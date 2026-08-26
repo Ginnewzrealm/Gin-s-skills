@@ -1,0 +1,809 @@
+{
+  "version": "v3.3.0",
+  "evals": [
+    {
+      "id": "eval-1",
+      "name": "触发反馈必须最先发送",
+      "input": "用户消息：健身追踪",
+      "checks": [
+        {
+          "type": "response_contains",
+          "value": "🏃 健身追踪技能已激活，正在连接数据..."
+        }
+      ]
+    },
+    {
+      "id": "eval-2",
+      "name": "版本号已更新到 v3.3.0",
+      "input": "读取 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "version: \"v3.3.0\""
+        }
+      ]
+    },
+    {
+      "id": "eval-3",
+      "name": "默认后端为 feishu_sheets",
+      "input": "读取 config/openclaw-config.md 和 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "config/openclaw-config.md",
+          "value": "默认 `feishu_sheets`"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "`feishu_sheets`：飞书普通表格（默认）"
+        }
+      ]
+    },
+    {
+      "id": "eval-4",
+      "name": "不再引用 Bitable 后端",
+      "input": "扫描所有文档",
+      "checks": [
+        {
+          "type": "file_not_contains",
+          "path": "SKILL.md",
+          "value": "feishu_bitable"
+        },
+        {
+          "type": "file_not_contains",
+          "path": "config/openclaw-config.md",
+          "value": "fitness.bitable"
+        }
+      ]
+    },
+    {
+      "id": "eval-5",
+      "name": "所有飞书操作委托给 lark-sheets skill 并附带显式命令模板",
+      "input": "读取 field-guide.md、write-verify/SKILL.md 和 sheets-calling-patterns.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "knowledge/field-guide.md",
+          "value": "调用时必须附带 `knowledge/sheets-calling-patterns.md` 中定义的完整命令模板"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "write_fields_by_name"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/sheets-calling-patterns.md",
+          "value": "### 模式 8：write_fields_by_name"
+        }
+      ]
+    },
+    {
+      "id": "eval-6",
+      "name": "子技能文档中 lark-cli sheets 调用必须附带完整命令模板",
+      "input": "扫描子技能文档",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "lark-cli sheets +workbook-info"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "lark-cli sheets +csv-get"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "lark-cli sheets +cells-search"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "lark-cli sheets +cells-set"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "lark-cli sheets +csv-get"
+        }
+      ]
+    },
+    {
+      "id": "eval-7",
+      "name": "自动按日期升序创建日期行",
+      "input": "读取 collect-data/SKILL.md 和 sheets-schema.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "调用 `create_date_row` 模式按日期升序插入新行"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/sheets-schema.md",
+          "value": "每日记录表采用**自动按日期升序创建空行**模式"
+        }
+      ]
+    },
+    {
+      "id": "eval-8",
+      "name": "BMI 由 Agent 写入静态值",
+      "input": "读取 sheets-schema.md 和 collect-data/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "config/sheets-schema.md",
+          "value": "由 Agent 根据用户身高和当日晨起体重计算后写入静态数值"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "将 BMI 作为额外字段加入写入请求"
+        }
+      ]
+    },
+    {
+      "id": "eval-9",
+      "name": "公式字段由 Sheets 自动计算，Agent 不写入",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "该字段由 Sheets 公式自动计算，Agent 不写入"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "周编号"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "睡眠时长"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "腰臀比"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "早晚体重差"
+        }
+      ]
+    },
+    {
+      "id": "eval-10",
+      "name": "周编号以周日为一周第一天",
+      "input": "读取 polling-rules.md 和 sheets-schema.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "knowledge/polling-rules.md",
+          "value": "**周起点：** 周日 00:00:00 CST"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/sheets-schema.md",
+          "value": "周日为一周第一天"
+        }
+      ]
+    },
+    {
+      "id": "eval-11",
+      "name": "错误码 LARK_SKILL_UNAVAILABLE",
+      "input": "读取 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "`LARK_SKILL_UNAVAILABLE`"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "`LARK_SKILL_UNAVAILABLE`"
+        }
+      ]
+    },
+    {
+      "id": "eval-12",
+      "name": "单选字段选项防污染三锁",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "锁 1（写入前·精确匹配）"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "锁 2（值构造·原文复制）"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "锁 3（写入后·选项数对比）"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "🟢无"
+        }
+      ]
+    },
+    {
+      "id": "eval-13",
+      "name": "字段元数据子表为主方式",
+      "input": "读取 polling-rules.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "knowledge/polling-rules.md",
+          "value": "统一以「字段元数据」子表为准"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/polling-rules.md",
+          "value": "### 主方式：字段元数据子表"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/polling-rules.md",
+          "value": "### 兜底方式：字段名模式匹配"
+        }
+      ]
+    },
+    {
+      "id": "eval-14",
+      "name": "用户配置表新增身高字段",
+      "input": "读取 sheets-schema.md 和 init/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "config/sheets-schema.md",
+          "value": "**新增必填项「身高」**：用于 Agent 计算 BMI。"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "| 身高 | 文本 | ✅ |"
+        }
+      ]
+    },
+    {
+      "id": "eval-15",
+      "name": "query-data 基于 Sheets 行读取",
+      "input": "读取 query-data/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "调用 `lark-sheets` skill 的 `read_header` 模式读取表头行"
+        }
+      ]
+    },
+    {
+      "id": "eval-16",
+      "name": "字段元数据子表文件存在且包含完整字段",
+      "input": "读取 config/field-metadata-schema.md",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "config/field-metadata-schema.md"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "晨起体重"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "BMI"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "总热量"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "其他备注"
+        }
+      ]
+    },
+    {
+      "id": "eval-17",
+      "name": "各子技能优先读取字段元数据子表",
+      "input": "读取 collect-data/query-data/write-verify",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "调用 `lark-sheets` skill 的 `read_field_metadata` 模式读取「字段元数据」子表"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "调用 `lark-sheets` skill 的 `read_field_metadata` 模式读取「字段元数据」子表"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "「字段元数据」子表"
+        }
+      ]
+    },
+    {
+      "id": "eval-19",
+      "name": "sheets-calling-patterns 文件存在且包含 10 个模式",
+      "input": "读取 knowledge/sheets-calling-patterns.md",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "knowledge/sheets-calling-patterns.md"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/sheets-calling-patterns.md",
+          "value": "### 模式 10：read_column_formats"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/sheets-calling-patterns.md",
+          "value": "lark-cli sheets +cells-set --url"
+        }
+      ]
+    },
+    {
+      "id": "eval-20",
+      "name": "SKILL.md 文件索引包含 sheets-calling-patterns",
+      "input": "读取 SKILL.md 文件索引",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "knowledge/sheets-calling-patterns.md"
+        }
+      ]
+    },
+    {
+      "id": "eval-21",
+      "name": "write-verify 包含 FIELD_TYPE_MISMATCH 处理",
+      "input": "读取 write-verify/SKILL.md 和 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "FIELD_TYPE_MISMATCH"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "`FIELD_TYPE_MISMATCH`"
+        }
+      ]
+    },
+    {
+      "id": "eval-22",
+      "name": "init 包含字段元数据一致性抽查",
+      "input": "读取 init/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "字段元数据一致性抽查"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "read_dropdown_options"
+        }
+      ]
+    },
+    {
+      "id": "eval-23",
+      "name": "init 不再包含自动创建子表的矛盾措辞",
+      "input": "读取 init/SKILL.md 检查措辞一致性",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "检测用户配置表是否存在，不存在则返回 TABLE_NOT_FOUND 错误，不自动创建"
+        },
+        {
+          "type": "file_not_contains",
+          "path": "skills/init/SKILL.md",
+          "value": "不存在则自动创建"
+        }
+      ]
+    },
+    {
+      "id": "eval-24",
+      "name": "query-data 返回完整 raw_record 且协调器明确审计展示规则",
+      "input": "读取 query-data/SKILL.md 和 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "raw_record"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "表头行定义的**全部字段**"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "当用户需要判断数据异常、缺失或格式错误时，Agent 不得替用户过滤空白字段"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "必须展示完整 `raw_record`"
+        }
+      ]
+    },
+    {
+      "id": "eval-25",
+      "name": "禁止编造字段名",
+      "input": "读取 field-guide.md、collect-data/SKILL.md、query-data/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "knowledge/field-guide.md",
+          "value": "字段来源唯一权威"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/field-guide.md",
+          "value": "凭记忆、印象或\"常见健身字段\"构造字段名"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/field-guide.md",
+          "value": "下午茶时间"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "字段来源红线"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "生成问题时，字段名必须 100% 来自"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "字段来源红线"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/query-data/SKILL.md",
+          "value": "下午茶感觉"
+        }
+      ]
+    },
+    {
+      "id": "eval-26",
+      "name": "write-verify 有写入前强制检查清单",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "写入前强制检查清单"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "字段名是否在表头行白名单中"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "单选值是否在真实下拉选项中"
+        }
+      ]
+    },
+    {
+      "id": "eval-27",
+      "name": "collect-data 有问题生成前强制检查清单",
+      "input": "读取 collect-data/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "问题生成前强制检查清单"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "字段名必须 100% 来自 read_header 返回的表头行"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/collect-data/SKILL.md",
+          "value": "不在表头行中的字段名 → 不得生成问题"
+        }
+      ]
+    },
+    {
+      "id": "eval-28",
+      "name": "字段名白名单机制",
+      "input": "读取 SKILL.md 和 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "字段名白名单"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "字段名白名单"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "不在白名单中的字段名 → 返回 `FIELD_NOT_FOUND`"
+        }
+      ]
+    },
+    {
+      "id": "eval-29",
+      "name": "单选字段匹配算法化",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "单选字段匹配算法"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "步骤 1：读取真实下拉选项"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "步骤 3：写入值必须从选项列表中原样复制"
+        }
+      ]
+    },
+    {
+      "id": "eval-30",
+      "name": "FIELD_NOT_FOUND 错误码",
+      "input": "读取 SKILL.md 和 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "FIELD_NOT_FOUND"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "FIELD_NOT_FOUND"
+        }
+      ]
+    },
+    {
+      "id": "eval-31",
+      "name": "write-verify 必须执行写入后回读验证",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "写入后回读验证"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "写入值 vs 复查值不一致"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "未通过回读验证不得标记为 success"
+        }
+      ]
+    },
+    {
+      "id": "eval-32",
+      "name": "未收到写入成功证据时不得汇报 success",
+      "input": "读取 write-verify/SKILL.md 和 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "lark-cli 返回的 revision"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "updated_cells_count"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "✅ 数据记录完成"
+        }
+      ]
+    },
+    {
+      "id": "eval-33",
+      "name": "反馈协调器延迟成功反馈",
+      "input": "读取 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "操作完成反馈必须在 write-verify 返回 success 且复查通过后发送"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "write-verify 返回 failed 或 partial 时"
+        }
+      ]
+    },
+    {
+      "id": "eval-34",
+      "name": "read_column_formats 工具模式已文档化",
+      "input": "读取 sheets-calling-patterns.md 和 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "knowledge/sheets-calling-patterns.md",
+          "value": "### 模式 10：read_column_formats"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/sheets-calling-patterns.md",
+          "value": "--include style,data_validation"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "read_column_formats"
+        }
+      ]
+    },
+    {
+      "id": "eval-35",
+      "name": "coerce_value.py 脚本存在且实现通用转换",
+      "input": "读取 scripts/coerce_value.py",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "scripts/coerce_value.py"
+        },
+        {
+          "type": "file_contains",
+          "path": "scripts/coerce_value.py",
+          "value": "number_format contains '%' and value ends with '%' -> divide by 100"
+        },
+        {
+          "type": "file_contains",
+          "path": "scripts/coerce_value.py",
+          "value": "INVALID_OPTION"
+        }
+      ]
+    },
+    {
+      "id": "eval-36",
+      "name": "百分比字符串自动转小数",
+      "input": "读取 write-verify/SKILL.md 和 scripts/coerce_value.py",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "scripts/coerce_value.py",
+          "value": "float(raw_value.rstrip(\"%\").strip()) / 100"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "若 `number_format` 包含 `%` 且原始值以 `%` 结尾 → 除以 100"
+        }
+      ]
+    },
+    {
+      "id": "eval-37",
+      "name": "时间字符串自动转 Excel 时间小数",
+      "input": "读取 write-verify/SKILL.md 和 scripts/coerce_value.py",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "scripts/coerce_value.py",
+          "value": "h / 24 + m / (24 * 60)"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "若 `number_format` 为时间格式（如 `h:mm`"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "→ 转为 Excel 时间小数"
+        }
+      ]
+    },
+    {
+      "id": "eval-38",
+      "name": "不在下拉选项的值被拒绝",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "INVALID_OPTION: '无' not in ['有氧']"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "若某列 `data_validation.items` 存在，原始值必须在列表中"
+        }
+      ]
+    },
+    {
+      "id": "eval-39",
+      "name": "时间字段元数据类型为时间而非文本",
+      "input": "读取 config/field-metadata-schema.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "| 入睡时间 | 晨间 | 时间 | Agent"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "| 早餐时间 | 晨间 | 时间 | Agent"
+        },
+        {
+          "type": "file_contains",
+          "path": "config/field-metadata-schema.md",
+          "value": "| 午餐时间 | 午间 | 时间 | Agent"
+        }
+      ]
+    },
+    {
+      "id": "eval-40",
+      "name": "write-verify 无字段名硬编码规则",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "禁止在 Agent prompt 中写死"
+        },
+        {
+          "type": "file_not_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "体脂率要除100"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "具体字段规则"
+        }
+      ]
+    }
+  ]
+}

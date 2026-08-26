@@ -16,6 +16,9 @@
 | `wechat-article-title` | 公众号全文标题与章节小标题优化 |
 | `wechat-article-quality` | 公众号文章四层质量自检 |
 | `xie-zuo-su-cai` | 写作素材库管理，为公众号写作准备素材 |
+| `jian-shen-zhui-zong` | 健身追踪：每日健康数据采集、查询、写入校验，支持飞书 Sheets / Local JSON / Obsidian |
+| `jianshen-zhushou` | 健身助手：训练计划生成、动作安排、训记 App 写回 |
+| `pdca-jianzhi` | PDCA 减脂：基于每日健康数据执行 M1-M9 代谢扫描，生成 PDCA 周报并写入飞书表格 |
 
 ## 使用方式
 

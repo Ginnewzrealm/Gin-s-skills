@@ -1,0 +1,11 @@
+{
+  "initialized": false,
+  "spreadsheet_url": "https://xxx.feishu.cn/sheets/xxx",
+  "daily_sheet_name": "每日记录",
+  "pdca_sheet_name": "PDCA减脂分析",
+  "target_weight": null,
+  "target_waist": null,
+  "target_bodyfat": null,
+  "target_sleep_duration": 8,
+  "schedule": "sunday 14:00"
+}
