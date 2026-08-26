@@ -1,0 +1,53 @@
+optional_dependencies:
+  baoyu-image-gen:
+    id: jimliu/baoyu-skills@baoyu-image-gen
+    required: false
+  baoyu-cover-image:
+    id: jimliu/baoyu-skills@baoyu-cover-image
+    required: false
+  baoyu-markdown-to-html:
+    id: jimliu/baoyu-skills@baoyu-markdown-to-html
+    required: false
+  baoyu-post-to-wechat:
+    id: jimliu/baoyu-skills@baoyu-post-to-wechat
+    required: false
+  wps-skill:
+    type: local
+    env: WECHAT_ARTICLE_WPS_SKILL_PATH
+    default: ~/.agents/skills/wps
+    required: false
+
+materials:
+  recursive: false
+  extensions:
+    - ".md"
+    - ".txt"
+    - ".url"
+
+default_template: social-slice
+templates_dir: templates/
+references_dir: references/
+
+# 用户可配置路径
+# 首次运行时，主技能会询问用户确认或修改三个路径；配置后写入 value 字段。
+paths:
+  # 用户素材输入目录：用户可在此放置文章素材、brief、参考链接、语音转文字等
+  input_dir:
+    env: WECHAT_ARTICLE_INPUT_DIR
+    default: "~/wechat-article-input"
+    value: ""      # 首次配置后写入用户确认的实际路径
+    required: true
+
+  # 草稿输出目录：生成的 article.md、docx、HTML 等保存到这里
+  output_dir:
+    env: WECHAT_ARTICLE_OUTPUT_DIR
+    default: "~/wechat-article-output"
+    value: ""      # 首次配置后写入用户确认的实际路径
+    required: true
+
+  # 用户自定义风格模板目录：可自由添加/删除 YAML 模板，与默认模板合并使用
+  user_templates_dir:
+    env: WECHAT_ARTICLE_USER_TEMPLATES_DIR
+    default: "~/wechat-article-templates"
+    value: ""      # 首次配置后写入用户确认的实际路径
+    required: true

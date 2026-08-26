@@ -1,0 +1,79 @@
+---
+name: wechat-article-outline
+description: 当需要根据公众号长文的角度和情绪触发点生成候选大纲和开头钩子时触发
+---
+
+# 生成候选大纲+开头
+
+## 输入
+
+- 需求记录
+- 模板规则
+- `context.md.narrative_protocol`（新增）
+- `context.md.materials_summary.materials_path` 指向的 `materials_full.md`（新增）
+- `context.md.reference_briefs.expansion_methodology`
+- `context.md.reference_briefs.hook_design`
+- `context.md.reference_briefs.outline_framework`
+- `context.md.reference_briefs.content_principles`
+
+## 动作
+
+1. 读取 `context.md`、其 `materials_summary.materials_path` 指向的 `materials_full.md`，以及 `context.md.reference_briefs` 下的四个核心要点摘要。
+2. 为每个素材支撑度≥60%的角度生成一个大纲+开头。
+3. 每个候选必须标注：
+   - 核心立场（thesis）：一句锐利、明确、可被记住的判断
+   - 副观点（supporting_points）：2-3 个互补角度
+   - 说服策略（persuasion_strategies）：数据/故事/权威/类比/社会认同的组合
+   - 情绪目标（emotion_goal）：主要触发的感受
+   - 情绪曲线（emotion_arc）：如 低落→好奇→反转→高潮
+   - 计划金句（key_quotes）：至少一句脱离上下文可传播的记忆锚点
+   - 结尾互动（closing_hook）：提问/填句/争议/投票等
+   - 切入角度（A1-A6 / B1-B2 / C1）
+   - 主情绪触发点
+   - 次情绪触发点
+   - 认知落差说明（读者能获得什么新视角）
+   - **推荐排序（1-N，1 为最推荐）**
+   - **推荐理由（一句话）**
+   - **适用场景（适合什么类型用户/传播目标）**
+   - **风险点（素材不足或可能写散的预警）**
+4. 章节结构（sections）必须严格按 `narrative_protocol.sections` 的顺序、职责和约束生成。
+   - `name` 对应 narrative_protocol 的 section name
+   - `purpose` 从 narrative_protocol 复制
+   - `must_include` 从 narrative_protocol 复制
+   - `forbidden` 从 narrative_protocol 复制
+   - `content` 根据素材和需求填充
+   - `materials_ref` 标注本 section 有哪些素材支撑
+   - `human_needed` 标注哪些必须用户补充真实经历
+   - `word_count_estimate` 预估本 section 字数
+5. 按推荐排序输出，通常 2-5 个，默认 3-4 个。
+6. 每个候选按客观检查清单评分并排序。
+7. 数量不足时提示用户补充素材。
+8. 用户要求重生成时，使用不同角度组合避免重复。
+
+## 输出
+
+- 候选方案 A/B/C/D，按推荐度从高到低排列。
+- 每份候选附带：核心立场、副观点、说服策略、情绪目标、情绪曲线、计划金句、结尾互动、章节结构、切入角度、主/次情绪触发点、认知落差说明、排序、推荐理由、适用场景、风险点。
+- 最终写入 `context.md` 的 `outline_candidates` 列表，每项至少包含：
+  - `rank`
+  - `angle`
+  - `thesis`
+  - `supporting_points`
+  - `persuasion_strategies`
+  - `emotion_goal`
+  - `emotion_arc`
+  - `key_quotes`
+  - `closing_hook`
+- `sections`
+  - `name`
+  - `purpose`
+  - `must_include`
+  - `forbidden`
+  - `content`
+  - `materials_ref`（新增）
+  - `human_needed`（新增）
+  - `word_count_estimate`（新增）
+  - `title`
+  - `reason`
+  - `scenario`
+  - `risk`

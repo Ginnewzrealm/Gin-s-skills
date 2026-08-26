@@ -1,0 +1,4 @@
+material_root: ""
+anchor_dir: 成品
+downstream_skill: human-writing
+downstream_repo: https://github.com/KKKKhazix/human-writing
