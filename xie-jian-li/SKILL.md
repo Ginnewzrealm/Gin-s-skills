@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.7.1（2026-08-26）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.8.0（2026-08-26）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -83,13 +83,15 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 7. **溯源校验**：`provenance_verifier.py --bullets bullets.json`；退出码 2 = 有拦截 → 引导用户补事实/修正/删除 → 重写 → 再校，不得跳过
 8. **初稿确认**：按 `references/resume-section-standard.md` 的字段结构组装 resume.json 展示给用户，用户要求修改则返回第 6 步
 9. **结构校验**：`resume_structure_check.py --resume resume.json`；退出码 2 = 字段不达标 → 修正后重新组装再校，不得跳过
-10. **渲染**：`html_renderer.py --resume resume.json`（默认 HTML；用户要求 Markdown 时用 `markdown_renderer.py`）
+10. **渲染前确认（硬闸门）**：把简历文字稿（基于 resume.json 生成）发给用户确认。用户说 OK / 没问题后，将 `render_approved = true` 写入 `review_state.json`，才能进入下一步。用户要求修改时，记录反馈并返回第 6 步或第 8 步重新修改，修改完成后需重新走溯源校验、结构校验和渲染前确认。**未获得用户明确确认前，禁止执行渲染。**
+11. **渲染**：`html_renderer.py --resume resume.json`（默认 HTML；用户要求 Markdown 时用 `markdown_renderer.py`）
 
 ### 其余子功能
 
 | 子功能 | 命令 / 方式 | 参考文档 |
 |--------|-----------|---------|
 | 求职信 / 打招呼语 | `cover_letter_renderer.py --jd <jd> --template <模板>` 出骨架 → Claude 填成稿 → `--check <成稿> --template <模板>` 校字数（boss 50-100/上限 120，其余 300-500） | `references/cover-letter-templates.md` |
+| 简历渲染前确认 | `resume_review_gate.py --resume resume.json --state review_state.json` 生成文字稿预览；`--approve` 确认；`--reject --feedback "..."` 回退修改 | `references/resume-section-standard.md` |
 | STAR 故事库 | `star_story_generator.py` 出骨架 → Claude 对话补全 A/R → 三版本 | `references/star-story-bank.md` |
 | 面试清单 | `interview_prep_generator.py [--jd <jd>]`（退出码 3 = 先生成 STAR） | — |
 | 高管简历 | `executive_resume_renderer.py` 出骨架 → Claude 补 Executive Profile | — |
@@ -103,6 +105,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 - 不联网调研目标公司；不代投简历、不代发邮件、不登录招聘平台
 - 知识库追加写入不覆盖；删除/修改需用户明确指示
 - 知识库路径只写技能目录 config.yaml，不改全局配置
+- **简历渲染前必须获得用户确认：未执行 `resume_review_gate.py --approve` 前，禁止调用 `html_renderer.py` / `markdown_renderer.py`**
 - 「生成物/」可清理；「面试素材/」与「原始事实/」是持久资产，不得删除
 
 ## 版本管理（修改技能时必须执行）
