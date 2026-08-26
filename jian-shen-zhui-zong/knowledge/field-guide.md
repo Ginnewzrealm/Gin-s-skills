@@ -13,10 +13,10 @@ Sheets 后端读取方式：
 - **Sheets 后端**：调用 `lark-sheets` skill 的 `read_header` 模式读取表头行：
 
   ```bash
-  lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A1:AQ1" --format json
+  lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A1:<LAST_COL>1" --format json
   ```
 
-  返回 `annotated_csv` 和 `col_indices`，建立「字段名 → 列字母」映射。
+  返回 `annotated_csv` 和 `col_indices`，建立「字段名 → 列字母」映射；用 `col_indices[-1]` 得到最右列字母 `<LAST_COL>`，供后续读取整行/整列使用。
 - **local_json / obsidian**：直接读取文件中的字段键
 
 **通用规则**：

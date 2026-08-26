@@ -130,8 +130,10 @@
   （表名与表头行范围定义见 `config/sheets-schema.md` 的「每日记录子表」章节）：
 
   ```bash
-  lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A1:AQ1" --format json
+  lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A1:<LAST_COL>1" --format json
   ```
+
+  返回的 `col_indices[-1]` 即为 `<LAST_COL>`，用于后续读取整行/整列。如果表头行数据量较大，可加 `--output-path ./header.json` 避免截断。
 
 - **必须调用 `lark-sheets` skill 的 `read_field_metadata` 模式读取「字段元数据」子表**，获取每个字段的时段、类型、写入方、选项、填写说明
   （表名与范围定义见 `config/sheets-schema.md` 的「字段元数据子表」章节）：

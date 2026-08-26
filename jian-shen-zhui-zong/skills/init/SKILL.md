@@ -100,8 +100,10 @@
    （表名与表头行范围定义见 `config/sheets-schema.md` 的「每日记录子表」章节）：
 
    ```bash
-   lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A1:AQ1" --format json
+   lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A1:<LAST_COL>1" --format json
    ```
+
+2. 从返回的 `col_indices[-1]` 得到 `<LAST_COL>`，用于后续读取整行/整列。
 
 2. **成功** → 子表存在
 3. **失败（子表不存在）** → 返回 `TABLE_NOT_FOUND` 错误

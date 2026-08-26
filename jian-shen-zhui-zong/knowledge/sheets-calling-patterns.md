@@ -36,20 +36,22 @@ lark-cli sheets +workbook-info --url "<fitness.sheets.url>" --format json
 
 **命令：**
 ```bash
-lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "<sheet_name>" --range "A1:AQ1" --format json
+lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "<sheet_name>" --range "A1:<LAST_COL>1" --format json
 ```
 
 **输入参数：**
 - `fitness.sheets.url`
 - `sheet_name`：子表名（如 `每日记录`、`用户配置`）
+- `LAST_COL`：运行时表头行最右列字母。首次读取时若未知，可先读 `A1:Z1` 拿到实际范围，再用返回的 `col_indices[-1]` 作为后续调用的 `<LAST_COL>`；也可以直接省略 `--range` 读取整个子表，由返回的 `actual_range` 确定表宽。
 
 **期望返回：** `annotated_csv` 中的第一行表头内容，`col_indices[]`
 
 **消费方式：**
 - 解析 CSV 得到字段名数组
 - 用 `col_indices[i]` 得到每个字段名对应的列字母
+- 用 `col_indices[-1]` 得到最右列字母，作为后续 `verify_row_values`、`read_column_formats` 等调用的 `<LAST_COL>`
 
-**注意：** 读取前先用 `+workbook-info` 确认子表存在；读取范围以实际表宽为准，当前表格为 43 列（`A1:AQ1`），但技能文档中应说明"以运行时表宽为准"。
+**注意：** 读取前先用 `+workbook-info` 确认子表存在；读取范围**必须以运行时表宽为准**，禁止硬编码列数。当前表格可能是 43 列，但用户可能增删列。
 
 ---
 
@@ -112,6 +114,10 @@ lark-cli sheets +cells-search --url "<fitness.sheets.url>" --sheet-name "每日�
 **消费方式：**
 - 从地址提取行号
 - 无匹配 → 日期行不存在，进入 `create_date_row`
+
+**何时用 search，何时用 read_date_column：**
+- 只查一个日期：用本模式（`+cells-search`）最快。
+- 查多个日期（如本周 7 天、补录一段历史）：先用模式 11 `read_date_column` 读整列 A 建立 `日期 → 行号` 映射，再本地查表。这样可以避免 7 次 search API 调用。
 
 ---
 
@@ -203,12 +209,13 @@ JSON
 
 **命令：**
 ```bash
-lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A<row>:AQ<row>" --format json
+lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A<row>:<LAST_COL><row>" --format json
 ```
 
 **输入参数：**
 - `fitness.sheets.url`
 - `row`：目标日期行号
+- `LAST_COL`：表头行最右列字母，来自 `read_header` 返回的 `col_indices[-1]`
 
 **期望返回：** 整行字段值
 
@@ -216,6 +223,8 @@ lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录
 - 按 `header_map` 核对每个写入字段的实际值
 - 一致 → 字段写入成功
 - 不一致 → 换工具/换方式重试一次，仍不一致 → `FIELD_WRITE_FAILED`
+
+**大表读取：** 如果整行数据量较大，可能触及 `--max-chars` 默认 500k 上限。此时改用 `--output-path ./verify-row.json`，上限自动提升到 20M，stdout 只返回摘要。Agent 从文件中读取 JSON 后再核对。
 
 ---
 
@@ -259,3 +268,75 @@ lark-cli sheets +cells-get \
   ]]
 }
 ```
+
+---
+
+### 模式 11：read_date_column — 读取日期列建立日期→行号映射
+
+**用途：** 替代反复调用 `find_date_row`（`+cells-search`），一次性读取整个日期列，在本地建立「日期 → 行号」映射。
+
+**命令：**
+```bash
+lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A2:<LAST_COL_DATE>" --format json
+```
+
+**输入参数：**
+- `fitness.sheets.url`
+- `LAST_COL_DATE`：日期列实际末行号。若不确定，可先读 `A2:A1000` 或更大范围；返回的 `annotated_csv` 每行自带 `[row=N]` 前缀，空行也会返回，可据此确定实际末行。更好的做法是先调用一次 `+csv-get --range A2:A`（省略结束行）读取整列，但为保险起见建议传一个足够大的上限如 `A2:A5000`，并用 `--output-path` 避免大表截断。
+
+**期望返回：** 日期列所有单元格，`annotated_csv` 每行前缀 `[row=N]` 即为实际行号
+
+**消费方式：**
+- 建立 `日期 → 行号` 映射
+- 查询本周/上周数据时，用该映射一次性定位多个日期行，再批量读取目标行
+- 找不到的日期 → 记录为缺失，进入 `create_date_row`
+
+**与 `find_date_row` 的选择：**
+- 只查一个日期：`+cells-search` 更快
+- 查多个日期（如本周 7 天）：优先用本模式读整列，再本地查表
+
+---
+
+### 模式 12：read_specific_columns — 精确读取少数列
+
+**用途：** 当只需要 1-3 个字段（如只看体重、体脂）时，按列精确读取，避免读整行。
+
+**命令（CSV 形态，只看值）：**
+```bash
+lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "<COL>2:<COL><LAST_ROW>" --format json
+```
+
+**命令（Cells 形态，需要公式/样式/验证）：**
+```bash
+lark-cli sheets +cells-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "<COL>2:<COL><LAST_ROW>" --include value,formula,style,comment,data_validation --format json
+```
+
+**输入参数：**
+- `fitness.sheets.url`
+- `COL`：目标列字母（来自 `header_map`）
+- `LAST_ROW`：实际末行号。不确定时可传一个足够大的值（如 5000），返回的空行可过滤掉
+
+**期望返回：** 单列数据
+
+**消费方式：**
+- 按 `header_map` 把字段名转成列字母
+- 对每列独立调用，或合并为一个 `+csv-get` / `+cells-get` 连续 range（如 `C2:C5000` 只读体重列）
+- 需要同时读多列但不连续时，必须分多次调用，因为 `+csv-get` / `+cells-get` 的 `--range` 只接受单个 A1 range
+
+**大表读取：** 单列数据量大时同样建议加 `--output-path ./col-data.json`。
+
+---
+
+### 模式 13：read_with_output_path — 大表读取兜底
+
+**用途：** 当任何读取命令可能超过 500k 字符默认上限时使用。
+
+**做法：** 在 `+csv-get` 或 `+cells-get` 后追加 `--output-path ./lark-read-<timestamp>.json`。
+
+**效果：**
+- 字符上限自动提升到约 20M
+- 文件内容是标准 JSON payload，与 stdout 返回结构一致
+- stdout 只返回 `output_path`、`byte_count`、`complete`/`truncated` 等摘要
+- Agent 从文件中读取并解析，而不是直接解析 stdout
+
+**注意：** 临时文件应放在系统临时目录（如 `/tmp`），不要写入项目目录或用户工作目录；读取后应及时清理。

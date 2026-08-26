@@ -384,8 +384,10 @@ Agent 只需要保证：
 调用 `lark-sheets` skill 的 `verify_row_values` 模式读取目标行：
 
 ```bash
-lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A<row>:AQ<row>" --format json
+lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录" --range "A<row>:<LAST_COL><row>" --format json
 ```
+
+`LAST_COL` 来自 `read_header` 返回的 `col_indices[-1]`。若整行数据较大，改用 `--output-path ./verify-row.json` 读取文件内容再核对。
 
 按表头行字段全集逐一核对读取值与写入值：
 
