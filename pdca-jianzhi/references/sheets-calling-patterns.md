@@ -41,20 +41,22 @@ lark-cli sheets +workbook-info --url "<pdca.sheets.url>" --format json
 
 **命令：**
 ```bash
-lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<sheet_name>" --range "A1:AQ1" --format json
+lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<sheet_name>" --range "A1:<LAST_COL>1" --format json
 ```
 
 **输入参数：**
 - `pdca.sheets.url`
 - `sheet_name`：子表名
+- `LAST_COL`：运行时表头行最右列字母。首次读取时若未知，可先读 `A1:Z1` 拿到实际范围，再用返回的 `col_indices[-1]` 作为后续调用的 `<LAST_COL>`；也可以直接省略 `--range` 读取整个子表，由返回的 `actual_range` 确定表宽。
 
 **期望返回：** `annotated_csv` 中的第一行表头内容，`col_indices[]`
 
 **消费方式：**
 - 解析 CSV 得到字段名数组
 - 用 `col_indices[i]` 得到每个字段名对应的列字母
+- 用 `col_indices[-1]` 得到最右列字母，作为后续 `read_daily_rows`、`verify_row_values`、`read_column_formats` 等调用的 `<LAST_COL>`
 - 读取前先用 `verify_spreadsheet` 确认子表存在
-- 读取范围以实际表宽为准，当前表格为 43 列（`A1:AQ1`），但技能文档中应说明"以运行时表宽为准"
+- 读取范围**必须以运行时表宽为准**，禁止硬编码列数。当前「每日记录」表可能是 43 列，但用户可能增删列；「PDCA减脂分析」表也可能从 12 列扩展。
 
 ---
 
@@ -64,12 +66,12 @@ lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<sheet_name>" -
 
 **命令：**
 ```bash
-lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.daily_sheet_name>" --range "A2:A<last_row>" --format json
+lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.daily_sheet_name>" --range "A2:<LAST_ROW>" --format json
 ```
 
 **输入参数：**
 - `pdca.sheets.url`
-- `last_row`：实际末行（可先调用一次确定 `current_region`，或直接用 `current_region` 中返回的最大行号）
+- `LAST_ROW`：实际末行号。若不确定，可先调用一次 `+csv-get --range A2:A5000`（或更大范围）；返回的 `annotated_csv` 每行自带 `[row=N]` 前缀，空行也会返回，可据此确定真实末行。数据量大时建议加 `--output-path ./date-column.json`，把 500k 默认上限提升到约 20M。
 
 **期望返回：** 日期列所有单元格，`annotated_csv` 每行前缀 `[row=N]` 即为实际行号
 
@@ -85,18 +87,20 @@ lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.daily_she
 
 **命令：**
 ```bash
-lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.daily_sheet_name>" --range "A<row>:AQ<row>" --format json
+lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.daily_sheet_name>" --range "A<row>:<LAST_COL_DAILY><row>" --format json
 ```
 
 **输入参数：**
 - `pdca.sheets.url`
 - `row`：目标行号
+- `LAST_COL_DAILY`：「每日记录」表头行最右列字母，来自 `read_header` 返回的 `col_indices[-1]`
 
 **期望返回：** 整行字段值
 
 **消费方式：**
 - 按 `header_map` 将列字母映射回字段名
 - 多个日期行独立调用，或合并为一个 range（仅当行号连续时）
+- 整行数据量大时改用 `--output-path ./daily-row.json` 避免截断
 
 ---
 
@@ -118,6 +122,10 @@ lark-cli sheets +cells-search --url "<pdca.sheets.url>" --sheet-name "<pdca.pdca
 **消费方式：**
 - 从地址提取行号
 - 无匹配 → 周号行不存在，进入 `create_week_row`
+
+**何时用 search，何时用 read_week_column：**
+- 只查一个周号：用本模式（`+cells-search`）最快。
+- 需要同时查多个历史周号（如读取上周报告）：先用模式 12 `read_week_column` 读「PDCA减脂分析」A 列整列建立 `周号 → 行号` 映射，再本地查表。
 
 ---
 
@@ -182,12 +190,13 @@ JSON
 
 **命令：**
 ```bash
-lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.pdca_sheet_name>" --range "A<row>:L<row>" --format json
+lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.pdca_sheet_name>" --range "A<row>:<LAST_COL_PDCA><row>" --format json
 ```
 
 **输入参数：**
 - `pdca.sheets.url`
 - `row`：目标周号行号
+- `LAST_COL_PDCA`：「PDCA减脂分析」表头行最右列字母，来自该子表 `read_header` 返回的 `col_indices[-1]`（默认 12 列 L，但禁止硬编码）
 
 **期望返回：** 整行字段值
 
@@ -195,6 +204,7 @@ lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.pdca_shee
 - 按 `header_map` 核对每个写入字段的实际值
 - 一致 → 字段写入成功
 - 不一致 → 换工具/换方式重试一次，仍不一致 → `FIELD_WRITE_FAILED`
+- 整行数据量大时改用 `--output-path ./verify-pdca-row.json` 避免截断
 
 ---
 
@@ -252,3 +262,77 @@ JSON
   "errors": {}
 }
 ```
+
+---
+
+## 模式 10：read_specific_columns — 精确读取少数列
+
+**用途：** 当只需要 1-3 个字段（如只看周号、起始日期）时，按列精确读取，避免读整行。
+
+**命令（CSV 形态，只看值）：**
+```bash
+lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<sheet_name>" --range "<COL>2:<COL><LAST_ROW>" --format json
+```
+
+**命令（Cells 形态，需要公式/样式/验证）：**
+```bash
+lark-cli sheets +cells-get --url "<pdca.sheets.url>" --sheet-name "<sheet_name>" --range "<COL>2:<COL><LAST_ROW>" --include value,formula,style,comment,data_validation --format json
+```
+
+**输入参数：**
+- `pdca.sheets.url`
+- `sheet_name`：子表名
+- `COL`：目标列字母（来自 `header_map`）
+- `LAST_ROW`：实际末行号。不确定时可传一个足够大的值（如 5000），返回的空行可过滤掉
+
+**期望返回：** 单列数据
+
+**消费方式：**
+- 按 `header_map` 把字段名转成列字母
+- 对每列独立调用，或合并为一个 `+csv-get` / `+cells-get` 连续 range（如 `A2:A5000` 只读周号列）
+- 需要同时读多列但不连续时，必须分多次调用，因为 `+csv-get` / `+cells-get` 的 `--range` 只接受单个 A1 range
+
+**大表读取：** 单列数据量大时同样建议加 `--output-path ./col-data.json`。
+
+---
+
+## 模式 11：read_with_output_path — 大表读取兜底
+
+**用途：** 当任何读取命令可能超过 500k 字符默认上限时使用。
+
+**做法：** 在 `+csv-get` 或 `+cells-get` 后追加 `--output-path ./lark-read-<timestamp>.json`。
+
+**效果：**
+- 字符上限自动提升到约 20M
+- 文件内容是标准 JSON payload，与 stdout 返回结构一致
+- stdout 只返回 `output_path`、`byte_count`、`complete`/`truncated` 等摘要
+- Agent 从文件中读取并解析，而不是直接解析 stdout
+
+**注意：** 临时文件应放在系统临时目录（如 `/tmp`），不要写入项目目录或用户工作目录；读取后应及时清理。
+
+---
+
+## 模式 12：read_week_column — 读取周号列建立周号→行号映射
+
+**用途：** 替代反复调用 `find_week_row`（`+cells-search`），一次性读取「PDCA减脂分析」A 列所有周号，在本地建立「周号 → 行号」映射，用于读取上周报告等场景。
+
+**命令：**
+```bash
+lark-cli sheets +csv-get --url "<pdca.sheets.url>" --sheet-name "<pdca.pdca_sheet_name>" --range "A2:A<LAST_ROW>" --format json
+```
+
+**输入参数：**
+- `pdca.sheets.url`
+- `pdca.pdca_sheet_name`
+- `LAST_ROW`：实际末行号。若不确定，可传一个足够大的值（如 5000），返回的 `annotated_csv` 每行自带 `[row=N]` 前缀
+
+**期望返回：** 周号列所有单元格，`annotated_csv` 每行前缀 `[row=N]` 即为实际行号
+
+**消费方式：**
+- 建立 `周号 → 行号` 映射
+- 读取上周报告时，直接用映射定位行号，再调用 `read_daily_rows`/`verify_row_values` 读取整行
+- 找不到的周号 → 记录为缺失，进入 `create_week_row`
+
+**与 `find_week_row` 的选择：**
+- 单个周号：用 `+cells-search`。
+- 多个周号（如同时读本周和上周）：优先用本模式读整列再本地查表。
