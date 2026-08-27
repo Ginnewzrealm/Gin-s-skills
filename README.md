@@ -18,7 +18,8 @@
 | `xie-zuo-su-cai` | 写作素材库管理，为公众号写作准备素材 |
 | `jian-shen-zhui-zong` | 健身追踪：每日健康数据采集、查询、写入校验，支持飞书 Sheets / Local JSON / Obsidian |
 | `jianshen-zhushou` | 健身助手：训练计划生成、动作安排、训记 App 写回 |
-| `pdca-jianzhi` | PDCA 减脂：基于每日健康数据执行 M1-M9 代谢扫描，生成 PDCA 周报并写入飞书表格 |
+| `naodongdakai` | 脑洞大开——小说开书前的灵感孵化与世界观锻造 |
+| `wangwendagang` | 嵌套剧本架构师——把设定素材整理成剧集/网文大纲并写入飞书多维表格 |
 
 ## 使用方式
 
