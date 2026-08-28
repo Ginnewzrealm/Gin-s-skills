@@ -94,6 +94,7 @@ checklist 步骤标签：
    - 主 skill 调用 `stage_validator.decide_next_stage(progress.md)` 获取当前 stage。
    - 每次推进到下一个 stage 前，调用 `stage_validator.validate_next_step()` 校验阶段转换、必要字段、模板白名单和 narrative_protocol 完整性。
    - 校验失败时，主 skill 停留在当前 stage，展示错误信息并等待用户处理。
+   - 校验通过后，主 skill 调用 `progress_reporter.render_macro()` 输出当前宏观 6 阶段进度仪表盘，再进入子 skill 或硬闸门等待。
 9. 根据当前 `stage` 调用对应子技能（后续流程在已选风格语境下进行）。
 
 每个 AI 输出节点（大纲候选、正文初稿、润色稿、标题候选、自检报告）之后均设置人工审阅节点，用户可确认、修改或要求重生成。
