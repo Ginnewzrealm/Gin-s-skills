@@ -14,7 +14,7 @@
 
 ### 场景进度
 
-当前场景：健身助手 — 训练日记
+当前场景：gin-workout-planner — 训练日记
 
 Progress:
 - [ ] Step 1 获取训记训练数据 [自动]

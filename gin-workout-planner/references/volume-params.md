@@ -20,7 +20,7 @@
 
 ### 场景进度
 
-当前场景：健身助手 — 目标/水平更改
+当前场景：gin-workout-planner — 目标/水平更改
 
 Progress:
 - [ ] Step 1 读取当前 `_skill-config.json` 的 training_goal / training_level [自动]
