@@ -30,14 +30,54 @@ def categorize(facts):
     stories = {k: [] for k in CATEGORIES}
     for f in facts["facts"]:
         org = f.get("company") or f.get("name") or ""
-        for b in f["bullets"]:
+        for idx, b in enumerate(f["bullets"]):
             for cat, kws in CATEGORIES.items():
                 if any(k in b for k in kws):
                     stories[cat].append({"fact_id": f["fact_id"], "org": org,
                                          "role": f.get("role", ""), "period": f.get("period", ""),
-                                         "bullet": b})
+                                         "bullet": b, "bullet_index": idx,
+                                         "responsibility_level": f.get("responsibility_levels", [""] * (idx + 1))[idx]})
                     break
     return stories
+
+
+def _backfill_interview_details(root, stories):
+    """把 STAR 故事素材回填到对应 claim 的 interview_details 中。"""
+    claims = common.read_claims(root)
+    if not claims:
+        return 0
+    claims_by_source = {}
+    for c in claims:
+        src = c.get("source_fact", "").strip()
+        if src:
+            claims_by_source[src] = c
+
+    updated = 0
+    for items in stories.values():
+        for it in items:
+            src = it["bullet"].strip()
+            # 去掉责任层级前缀，便于匹配
+            _, cleaned = common.extract_responsibility_level(src)
+            c = claims_by_source.get(cleaned) or claims_by_source.get(src)
+            if not c:
+                continue
+            # 只回填占位符
+            interview = c.get("interview_details", {})
+            if not interview or not any("待用户补充" in str(v) for v in interview.values()):
+                continue
+            c["interview_details"] = {
+                "decision": "（由 STAR 故事库回填，待确认）%s 期间，在 %s 背景下承担 %s" % (it["period"], it["org"], it["role"]),
+                "challenge": "（由 STAR 故事库回填，待确认）%s" % it["bullet"][:80],
+                "verification": "（由 STAR 故事库回填，待确认）结果须与原始事实中的数字一致",
+                "result": "（由 STAR 故事库回填，待确认）参见 面试素材/star_stories.md 中 [%s] 素材" % it["fact_id"],
+            }
+            c["last_verified"] = common.today_str()
+            common.write_claim(root, c, update_aggregate=False)
+            updated += 1
+
+    if updated:
+        common._update_claims_aggregate(root)
+    return updated
 
 
 def render(facts, stories):
@@ -72,8 +112,9 @@ def main():
     with open(out, "w", encoding="utf-8") as f:
         f.write(md)
     total = sum(len(v) for v in stories.values())
-    print("[完成] STAR 故事库已生成: %s（素材 %d 条，分类 %d/%d 非空）"
-          % (out, total, sum(1 for v in stories.values() if v), len(CATEGORIES)))
+    backfilled = _backfill_interview_details(root, stories)
+    print("[完成] STAR 故事库已生成: %s（素材 %d 条，分类 %d/%d 非空，回填 %d 条 claim interview_details）"
+          % (out, total, sum(1 for v in stories.values() if v), len(CATEGORIES), backfilled))
 
 
 if __name__ == "__main__":

@@ -86,6 +86,8 @@ def build_facts(root):
             "company": e["title"], "role": e["role"], "period": e["period"],
             "years": common.years_of_experience(e["period"]),
             "bullets": e["bullets"],
+            "responsibility_levels": [l or "待确认" for l in e.get("responsibility_levels", [])],
+            "verification_status": [common.DEFAULT_VERIFICATION_STATUS] * len(e["bullets"]),
         })
 
     # 项目经历
@@ -94,6 +96,8 @@ def build_facts(root):
             "fact_id": "P%d" % i, "type": "project",
             "name": e["title"], "role": e["role"], "period": e["period"],
             "bullets": e["bullets"],
+            "responsibility_levels": [l or "待确认" for l in e.get("responsibility_levels", [])],
+            "verification_status": [common.DEFAULT_VERIFICATION_STATUS] * len(e["bullets"]),
         })
 
     # 技能：两段结构（## 通用能力 / ## 专属能力）；无分节旧格式全部视为专属能力
