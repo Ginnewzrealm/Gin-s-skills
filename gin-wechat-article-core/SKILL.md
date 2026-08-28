@@ -23,6 +23,38 @@ description: 当用户需要写公众号长文、整理素材成文、润色文�
 - `references/ai-flavor-guide.md`：AI 味治理指南
 - `references/writing-checklist.md`：写作检查清单（内容债/语言债诊断）
 
+## 进度条使用规则
+
+每次触发本 skill、每次 stage 跳转、每次会话恢复时，必须向用户展示 Progress checklist，并在执行过程中动态更新：
+
+1. 进入新 stage 后，先展示当前宏观 6 阶段仪表盘。
+2. 调用子 skill 前，由 core 展示宏观仪表盘；子 skill 只展示本环节 micro-checklist。
+3. 每完成一步，将该步骤标记为 `[x]`，并高亮下一步为 `← 当前`。
+4. 如果需要等待用户输入，输出 `当前阻塞：...`。
+5. 会话中断后恢复时，先输出当前完整 6 阶段进度状态，再继续。
+
+checklist 步骤标签：
+
+| 标签 | 含义 |
+|------|------|
+| `[自动]` | AI/脚本自动执行，无需用户输入 |
+| `[需确认]` | 需要用户查看并确认，但非强制通过 |
+| `[硬闸门]` | 用户不通过则无法继续下一步，必须明确说 OK / 批准 / 继续 |
+| `[可回环]` | 用户提出修改时，返回前面步骤重做 |
+
+宏观 6 阶段映射：
+
+| 阶段 | 内部 stage | 关键硬闸门 |
+|---|---|---|
+| 阶段 1/6：初始化与需求澄清 | init, clarify | 需求记录确认 |
+| 阶段 2/6：素材诊断与角度选择 | template_loaded, angle_diagnosed, role_boundary | 人-AI 协作契约书确认 |
+| 阶段 3/6：大纲生成与确认 | angle_matched, outline_generated, outline_selected, outline_confirmed | 大纲选择 + 开始写正文确认 |
+| 阶段 4/6：正文写作与人工改写 | draft_written, draft_revised | 人工二次改写确认 |
+| 阶段 5/6：润色、小标题与标题优化 | polished, titled, title_confirmed | 标题确认 |
+| 阶段 6/6：质量检查与终审定稿 | quality_checked, finalized, markdown_output, publish_decision | 终审定稿确认 |
+
+子 skill 被 core 调用时，不重复展示完整 6 阶段宏观进度；被用户直接调用时，先输出阶段定位句 `当前处于公众号长文写作的阶段 X/6：XXX。`，再输出 micro-checklist。
+
 ## 触发条件
 
 - 用户说"我想写公众号文章"
@@ -57,37 +89,38 @@ description: 当用户需要写公众号长文、整理素材成文、润色文�
 5. 调用 `scripts/dep_checker.py` 检查可选依赖状态（baoyu 技能 + WPS skill），
    由主 skill 写入 `context.md.optional_deps`。
 6. 创建或读取 `output_dir/<article_id>/context.md`；若同目录下 `progress.md` 存在，则读取并恢复 `stage` 与关键决策，按 `blocked.md` 继续等待用户确认；否则按初始 stage 启动新流程。
-7. **调用 `scripts/stage_validator.py` 决定并校验下一步：**
+7. **会话恢复时输出**：若同目录下 `progress.md` 已存在，主 skill 先调用 `progress_reporter.render_macro()` 输出完整 6 阶段进度状态（含当前步骤高亮），再继续后续流程。
+8. **调用 `scripts/stage_validator.py` 决定并校验下一步：**
    - 主 skill 调用 `stage_validator.decide_next_stage(progress.md)` 获取当前 stage。
    - 每次推进到下一个 stage 前，调用 `stage_validator.validate_next_step()` 校验阶段转换、必要字段、模板白名单和 narrative_protocol 完整性。
    - 校验失败时，主 skill 停留在当前 stage，展示错误信息并等待用户处理。
-8. 根据当前 `stage` 调用对应子技能（后续流程在已选风格语境下进行）。
+9. 根据当前 `stage` 调用对应子技能（后续流程在已选风格语境下进行）。
 
 每个 AI 输出节点（大纲候选、正文初稿、润色稿、标题候选、自检报告）之后均设置人工审阅节点，用户可确认、修改或要求重生成。
 
 ## 阶段定义
 
-| stage | 下一步动作 | 调用的子技能 | 类型 |
-|-------|-----------|-------------|------|
-| init | 路径初始化检查 + 风格选择 | init_checker.py + style_selector.py（主 skill 内部） | AI |
-| clarify | 需求澄清 | gin-wechat-article-clarify | 人工 |
-| template_loaded | 加载模板 + 生成 narrative_protocol | template_loader.py（主 skill 内部加载） | AI |
-| angle_diagnosed | 素材诊断 | gin-wechat-article-angle | AI |
-| role_boundary | 人-AI 协作契约书确认 | （主 skill 内部） | 人工 |
-| angle_matched | 生成候选大纲 | gin-wechat-article-outline | AI |
-| outline_generated | 选择/修改大纲 | （人工） | 人工 |
-| outline_selected | 确认开始写正文 | （人工） | 人工 |
-| outline_confirmed | 分段写正文 | gin-wechat-article-writer | AI |
-| draft_written | 二次改写正文 | （人工） | 人工 |
-| draft_revised | 小标题优化 + 润色 | gin-wechat-article-polish | AI |
-| polished | 审阅润色稿 → 提炼标题候选 | （人工审阅）+ gin-wechat-article-title(article) | 人工+AI |
-| titled | 选择/修改标题 | （人工） | 人工 |
-| title_confirmed | 质量自检 | gin-wechat-article-quality | AI |
-| quality_failed | 返回润色 | gin-wechat-article-polish | AI（循环） |
-| quality_checked | 终审定稿 | （人工） | 人工 |
-| finalized | 输出 Markdown | （主 skill 内部） | AI |
-| markdown_output | 发布/保存决策 | （人工） | 人工 |
-| publish_decision | 保存/推送 | wps-skill / baoyu-post-to-wechat | AI/外部 |
+| stage | 下一步动作 | 调用的子技能 | 类型 | 进度标签 |
+|-------|-----------|-------------|------|---------|
+| init | 路径初始化检查 + 风格选择 | init_checker.py + style_selector.py（主 skill 内部） | AI | [自动] |
+| clarify | 需求澄清 | gin-wechat-article-clarify | 人工 | [需确认] + [硬闸门] |
+| template_loaded | 加载模板 + 生成 narrative_protocol | template_loader.py（主 skill 内部加载） | AI | [自动] |
+| angle_diagnosed | 素材诊断 | gin-wechat-article-angle | AI | [自动] |
+| role_boundary | 人-AI 协作契约书确认 | （主 skill 内部） | 人工 | [硬闸门] |
+| angle_matched | 生成候选大纲 | gin-wechat-article-outline | AI | [自动] |
+| outline_generated | 选择/修改大纲 | （人工） | 人工 | [硬闸门] [可回环] |
+| outline_selected | 确认开始写正文 | （人工） | 人工 | [硬闸门] |
+| outline_confirmed | 分段写正文 | gin-wechat-article-writer | AI | [自动] |
+| draft_written | 二次改写正文 | （人工） | 人工 | [硬闸门] [可回环] |
+| draft_revised | 小标题优化 + 润色 | gin-wechat-article-polish | AI | [自动] |
+| polished | 审阅润色稿 → 提炼标题候选 | （人工审阅）+ gin-wechat-article-title(article) | 人工+AI | [需确认] |
+| titled | 选择/修改标题 | （人工） | 人工 | [硬闸门] [可回环] |
+| title_confirmed | 质量自检 | gin-wechat-article-quality | AI | [自动] |
+| quality_failed | 返回润色 | gin-wechat-article-polish | AI（循环） | [可回环] |
+| quality_checked | 终审定稿 | （人工） | 人工 | [硬闸门] |
+| finalized | 输出 Markdown | （主 skill 内部） | AI | [自动] |
+| markdown_output | 发布/保存决策 | （人工） | 人工 | [需确认] |
+| publish_decision | 保存/推送 | wps-skill / baoyu-post-to-wechat | AI/外部 | [需确认] |
 
 ## 阶段路由与硬闸门
 
