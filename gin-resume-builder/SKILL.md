@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.16.0（2026-08-28）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.17.0（2026-08-28）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -120,12 +120,15 @@ Progress:
 - [ ] Step 2 ATS 预检 → 报告关键词 gap `[自动]`
 - [ ] Step 3 JD 分类 → 展示分类结果 `[需确认]`
 - [ ] Step 4 跨行业检测 → 事实挑选（展示选中事实）`[需确认]`
-- [ ] Step 5 改写 → 溯源校验（拦截项需用户裁决）`[硬闸门]` `[可回环]`
-- [ ] Step 6 初稿组装 → 结构校验 → 展示 resume.json `[自动]` `[可回环]`
-- [ ] Step 7 渲染前确认（用户必须明确说 OK）`[硬闸门]` `[可回环]`
-- [ ] Step 8 渲染输出 → HTML / Markdown `[自动]`
+- [ ] Step 5 改写 → 生成候选 bullets `[自动]`
+- [ ] Step 6 强主张审计 → 降级/标注待确认 `[自动]`
+- [ ] Step 7 主张绑定 → 生成 claim 记录 `[自动]`
+- [ ] Step 8 溯源校验 → 拦截项需用户裁决 `[硬闸门]` `[可回环]`
+- [ ] Step 9 初稿组装 → 结构校验 → 展示 resume.json `[自动]` `[可回环]`
+- [ ] Step 10 渲染前确认（用户必须明确说 OK）`[硬闸门]` `[可回环]`
+- [ ] Step 11 渲染输出 → HTML / Markdown `[自动]`
 
-内部 11 步细节：
+内部 13 步细节：
 
 1. **加载知识库**：`cli.py summary` 展示摘要给用户
 2. **ATS 预检**：`ats_checker.py --jd <jd>`（不传 --resume 即预检），报告 gap
@@ -133,11 +136,13 @@ Progress:
 4. **跨行业检测**：分类结果 career_switch_hint=true 时询问是否启用转行模式
 5. **事实挑选**：`fact_selector.py --jd <jd> --json-out picked.json`（转行加 --career-switch），展示选中事实
 6. **改写**：`bullet_rewriter.py --selected picked.json --out bullets.json` 产出硬事实层 → Claude 在此基础上润色表达（三层控制：硬事实自动校验、表达风格不校验、灰区 {?} 用户确认）。写作规范读 `references/resume-writing-methodology.md` 与 `references/writing-formulas.md`；板块字段结构（核心职责/关键业绩/专业能力/荣誉奖项、项目描述/职责与行动/成果与影响、岗位胜任、技能）必须读 `references/resume-section-standard.md`
-7. **溯源校验**：`provenance_verifier.py --bullets bullets.json`；退出码 2 = 有拦截 → 引导用户补事实/修正/删除 → 重写 → 再校，不得跳过
-8. **初稿确认**：按 `references/resume-section-standard.md` 的字段结构组装 resume.json 展示给用户，用户要求修改则返回第 6 步
-9. **结构校验**：`resume_structure_check.py --resume resume.json`；退出码 2 = 字段不达标 → 修正后重新组装再校，不得跳过
-10. **渲染前确认（硬闸门）**：把简历文字稿（基于 resume.json 生成）发给用户确认。用户说 OK / 没问题后，将 `render_approved = true` 写入 `review_state.json`，才能进入下一步。用户要求修改时，记录反馈并返回第 6 步或第 8 步重新修改，修改完成后需重新走溯源校验、结构校验和渲染前确认。**未获得用户明确确认前，禁止执行渲染。**
-11. **渲染**：`html_renderer.py --resume resume.json`（默认 HTML；用户要求 Markdown 时用 `markdown_renderer.py`）
+7. **强主张审计**：`strong_claim_auditor.py --bullets bullets.json`；含「主导/负责/0→1/核心/Owner」但无具体决策/结果时，降级为「参与」或标注【待确认】
+8. **主张绑定**：`claim_binder.py --bullets bullets.json [--claims user_inputs.json]`；每条通过的 bullet 生成 claim 记录，写入 `原始事实/claims/`，并追问用户确认 boundary 与 interview_details
+9. **溯源校验**：`provenance_verifier.py --bullets bullets.json`；退出码 2 = 有拦截 / 退出码 3 = 事实冲突 → 引导用户补事实/修正/删除/裁决 → 重写 → 再校，不得跳过
+10. **初稿确认**：按 `references/resume-section-standard.md` 的字段结构组装 resume.json 展示给用户，用户要求修改则返回第 6 步
+11. **结构校验**：`resume_structure_check.py --resume resume.json`；退出码 2 = 字段不达标 → 修正后重新组装再校，不得跳过
+12. **渲染前确认（硬闸门）**：把简历文字稿（基于 resume.json 生成）发给用户确认。用户说 OK / 没问题后，将 `render_approved = true` 写入 `review_state.json`，才能进入下一步。用户要求修改时，记录反馈并返回第 6 步或第 10 步重新修改，修改完成后需重新走强主张审计、主张绑定、溯源校验、结构校验和渲染前确认。**未获得用户明确确认前，禁止执行渲染。**
+13. **渲染**：`html_renderer.py --resume resume.json`（默认 HTML；用户要求 Markdown 时用 `markdown_renderer.py`）
 
 ### 其余子功能
 
