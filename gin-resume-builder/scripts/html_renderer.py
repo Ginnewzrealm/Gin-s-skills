@@ -103,16 +103,108 @@ def field_line(label, text):
             % (esc(label), rich(text)))
 
 
+EDU_DEGREES = ["博士", "硕士", "MBA", "EMBA", "本科", "大专", "专科"]
+EDU_RANK = {d: i for i, d in enumerate(EDU_DEGREES)}  # 数字越小，学历越高
+
+
+def _extract_degree(text):
+    """从文本中提取最高学历关键词（按 EDU_DEGREES 顺序匹配）。"""
+    for d in EDU_DEGREES:
+        if d in text:
+            return d
+    return ""
+
+
+def _simplify_education(text):
+    """简化教育背景：只保留学校 + 学历，去掉专业和时间。"""
+    text = str(text).strip()
+    if not text:
+        return ""
+    # 按常见分隔符切分：全角竖线、半角竖线、中英文分号、空格、逗号
+    parts = re.split(r"[｜|;；\s,，]+", text)
+    school = parts[0].strip() if parts else ""
+    degree = _extract_degree(text)
+    if school and degree:
+        return "%s %s" % (school, degree)
+    return text
+
+
+def _pick_highest_education(text):
+    """从可能包含多段学历的文本中，只保留最高学历。"""
+    text = str(text).strip()
+    if not text:
+        return ""
+    # 先按中英文分号拆成多条学历
+    entries = re.split(r"[;；]+", text)
+    candidates = []
+    for entry in entries:
+        simplified = _simplify_education(entry)
+        if not simplified:
+            continue
+        degree = _extract_degree(simplified)
+        rank = EDU_RANK.get(degree, 99)
+        candidates.append((rank, simplified))
+    if not candidates:
+        return ""
+    candidates.sort(key=lambda x: x[0])
+    return candidates[0][1]
+
+
+def _education_text(section):
+    """把教育背景 section 转换为单行简化文本，只取最高学历。"""
+    candidates = []
+    if section.get("entries"):
+        for e in section["entries"]:
+            org = e.get("org", "")
+            role = e.get("role", "")
+            degree = _extract_degree(role) or _extract_degree(org)
+            if org and degree:
+                candidates.append((EDU_RANK.get(degree, 99), "%s %s" % (org.strip(), degree)))
+            elif org:
+                candidates.append((99, org.strip()))
+    if section.get("items"):
+        for i in section["items"]:
+            if isinstance(i, dict):
+                text = "%s：%s" % (i.get("tag", ""), i.get("text", ""))
+            else:
+                text = str(i)
+            simplified = _simplify_education(text)
+            if simplified:
+                degree = _extract_degree(simplified)
+                candidates.append((EDU_RANK.get(degree, 99), simplified))
+    if not candidates:
+        return ""
+    candidates.sort(key=lambda x: x[0])
+    return candidates[0][1]
+
+
 def build_body(resume):
     basic = resume.get("basic", {})
     L = ['<header class="header"><h1 class="name">%s</h1>' % esc(basic.get("姓名", "（姓名）"))]
+
+    sections = list(resume.get("sections", []))
+    # 教育背景统一抽到 header 联系信息行末尾，并简化为“学校 学历”
+    edu_text = basic.get("教育背景", "")
+    edu_from_basic = bool(edu_text)
+    for s in sections[:]:
+        if s.get("title") == "教育背景":
+            sections.remove(s)
+            if not edu_text:
+                edu_text = _education_text(s)
+                edu_from_basic = False
+            break
+    # basic 里的原始字符串需要简化并只保留最高学历；section 派生的已经在 _education_text 中处理
+    if edu_text and edu_from_basic:
+        edu_text = _pick_highest_education(edu_text)
+
     contact = [esc(basic[k]) for k in ("电话", "邮箱", "城市", "求职意向") if basic.get(k)]
+    if edu_text:
+        contact.append(esc(edu_text))
     if contact:
         L.append('<div class="contact-row">%s</div>'
                  % "".join('<span class="contact-item">%s</span>' % c for c in contact))
     L.append("</header>")
 
-    sections = resume.get("sections", [])
     # 置顶板块：核心亮点/个人优势 固定排在联系方式之后、其他章节之前
     front = [s for s in sections if s.get("title") in FRONT_SECTIONS]
     rest = [s for s in sections if s.get("title") not in FRONT_SECTIONS]
