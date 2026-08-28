@@ -75,6 +75,33 @@ TAG_PATTERN = r"^[^：:]{1,32}："
 # 置顶板块候选名
 FRONT_SECTIONS = ("岗位胜任", "核心亮点", "个人优势")
 
+# 责任层级标准（由低到高）
+RESPONSIBILITY_LEVELS = ("参与", "负责模块", "主导方案或交付", "项目负责人")
+RESPONSIBILITY_ALIASES = {
+    "参与": "参与",
+    "负责": "负责模块",
+    "负责模块": "负责模块",
+    "主导": "主导方案或交付",
+    "主导方案": "主导方案或交付",
+    "主导方案或交付": "主导方案或交付",
+    "项目负责人": "项目负责人",
+    "负责人": "项目负责人",
+    "Owner": "项目负责人",
+}
+DEFAULT_VERIFICATION_STATUS = "待确认"
+_RESPONSIBILITY_RE = re.compile(
+    r"^\*\*\[(" + "|".join(re.escape(k) for k in sorted(RESPONSIBILITY_ALIASES.keys(), key=len, reverse=True)) + r")\]\*\*\s*[：:]?\s*"
+)
+
+
+def extract_responsibility_level(bullet):
+    """从 bullet 文本中提取责任层级前缀，返回 (标准层级, 去掉前缀后的文本)。
+    无层级时返回 ('', 原文本)。"""
+    m = _RESPONSIBILITY_RE.match(str(bullet).strip())
+    if m:
+        return RESPONSIBILITY_ALIASES[m.group(1)], bullet[m.end():].strip()
+    return "", str(bullet).strip()
+
 # JD 关键词提取用的技术与能力词表（可按需扩充）
 TECH_VOCAB = [
     "Python", "Java", "Go", "Golang", "C++", "JavaScript", "TypeScript", "Rust",
@@ -213,7 +240,7 @@ def _update_claims_aggregate(root):
 
 def parse_entries(md_text):
     """解析 '## 标题 | 角色 | 时间段' 结构的 Markdown，返回条目列表。
-    每个条目: {title, role, period, bullets[]}"""
+    每个条目: {title, role, period, bullets[], responsibility_levels[]}"""
     entries = []
     cur = None
     for line in md_text.splitlines():
@@ -225,10 +252,14 @@ def parse_entries(md_text):
                 "role": parts[1] if len(parts) > 1 else "",
                 "period": parts[2] if len(parts) > 2 else "",
                 "bullets": [],
+                "responsibility_levels": [],
             }
             entries.append(cur)
         elif line.startswith("- ") and cur is not None:
-            cur["bullets"].append(line[2:].strip())
+            raw = line[2:].strip()
+            level, _ = extract_responsibility_level(raw)
+            cur["bullets"].append(raw)
+            cur["responsibility_levels"].append(level or "")
     return entries
 
 
