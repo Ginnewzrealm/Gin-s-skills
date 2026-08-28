@@ -28,7 +28,7 @@ description: 健身助手（gin-workout-planner）。基于本地健身知识库
 | "冷冻XX""激活XX""胸部有哪些动作""换健身房了""XX进渐进期了" | 动作状态与阶段管理 | `references/rules.md` 第 6 节；阶段切换加读 `training-stages.md` |
 | "帮我设定弱项是肩""取消弱项""记一下我的侧重点""臀大肌我想练力气" | 侧重点/弱项设定 | `references/training-focus.md`（写入知识库根目录 `训练侧重点.md` 并复述确认）；弱项=侧重点文件的加强行 |
 | "这段想增力""我其实是新手" | 目标/水平更改 | `references/volume-params.md` + `references/kb-structure.md`（`training_goal`、`training_level` 字段） |
-| "初始化健身知识库" / 首次使用 | 初始化 | `references/kb-structure.md` |
+| "初始化健身知识库" / 首次使用 | 初始化 | `references/kb-structure.md`；Progress: 确认路径 [硬闸门] → 创建目录 [自动] → 创建配置文件 [硬闸门] → 完成 |
 
 消歧：话语含"写日记/总结/分析/复盘/打卡"→ 训练日记场景，不走训练计划场景。规则真源归属：命名/分类/三大项/编排/状态/计重/目标部位标签词表 → `rules.md`；排序 → `ordering.md`；组数/次数/负荷/休息/1RM → `volume-params.md`；训练技术 → `techniques.md`；训练阶段 → `training-stages.md`；训练侧重点 → `training-focus.md`；动作同名判定 → `name-matching.md`；动作文档结构 → `action-doc-template.md`，写法 → `action-doc-writing-guide.md`；发力感知提示采集 → `cue-collection.md`；索引结构/行排序/巡检/查重标记 → `kb-structure.md`；训记训练技能调用约定 → `trains-train-bridge.md`；**训练计划写回训记 → `trains-train-writeback.md`**；训记饮食技能调用约定 → `trains-diet-bridge.md`。
 
