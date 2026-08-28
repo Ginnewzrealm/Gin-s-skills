@@ -17,6 +17,25 @@ description: 根据正文提炼文章标题，或优化章节小标题。支持 
 - `context.md.reference_briefs.bigpeng_title_corpus`
 - `context.md.reference_briefs.bigpeng_qa_checklist`
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+`mode=article` 时：
+
+```markdown
+阶段 5/6：润色、小标题与标题优化
+Progress:
+- [ ] Step 1 读取正文与模板规则 [自动]
+- [ ] Step 2 提取亮点并套用标题公式 [自动]
+- [ ] Step 3 生成 3-6 个候选标题 [自动]
+- [ ] Step 4 用 qa-checklist 剔除 hard-fail [自动]
+- [ ] Step 5 展示候选标题 [需确认]
+- [ ] Step 6 用户选择/修改标题 [硬闸门] [可回环]
+```
+
+`mode=subheading` 由 `gin-wechat-article-polish` 内部调用，不单独向用户展示 checklist。
+
 ## 动作
 
 ### mode=article
