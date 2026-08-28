@@ -18,6 +18,20 @@ description: 对标题和正文进行四层质量自检，输出评分报告。
 - `context.md.reference_briefs.emotion_trigger_system`
 - `context.md.reference_briefs.content_principles`
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+```markdown
+阶段 6/6：质量检查与终审定稿
+Progress:
+- [ ] Step 1 读取最终标题与润色后正文 [自动]
+- [ ] Step 2 执行 L1-L4 四层自检 [自动]
+- [ ] Step 3 输出质量报告 [自动]
+- [ ] Step 4 用户审阅质量报告 [需确认]
+- [ ] Step 5 用户终审定稿确认 [硬闸门] [可回环]
+```
+
 ## 动作
 
 执行四层自检体系：
