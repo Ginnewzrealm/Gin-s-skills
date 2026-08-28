@@ -11,6 +11,20 @@ description: 当用户需要澄清公众号文章需求、整理写作素材时�
 - 主题/素材
 - `context.md` 中已写入的 `selected_template`（由主 skill 在触发本技能前完成风格选择，无需再次询问）
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+```markdown
+阶段 1/6：初始化与需求澄清
+Progress:
+- [ ] Step 1 读取已有素材与已选模板信息 [自动]
+- [ ] Step 2 结构化访谈：确认主题/读者/核心观点/字数 [需确认]  ← 当前
+- [ ] Step 3 确认说话位置与素材完整性 [需确认]
+- [ ] Step 4 写入 requirements 到 context.md [自动]
+- [ ] Step 5 用户确认需求记录 [硬闸门]
+```
+
 ## 动作
 
 > **前提**：上游已有专门整理素材的 skill，输入为结构化 Markdown 素材文档，本 skill 不再重复收集素材内容，只确认素材是否足够以及缺口在哪里。
