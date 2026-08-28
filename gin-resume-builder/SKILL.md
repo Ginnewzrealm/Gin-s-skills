@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.9.0（2026-08-28）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.9.1（2026-08-28）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -34,10 +34,19 @@ checklist 格式统一为：
 
 ```markdown
 Progress:
-- [ ] Step 1 动作名称 → 产出物
-- [ ] Step 2 动作名称 → 产出物
-- [ ] Step 3 动作名称 → 产出物  ← 当前
+- [ ] Step 1 动作名称 → 产出物 `[标签]`
+- [ ] Step 2 动作名称 → 产出物 `[标签]`
+- [ ] Step 3 动作名称 → 产出物 `[标签]`  ← 当前
 ```
+
+步骤标签说明：
+
+| 标签 | 含义 |
+|------|------|
+| `[自动]` | Agent / 脚本自动执行，无需用户输入 |
+| `[需确认]` | 需要用户查看并确认，但非强制通过 |
+| `[硬闸门]` | 用户不通过则无法继续下一步，必须明确说 OK / 批准 |
+| `[可回环]` | 用户提出修改时，返回前面步骤重做 |
 
 ## 路由表
 
@@ -63,11 +72,11 @@ Progress:
 ### KB 访谈与增量更新（N5/N6）
 
 **Progress：**
-- [ ] Step 1 确认访谈目标（初始化 / 增量更新 / 技能深挖）
-- [ ] Step 2 按方法论追问，挖掘事实、量化与 STAR
-- [ ] Step 3 展示待写入条目，获得用户确认
-- [ ] Step 4 调用 `kb_interview.py` 追加写入（处理冲突退出码 2）
-- [ ] Step 5 重生成 `facts.yaml`、版本 +1、记 `changelog`
+- [ ] Step 1 确认访谈目标（初始化 / 增量更新 / 技能深挖）`[需确认]`
+- [ ] Step 2 按方法论追问，挖掘事实、量化与 STAR `[自动]`
+- [ ] Step 3 展示待写入条目，获得用户确认 `[硬闸门]`
+- [ ] Step 4 调用 `kb_interview.py` 追加写入（处理冲突退出码 2）`[自动]`
+- [ ] Step 5 重生成 `facts.yaml`、版本 +1、记 `changelog` `[自动]`
 
 - 访谈风格、六类量化策略、退出/重入、冲突对话流程：读 `references/interview-methodology.md`
 - 全部写入经 `scripts/kb_interview.py`（追加不覆盖，自动重生成 facts.yaml、版本+1、记 changelog）
@@ -94,24 +103,27 @@ Progress:
 ### JD 分析（N8）
 
 **Progress：**
-- [ ] Step 1 读取 JD 并提取硬性要求
-- [ ] Step 2 读取 `knowledge/` 简历素材
-- [ ] Step 3 运行 `jd_analyzer.py` 打分并粗筛红标
-- [ ] Step 4 人工复评同义词与语义覆盖
-- [ ] Step 5 输出匹配度报告，询问是否衔接简历管线
+- [ ] Step 1 读取 JD 并提取硬性要求 `[自动]`
+- [ ] Step 2 读取 `knowledge/` 简历素材 `[自动]`
+- [ ] Step 3 运行 `jd_analyzer.py` 打分并粗筛红标 `[自动]`
+- [ ] Step 4 人工复评同义词与语义覆盖 `[需确认]`
+- [ ] Step 5 输出匹配度报告，询问是否衔接简历管线 `[自动]`
 
 `python3 scripts/jd_analyzer.py --jd <jd文件> --kb <路径>`，打分算法与红标标准读 `references/jd-analysis-methodology.md`。脚本粗筛后必须人工复评同义词与语义覆盖。
 
 ### 简历管线（N9，核心）
 
-管线内部自行处理全部交互与循环，每步给进度反馈。面向用户的 Progress checklist 聚合为 5 个阶段：
+管线内部自行处理全部交互与循环，每步给进度反馈。面向用户的 Progress checklist 拆细为 8 个透明阶段：
 
 **Progress：**
-- [ ] Step 1 准备：加载知识库摘要 → ATS 预检 → JD 分类（需用户确认）
-- [ ] Step 2 选材：跨行业检测 → 事实挑选（展示选中事实）
-- [ ] Step 3 写作：改写 → 溯源校验 → 初稿组装 → 结构校验
-- [ ] Step 4 确认：渲染前硬闸门（用户必须明确说 OK，写入 `review_state.json`）
-- [ ] Step 5 渲染：`html_renderer.py` 或 `markdown_renderer.py` 输出最终文件
+- [ ] Step 1 加载知识库摘要 → `cli.py summary` `[自动]`
+- [ ] Step 2 ATS 预检 → 报告关键词 gap `[自动]`
+- [ ] Step 3 JD 分类 → 展示分类结果 `[需确认]`
+- [ ] Step 4 跨行业检测 → 事实挑选（展示选中事实）`[需确认]`
+- [ ] Step 5 改写 → 溯源校验（拦截项需用户裁决）`[硬闸门]` `[可回环]`
+- [ ] Step 6 初稿组装 → 结构校验 → 展示 resume.json `[自动]` `[可回环]`
+- [ ] Step 7 渲染前确认（用户必须明确说 OK）`[硬闸门]` `[可回环]`
+- [ ] Step 8 渲染输出 → HTML / Markdown `[自动]`
 
 内部 11 步细节：
 
@@ -132,75 +144,75 @@ Progress:
 #### 求职信 / 打招呼语
 
 **Progress：**
-- [ ] Step 1 确认岗位与模板（标准/推荐人/转行/应届/boss）
-- [ ] Step 2 提取匹配点与公司动态钩子
-- [ ] Step 3 `cover_letter_renderer.py` 出骨架 → Claude 填成稿
-- [ ] Step 4 `--check` 校验字数（boss 50-100/上限 120，其余 300-500）
-- [ ] Step 5 输出最终求职信 / 打招呼语
+- [ ] Step 1 确认岗位与模板（标准/推荐人/转行/应届/boss）`[需确认]`
+- [ ] Step 2 提取匹配点与公司动态钩子 `[自动]`
+- [ ] Step 3 `cover_letter_renderer.py` 出骨架 → Claude 填成稿 `[自动]`
+- [ ] Step 4 `--check` 校验字数（boss 50-100/上限 120，其余 300-500）`[自动]`
+- [ ] Step 5 输出最终求职信 / 打招呼语 `[自动]`
 
 命令 / 方式：`cover_letter_renderer.py --jd <jd> --template <模板>` 出骨架 → Claude 填成稿 → `--check <成稿> --template <模板>` 校字数。参考 `references/cover-letter-templates.md`。
 
 #### 简历渲染前确认
 
 **Progress：**
-- [ ] Step 1 `resume_review_gate.py` 生成文字稿预览
-- [ ] Step 2 用户确认或提出修改反馈
-- [ ] Step 3 `--approve` 写入 `render_approved = true`，或 `--reject` 回退修改
+- [ ] Step 1 `resume_review_gate.py` 生成文字稿预览 `[自动]`
+- [ ] Step 2 用户确认或提出修改反馈 `[硬闸门]` `[可回环]`
+- [ ] Step 3 `--approve` 写入 `render_approved = true`，或 `--reject` 回退修改 `[自动]`
 
 命令：`resume_review_gate.py --resume resume.json --state review_state.json` 生成文字稿预览；`--approve` 确认；`--reject --feedback "..."` 回退修改。参考 `references/resume-section-standard.md`。
 
 #### STAR 故事库
 
 **Progress：**
-- [ ] Step 1 确认目标岗位能力模型
-- [ ] Step 2 选择要深挖的经历
-- [ ] Step 3 `star_story_generator.py` 出骨架 → Claude 补全 A/R
-- [ ] Step 4 输出三版本故事，落盘 `面试素材/`
+- [ ] Step 1 确认目标岗位能力模型 `[需确认]`
+- [ ] Step 2 选择要深挖的经历 `[需确认]`
+- [ ] Step 3 `star_story_generator.py` 出骨架 → Claude 补全 A/R `[自动]`
+- [ ] Step 4 输出三版本故事，落盘 `面试素材/` `[自动]`
 
 命令：`star_story_generator.py` 出骨架 → Claude 对话补全 A/R → 三版本。参考 `references/star-story-bank.md`。
 
 #### 面试清单
 
 **Progress：**
-- [ ] Step 1 读取 JD 与公司背景
-- [ ] Step 2 识别考察能力维度（退出码 3 时先生成 STAR 故事库）
-- [ ] Step 3 `interview_prep_generator.py` 生成问题清单
-- [ ] Step 4 为问题匹配 STAR 故事，输出面试准备文档
+- [ ] Step 1 读取 JD 与公司背景 `[自动]`
+- [ ] Step 2 识别考察能力维度（退出码 3 时先生成 STAR 故事库）`[自动]`
+- [ ] Step 3 `interview_prep_generator.py` 生成问题清单 `[自动]`
+- [ ] Step 4 为问题匹配 STAR 故事，输出面试准备文档 `[自动]`
 
 命令：`interview_prep_generator.py [--jd <jd>]`（退出码 3 = 先生成 STAR）。
 
 #### 高管简历
 
 **Progress：**
-- [ ] Step 1 确认目标高管岗位与叙事主线
-- [ ] Step 2 把经历升级为业务结果语言
-- [ ] Step 3 `executive_resume_renderer.py` 出骨架 → Claude 补 Executive Profile
-- [ ] Step 4 检查抽象词与黑话
-- [ ] Step 5 输出高管简历
+- [ ] Step 1 确认目标高管岗位与叙事主线 `[需确认]`
+- [ ] Step 2 把经历升级为业务结果语言 `[自动]`
+- [ ] Step 3 `executive_resume_renderer.py` 出骨架 → Claude 补 Executive Profile `[自动]`
+- [ ] Step 4 检查抽象词与黑话 `[自动]`
+- [ ] Step 5 输出高管简历 `[自动]`
 
 #### 冷邮件
 
 **Progress：**
-- [ ] Step 1 确认收件人与发送目的
-- [ ] Step 2 提取 1-2 个亮点与共同点
-- [ ] Step 3 LLM 生成 200-300 字初稿（五种开头策略）
-- [ ] Step 4 校验语气与下一步行动，输出最终邮件
+- [ ] Step 1 确认收件人与发送目的 `[需确认]`
+- [ ] Step 2 提取 1-2 个亮点与共同点 `[自动]`
+- [ ] Step 3 LLM 生成 200-300 字初稿（五种开头策略）`[自动]`
+- [ ] Step 4 校验语气与下一步行动，输出最终邮件 `[需确认]`
 
 #### 网申答案
 
 **Progress：**
-- [ ] Step 1 识别问题类型（动机/经历/情景/优缺点/薪资/其他/开放）
-- [ ] Step 2 从知识库提取相关事实
-- [ ] Step 3 每题生成 1-3 句答案
-- [ ] Step 4 汇总输出，不与简历重复
+- [ ] Step 1 识别问题类型（动机/经历/情景/优缺点/薪资/其他/开放）`[自动]`
+- [ ] Step 2 从知识库提取相关事实 `[自动]`
+- [ ] Step 3 每题生成 1-3 句答案 `[自动]`
+- [ ] Step 4 汇总输出，不与简历重复 `[自动]`
 
 #### ATS 诊断
 
 **Progress：**
-- [ ] Step 1 读取目标简历与 JD
-- [ ] Step 2 运行 `ats_checker.py --jd <jd> --resume <简历>`
-- [ ] Step 3 扫描关键词覆盖率与格式可解析性
-- [ ] Step 4 输出 ATS 诊断报告与优化建议
+- [ ] Step 1 读取目标简历与 JD `[自动]`
+- [ ] Step 2 运行 `ats_checker.py --jd <jd> --resume <简历>` `[自动]`
+- [ ] Step 3 扫描关键词覆盖率与格式可解析性 `[自动]`
+- [ ] Step 4 输出 ATS 诊断报告与优化建议 `[自动]`
 
 命令：`ats_checker.py --jd <jd> --resume <简历>`。参考 `references/ats-checklist.md`。
 
