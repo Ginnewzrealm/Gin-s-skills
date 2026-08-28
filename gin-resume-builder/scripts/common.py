@@ -16,6 +16,24 @@ DIR_RAW = "原始事实"
 DIR_AUTO = "自动生成"
 DIR_INTERVIEW = "面试素材"
 DIR_OUTPUT = "生成物"
+CLAIMS_DIR = os.path.join(DIR_RAW, "claims")
+CLAIMS_AGGREGATE = "claims.json"
+
+# Claim 字段标准（见 references/knowledge-structure.md）
+CLAIM_FIELDS = (
+    "id",
+    "section",
+    "section_id",
+    "source_fact",
+    "candidate_wording",
+    "responsibility_level",
+    "verification_status",
+    "allowed_uses",
+    "interview_details",
+    "boundary",
+    "risk_notes",
+    "last_verified",
+)
 
 RAW_FILES = {
     "basic_info": "basic_info.md",
@@ -111,6 +129,11 @@ def ensure_kb_structure(root):
             with open(p, "w", encoding="utf-8") as f:
                 f.write("# %s\n" % key)
             created.append(p)
+    # 主张（Claim）记录目录
+    claims_dir = os.path.join(root, CLAIMS_DIR)
+    if not os.path.isdir(claims_dir):
+        os.makedirs(claims_dir, exist_ok=True)
+        created.append(claims_dir)
     return created
 
 
@@ -125,6 +148,67 @@ def read_raw(root, key):
         return ""
     with open(p, encoding="utf-8") as f:
         return f.read()
+
+
+def _claims_path(root):
+    return os.path.join(root, CLAIMS_DIR)
+
+
+def _claim_file_path(root, claim_id):
+    return os.path.join(root, CLAIMS_DIR, "%s.json" % claim_id)
+
+
+def _aggregate_path(root):
+    return os.path.join(root, CLAIMS_DIR, CLAIMS_AGGREGATE)
+
+
+def read_claims(root):
+    """读取所有单个 claim 文件，返回按 claim_id 排序的列表。"""
+    d = _claims_path(root)
+    if not os.path.isdir(d):
+        return []
+    claims = []
+    for name in sorted(os.listdir(d)):
+        if not name.endswith(".json") or name == CLAIMS_AGGREGATE:
+            continue
+        p = os.path.join(d, name)
+        try:
+            with open(p, encoding="utf-8") as f:
+                claims.append(json.load(f))
+        except (json.JSONDecodeError, OSError):
+            continue
+    return claims
+
+
+def write_claim(root, claim, update_aggregate=True):
+    """写入单个 claim 文件，并自动维护 claims.json 汇总文件。"""
+    missing = [f for f in CLAIM_FIELDS if f not in claim]
+    if missing:
+        raise ValueError("claim 缺少必填字段: %s" % ", ".join(missing))
+    if not isinstance(claim.get("id"), str) or not claim["id"]:
+        raise ValueError("claim['id'] 必须是非空字符串")
+    os.makedirs(_claims_path(root), exist_ok=True)
+    p = _claim_file_path(root, claim["id"])
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(claim, f, ensure_ascii=False, indent=2)
+    if update_aggregate:
+        _update_claims_aggregate(root)
+    return p
+
+
+def write_claims(root, claims):
+    """批量写入 claim 文件并重建汇总文件。"""
+    d = _claims_path(root)
+    os.makedirs(d, exist_ok=True)
+    for claim in claims:
+        write_claim(root, claim, update_aggregate=False)
+    _update_claims_aggregate(root)
+
+
+def _update_claims_aggregate(root):
+    """把所有单个 claim 文件汇总成 claims.json。"""
+    with open(_aggregate_path(root), "w", encoding="utf-8") as f:
+        json.dump(read_claims(root), f, ensure_ascii=False, indent=2)
 
 
 def parse_entries(md_text):

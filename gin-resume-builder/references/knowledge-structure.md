@@ -14,9 +14,12 @@
 │   ├── skill_details.md       # ## 技能名 + - 情境/行动/结果/沉淀 五维块（深挖产物，规范见 references/skill-mining-playbook.md）
 │   ├── advantages.md          # - 优势条目
 │   ├── internal_notes.md      # 用户私下备注（不上简历的信息，如离职真实原因）
-│   └── behavioral_evidence/   # 新增：STAR 行为证据碎片（自动维护，禁止手动编辑）
-│       ├── map.md             # 行为证据索引
-│       └── be_*.md            # 单个 STAR 证据碎片（规范见 references/tacit-mining-methodology.md）
+│   ├── behavioral_evidence/   # 新增：STAR 行为证据碎片（自动维护，禁止手动编辑）
+│   │   ├── map.md             # 行为证据索引
+│   │   └── be_*.md            # 单个 STAR 证据碎片（规范见 references/tacit-mining-methodology.md）
+│   └── claims/                # 主张（Claim）记录：每条经历 bullet 对应一条 claim（自动维护，禁止手动编辑）
+│       ├── claims.json        # 汇总索引
+│       └── claim_*.json       # 单个 claim 文件
 │
 ├── 自动生成/                  # 脚本派生，禁止手动编辑
 │   ├── facts.yaml             # facts_parser.py 生成（JSON 格式 YAML，可被 json.load 读取）
@@ -83,3 +86,32 @@ created: 2026-08-21
 ```
 
 禁止手动编辑，统一由 `scripts/mining/evidence_store.py` 维护。
+
+## claims 格式约定
+
+路径：`原始事实/claims/`
+
+### claims.json
+
+汇总文件，包含当前所有 claim 的数组，由脚本自动维护，禁止手动编辑。
+
+### claim_{id}.json
+
+单个主张记录，字段标准如下：
+
+| 字段 | 说明 |
+|------|------|
+| `id` | claim 唯一标识 |
+| `section` | 归属板块：`work_history` / `project` / `advantage` |
+| `section_id` | 板块内条目标识，如 `公司名-起始年月` |
+| `source_fact` | 用户原始说法，不做包装 |
+| `candidate_wording` | 可用于简历的候选表述 |
+| `responsibility_level` | 参与 / 负责模块 / 主导方案或交付 / 项目负责人 |
+| `verification_status` | 已确认 / 待确认 / 已过期 / 不采用 |
+| `allowed_uses` | 可用于哪些岗位版本或求职材料 |
+| `interview_details` | 追问展开用的决策、难点、验证、结果 |
+| `boundary` | 团队成果与个人贡献的明确分界 |
+| `risk_notes` | 冲突、缺口或成稿前必须处理的问题 |
+| `last_verified` | 最近一次确认日期（YYYY-MM-DD） |
+
+禁止手动编辑单个 claim 文件，统一由 `scripts/common.py` 中的 `write_claim` / `write_claims` 维护。
