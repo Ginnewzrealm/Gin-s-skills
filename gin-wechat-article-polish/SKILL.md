@@ -19,6 +19,20 @@ description: 润色正文，去除 AI 味，增强活人感。
 - `context.md.reference_briefs.emotion_trigger_system`
 - `context.md.reference_briefs.quality_checklist`（问题清单，可选）
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+```markdown
+阶段 5/6：润色、小标题与标题优化
+Progress:
+- [ ] Step 1 读取 draft_revised.md 与 reference_briefs [自动]
+- [ ] Step 2 调用 title 子 skill 优化小标题 [自动]
+- [ ] Step 3 按规则去 AI 味、增强口语化 [自动]
+- [ ] Step 4 输出 polished_draft.md [自动]
+- [ ] Step 5 用户审阅润色稿 [需确认]
+```
+
 ## 动作
 
 1. 读取 `draft_revised_path` 指向的文件内容。
