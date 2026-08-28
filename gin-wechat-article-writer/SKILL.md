@@ -37,6 +37,20 @@ description: |
 - `context.md.reference_briefs.writing_style`
 - 用户提供的素材、观点、真实经历、情绪节点
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+```markdown
+阶段 4/6：正文写作与人工改写
+Progress:
+- [ ] Step 1 读取 selected_outline 与 narrative_protocol [自动]
+- [ ] Step 2 按章节逐段生成正文 [自动]
+- [ ] Step 3 标注需用户补充位置 [自动]
+- [ ] Step 4 输出 article_draft.md [自动]
+- [ ] Step 5 用户二次改写 [硬闸门] [可回环]
+```
+
 ## 输出
 
 - 正文初稿：`article_draft.md`（带 frontmatter）
