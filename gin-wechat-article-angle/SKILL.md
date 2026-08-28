@@ -16,6 +16,20 @@ description: 根据需求记录和模板规则，提取素材信号，匹配切�
 - `context.md.reference_briefs.emotion_trigger_system`
 - `context.md.reference_briefs.content_principles`
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+```markdown
+阶段 2/6：素材诊断与角度选择
+Progress:
+- [ ] Step 1 读取 context.md 与 materials_full.md [自动]
+- [ ] Step 2 提取素材信号（痛点/反常识/数字/故事/身份/教程） [自动]
+- [ ] Step 3 匹配切入角度与情绪触发点 [自动]
+- [ ] Step 4 输出素材诊断报告 [自动]
+- [ ] Step 5 用户确认诊断结果或补充素材 [需确认]
+```
+
 ## 动作
 
 1. **提取素材信号**：从需求记录中识别以下信号：
