@@ -16,6 +16,20 @@ description: 当需要根据公众号长文的角度和情绪触发点生成候�
 - `context.md.reference_briefs.outline_framework`
 - `context.md.reference_briefs.content_principles`
 
+## Progress
+
+本 skill 被 `gin-wechat-article-core` 调用时，不重复展示完整 6 阶段宏观进度，只展示本环节 micro-checklist。被用户直接调用时，先输出阶段定位句。
+
+```markdown
+阶段 3/6：大纲生成与确认
+Progress:
+- [ ] Step 1 读取 context.md 与 reference_briefs [自动]
+- [ ] Step 2 为可用角度生成候选大纲 [自动]
+- [ ] Step 3 自检排序并标注风险点 [自动]
+- [ ] Step 4 展示候选大纲 [需确认]
+- [ ] Step 5 用户选择/修改大纲 [硬闸门] [可回环]
+```
+
 ## 动作
 
 1. 读取 `context.md`、其 `materials_summary.materials_path` 指向的 `materials_full.md`，以及 `context.md.reference_briefs` 下的四个核心要点摘要。
