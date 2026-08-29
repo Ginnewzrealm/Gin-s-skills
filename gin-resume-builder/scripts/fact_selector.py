@@ -30,7 +30,7 @@ def score_bullet(text, jd_kws, career_switch):
     return s
 
 
-def select(facts, jd_text, top=8, career_switch=False):
+def select(facts, jd_text, top=None, career_switch=False):
     jd_kws = common.extract_jd_keywords(jd_text)
     cands = []
     for f in facts["facts"]:
@@ -42,13 +42,13 @@ def select(facts, jd_text, top=8, career_switch=False):
                 "bullet": b, "score": score_bullet(b, jd_kws, career_switch),
             })
     cands.sort(key=lambda x: -x["score"])
-    return cands[:top]
+    return cands[:top] if top else cands
 
 
 def main():
     ap = argparse.ArgumentParser(description="事实挑选")
     ap.add_argument("--jd", required=True)
-    ap.add_argument("--top", type=int, default=8)
+    ap.add_argument("--top", type=int, default=None, help="最多挑选 N 条事实；默认不限制，生成完整版后由用户手动删减")
     ap.add_argument("--career-switch", action="store_true")
     ap.add_argument("--kb", default=None)
     ap.add_argument("--json-out", default=None, help="选中事实 JSON 输出路径")
@@ -59,7 +59,8 @@ def main():
         jd_text = f.read()
 
     picked = select(facts, jd_text, args.top, args.career_switch)
-    print("选中事实（%d 条，转行模式=%s）：" % (len(picked), args.career_switch))
+    limit_info = "前 %d 条" % args.top if args.top else "全部"
+    print("选中事实（%s，转行模式=%s）：" % (limit_info, args.career_switch))
     for p in picked:
         print("  [%s|%d分] %s · %s\n      %s" % (p["fact_id"], p["score"], p["org"], p["role"], p["bullet"]))
     if args.json_out:
