@@ -12,7 +12,7 @@ description: >
   讯记同步与初始化配置。
   **触发后必须立即发送反馈"🏃 健身追踪技能已激活，正在连接数据..."，然后再执行任何操作。**
   不用于制定训练计划、每周复盘分析、推荐健身房/补剂/动作或提供健身建议。
-version: "v3.3.0"
+version: "v3.4.0"
 ---
 
 # 健身追踪 v3.3.0
@@ -342,6 +342,11 @@ const DataStore = {
 - 健身追踪内部负责字段名→列字母映射、字段类型校验、单选选项匹配等业务逻辑；`lark-sheets` skill 负责执行具体 CLI 命令
 
 详细实现方式见 `knowledge/field-guide.md`。
+
+### 外部技能桥接约定
+
+- 讯记 skill 调用约定 → `references/xunji-bridge.md`
+- lark-sheets skill 调用约定 → `references/lark-sheets-bridge.md`
 
 ---
 
