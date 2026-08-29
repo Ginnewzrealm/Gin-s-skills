@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.18.0（2026-08-29）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.18.1（2026-08-29）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -82,7 +82,7 @@ Progress:
 - 全部写入经 `scripts/kb_interview.py`（追加不覆盖，自动重生成 facts.yaml、版本+1、记 changelog）
 - `append-work` 退出码 2 = 同公司冲突：暂停写入，新旧并排展示，用户裁决后再写
 - 目录结构：`scripts/kb_interview.py init --kb <路径>` 自动创建，规范见 `references/knowledge-structure.md`
-- **工作经历支持职业空窗期条目**：`work_history.md` 中可写入 `## 职业空窗期 | 空窗期类型 | 起止时间`，渲染时自动识别并弱化显示，字段标签自动从「核心职责/关键业绩」切换为「核心说明/关键事实」。写作规范见 `references/resume-section-standard.md` 第五部分。
+- **工作经历支持职业休整期条目**：`work_history.md` 中可写入 `## 职业休整期 | 休整期类型 | 起止时间`，渲染时自动识别并弱化显示，字段标签自动从「核心职责/关键业绩」切换为「核心说明/关键事实」。写作规范见 `references/resume-section-standard.md` 第五部分。
 - **技能清单确认门禁**：技能的定义（通用能力/专属能力两段）、命名格式、条目写法（专属=熟练度+佐证；通用=证据强度+场景）与确认流程，必读 `references/skills-inventory-standard.md`。所有技能（用户自报 + AI 从经历推断）必须先整批展示给用户确认，确认的条目才用 `append-skill`（通用能力加 `--type general`）逐条写入；未确认不落盘。简历与求职材料只准使用 skills.md 中已确认的技能。查看清单用 `list-skills`
 - **优势录入**：个人优势/岗位胜任条目用 `append-advantage --text '...'` 写入 `原始事实/advantages.md`，展示层自动置顶为「岗位胜任」
 - **技能深挖**：为核心技能写详细描述前信息不足时，按 `references/skill-mining-playbook.md` 支架式提问（把创作题变成选择题/填空题/改错题，不抛开放式大问题），核心技能挖全 STAR-Plus 五维、其余从简；产物经用户确认后写入 `原始事实/skill_details.md` 并运行 `facts_parser.py` 重建

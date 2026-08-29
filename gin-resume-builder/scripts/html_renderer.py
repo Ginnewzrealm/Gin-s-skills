@@ -178,16 +178,19 @@ def _education_text(section):
     return candidates[0][1]
 
 
+GAP_TITLES = {"职业休整期", "职业空窗期", "career break", "career gap"}
+GAP_DISPLAY = "职业休整期"
+
+
 def _is_gap_entry(e):
-    """判断是否为职业空窗期条目。支持显式标记或组织名匹配。"""
+    """判断是否为职业休整期条目。支持显式标记或组织名匹配。"""
     if e.get("is_gap") is True or e.get("type") == "career_gap":
         return True
-    org = str(e.get("org", "")).strip().lower()
-    return org in ("职业空窗期", "career break", "career gap") or "空窗期" in org
+    return str(e.get("org", "")).strip().lower() in GAP_TITLES
 
 
 def _gap_fields(fields):
-    """空窗期条目的字段标签覆盖：核心职责→核心说明，关键业绩→关键事实。"""
+    """休整期条目的字段标签覆盖：核心职责→核心说明，关键业绩→关键事实。"""
     gap_fields = dict(fields)
     gap_fields["summary"] = "核心说明"
     gap_fields["bullets"] = "关键事实"
@@ -235,6 +238,8 @@ def build_body(resume):
             is_gap = _is_gap_entry(e)
             entry_fields = _gap_fields(fields) if is_gap else fields
             org = e.get("org", "")
+            if is_gap:
+                org = GAP_DISPLAY
             if e.get("org_note"):
                 org += '<span class="org-note">（%s）</span>' % esc(e["org_note"])
             else:
