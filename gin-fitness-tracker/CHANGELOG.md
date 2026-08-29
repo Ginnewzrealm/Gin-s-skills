@@ -37,6 +37,28 @@
 
 ---
 
+### v3.4.2 — 2026-08-29
+
+**更新类型**：优化
+
+**涉及文件**：
+- `scripts/validate_field_metadata.py`
+- `skills/collect-data/SKILL.md`
+- `skills/write-verify/SKILL.md`
+- `knowledge/field-guide.md`
+- `SKILL.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **新增字段元数据类型/选项硬校验脚本 `validate_field_metadata.py`**：根据字段元数据子表的「类型」和「选项」对用户输入做硬校验，支持数字、时间、日期、单选、多选、文本、公式类型
+2. **`collect-data` 明确自然语言解析原则**：要求 Agent 用 LLM 语义理解从用户自然语言中提取字段和值，禁止关键词脚本硬匹配；提供用户示例并说明歧义字段需主动确认
+3. **`write-verify` 增加字段元数据类型校验步骤**：写入前强制检查清单新增「字段值是否符合字段元数据子表的类型和选项」；失败时返回具体错误，单选值不在选项中需列出全部可选值
+4. **`knowledge/field-guide.md` 更新为三层校验模型**：字段处理规则表扩展为「读取 / Agent 提取 / 写入前校验」四列，明确语义提取层、元数据校验层、真实格式转换层的职责边界
+5. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.4.1` 升级到 `v3.4.2`
+
+---
+
 ### v3.4.0 — 2026-08-29
 
 **更新类型**：优化
