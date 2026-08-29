@@ -178,6 +178,22 @@ def _education_text(section):
     return candidates[0][1]
 
 
+def _is_gap_entry(e):
+    """判断是否为职业空窗期条目。支持显式标记或组织名匹配。"""
+    if e.get("is_gap") is True or e.get("type") == "career_gap":
+        return True
+    org = str(e.get("org", "")).strip().lower()
+    return org in ("职业空窗期", "career break", "career gap") or "空窗期" in org
+
+
+def _gap_fields(fields):
+    """空窗期条目的字段标签覆盖：核心职责→核心说明，关键业绩→关键事实。"""
+    gap_fields = dict(fields)
+    gap_fields["summary"] = "核心说明"
+    gap_fields["bullets"] = "关键事实"
+    return gap_fields
+
+
 def build_body(resume):
     basic = resume.get("basic", {})
     L = ['<header class="header"><h1 class="name">%s</h1>' % esc(basic.get("姓名", "（姓名）"))]
@@ -216,33 +232,36 @@ def build_body(resume):
         en_span = '<span class="en">%s</span>' % en if en else ""
         L.append('<section class="section"><h2 class="section-title">%s%s</h2>' % (esc(title), en_span))
         for e in sec.get("entries", []):
+            is_gap = _is_gap_entry(e)
+            entry_fields = _gap_fields(fields) if is_gap else fields
             org = e.get("org", "")
             if e.get("org_note"):
                 org += '<span class="org-note">（%s）</span>' % esc(e["org_note"])
             else:
                 org = esc(org)
             role = ("｜" + e["role"]) if e.get("role") else ""
-            L.append('<div class="entry"><div class="entry-header"><div class="entry-left">'
+            entry_cls = "entry career-gap" if is_gap else "entry"
+            L.append('<div class="%s"><div class="entry-header"><div class="entry-left">'
                      '<span class="entry-company">%s</span><span class="entry-position">%s</span></div>'
                      '<span class="entry-meta">%s</span></div>'
-                     % (org, esc(role), esc(e.get("period", ""))))
+                     % (entry_cls, org, esc(role), esc(e.get("period", ""))))
             # 字段标签：summary/description → bullets → skills → impact → honor
             if e.get("summary"):
-                L.append(field_line(fields.get("summary", "核心职责"), e["summary"]))
+                L.append(field_line(entry_fields.get("summary", "核心职责"), e["summary"]))
             if e.get("description"):
-                L.append(field_line(fields.get("description", "项目描述"), e["description"]))
+                L.append(field_line(entry_fields.get("description", "项目描述"), e["description"]))
             if e.get("bullets"):
-                if fields.get("bullets"):
+                if entry_fields.get("bullets"):
                     L.append('<p class="field-line field-label-only">'
-                             '<span class="field-label">%s</span></p>' % esc(fields["bullets"]))
+                             '<span class="field-label">%s</span></p>' % esc(entry_fields["bullets"]))
                 L.append('<ul class="bullet-list">'
                          + "".join("<li>%s</li>" % rich_bullet(b) for b in e["bullets"]) + "</ul>")
             if e.get("skills"):
-                L.append(field_line(fields.get("skills", "专业能力"), e["skills"]))
+                L.append(field_line(entry_fields.get("skills", "专业能力"), e["skills"]))
             if e.get("impact"):
-                L.append(field_line(fields.get("impact", "成果与影响"), e["impact"]))
+                L.append(field_line(entry_fields.get("impact", "成果与影响"), e["impact"]))
             if e.get("honor"):
-                L.append(field_line(fields.get("honor", "荣誉奖项"), e["honor"]))
+                L.append(field_line(entry_fields.get("honor", "荣誉奖项"), e["honor"]))
             L.append("</div>")
         if sec.get("groups"):
             L.append('<ul class="bullet-list">'

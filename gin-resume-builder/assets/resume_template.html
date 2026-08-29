@@ -119,6 +119,12 @@
   }
   .entry:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
 
+  /* 职业空窗期条目：视觉弱化处理，避免喧宾夺主 */
+  .entry.career-gap .entry-company { color: var(--text-muted); }
+  .entry.career-gap .entry-position { color: var(--text-muted); font-style: italic; }
+  .entry.career-gap .entry-meta { color: #999999; }
+  .entry.career-gap .field-label { background: #777777; }
+
   .entry-header {
     display: flex;
     justify-content: space-between;
