@@ -18,6 +18,35 @@
 
 ---
 
+### v3.4.0 — 2026-08-29
+
+**更新类型**：优化
+
+**涉及文件**：
+- `SKILL.md`
+- `skills/init/SKILL.md`
+- `skills/collect-data/SKILL.md`
+- `skills/write-verify/SKILL.md`
+- `skills/query-data/SKILL.md`
+- `skills/sync-xunji/SKILL.md`
+- `references/xunji-bridge.md`
+- `references/lark-sheets-bridge.md`
+- `knowledge/xunji-api-guide.md`
+- `knowledge/sheets-calling-patterns.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **新增 Progress Checklist 使用规则**：主 `SKILL.md` 增加统一规则、场景定位句、标签说明、展示时机与禁止项
+2. **5 个子技能执行流程 checklist 化**：init/collect-data/write-verify/query-data/sync-xunji 分别插入 micro-checklist，标注 `[自动]` / `[需确认]` / `[硬闸门]` / `[可回环]`
+3. **硬闸门显性化**：在 collect-data 问题生成前检查单、write-verify 已有值检查、单选项匹配等位置增加 `当前阻塞：等待你确认 XXXX` 提示
+4. **新增 `references/xunji-bridge.md`**：按技能桥接模式技术规范 v2.0 五章格式，整合讯记桥接约定
+5. **新增 `references/lark-sheets-bridge.md`**：按规范五章格式，收敛飞书表格调用契约
+6. **知识库文件增加桥接指针**：`xunji-api-guide.md` 与 `sheets-calling-patterns.md` 顶部增加指向新桥接文件的说明
+7. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.3.0` 升级到 `v3.4.0`
+
+---
+
 ### v3.3.0 — 2026-08-26
 
 **更新类型**：重构
