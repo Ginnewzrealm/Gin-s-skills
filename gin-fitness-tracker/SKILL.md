@@ -111,6 +111,53 @@ version: "v3.3.0"
 
 即：write-verify 返回 failed 或 partial 时，禁止发送 "✅ 数据记录完成" 反馈。
 
+触发反馈发送后，如果本次进入新子模块，紧接着输出该子模块的场景定位句 + micro-checklist。
+
+---
+
+## Progress Checklist 使用规则
+
+本技能含 5 个子模块：`init`、`collect-data`、`query-data`、`sync-xunji`、`write-verify`。每次触发本技能时，先根据路由表选择目标子模块，然后**立即输出场景定位句 + 该子模块 micro-checklist**。
+
+### 场景定位句
+
+进入任意子模块时，先说一句：
+
+```markdown
+当前场景：gin-fitness-tracker — [子模块名]
+```
+
+例如：
+- 初始化 → `当前场景：gin-fitness-tracker — init`
+- 数据收集 → `当前场景：gin-fitness-tracker — collect-data`
+- 数据查询 → `当前场景：gin-fitness-tracker — query-data`
+- 讯记同步 → `当前场景：gin-fitness-tracker — sync-xunji`
+- 写入验证 → `当前场景：gin-fitness-tracker — write-verify`
+
+### micro-checklist 标签
+
+| 标签 | 含义 |
+|------|------|
+| `[自动]` | AI / 脚本自动读取配置/表头/写入数据，无需用户实时输入 |
+| `[需确认]` | 需要用户查看并确认，但非强制阻塞 |
+| `[硬闸门]` | 用户不确认则不能继续下一步 |
+| `[可回环]` | 用户可要求回退到前面步骤重做 |
+
+### 展示时机
+
+1. **流程开始时**：输出场景定位句 + 完整 micro-checklist，高亮当前步骤。
+2. **进入硬闸门时**：再次展示 checklist，并追加 `当前阻塞：等待你确认 XXXX。`
+3. **完成时**：将最后一步标记为 `[✓]`，输出关键结果（写入字段数、失败字段、未验证项）。
+4. **子模块切换时**：输出新子模块的场景定位句 + micro-checklist，继承上游状态。
+5. **会话中断恢复时**：读取当前日期行后，重新输出完整 checklist + 当前阻塞提示。
+
+### 禁止
+
+- 不要跳过 `write-verify` 返回的 `needs_user_input` 硬闸门
+- 不要静默覆盖用户已有数据
+- 不要在用户说"重来"或"回退"时不重置 checklist 状态
+- 不要子模块直接向用户输出未经协调的长篇结果
+
 ---
 
 ## 路由规则
