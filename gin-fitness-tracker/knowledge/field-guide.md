@@ -138,21 +138,28 @@ storage:
 
 ## 字段处理规则
 
-| 字段类型 | 读取 | 写入 |
-|---------|------|------|
-| 数字字段 | 解析数值 | Agent 传数字（整数/小数），由表格 `number_format` 控制显示小数位 |
-| 时间字段 | 解析为时间字符串 | Agent 可传 `HH:mm` 字符串；`coerce_value.py` 根据 `number_format`（如 `h:mm`）自动转为 Excel 时间小数 |
-| 百分比字段 | 解析为百分比字符串 | Agent 可传 `21.9%` 或 `0.219`；`coerce_value.py` 根据 `number_format` 含 `%` 自动处理 |
-| 单选字段 | 解析选项文本 | **不是写，是选**：写入值必须从真实下拉选项中**原样复制**，禁止任何改写、缩写、同义词替换、emoji 增减 |
-| 多选字段 | 解析选项数组 | **不是写，是选**：每个元素必须是选项列表原文 |
-| 日期字段 | 解析 YYYY-MM-DD | 格式化为 YYYY-MM-DD |
-| 公式字段 | 读取计算结果 | **Agent 不写入公式字段**（周编号、睡眠时长、腰臀比、早晚体重差由 Sheets 公式自动计算） |
-| BMI | 读取静态数值 | **Agent 根据用户身高和晨起体重计算后写入静态数值**，不使用公式 |
+| 字段类型 | 读取 | Agent 提取 | 写入前校验 |
+|---------|------|-----------|-----------|
+| 数字字段 | 解析数值 | 从自然语言中提取数字 | `validate_field_metadata.py` 校验可解析为数字 |
+| 时间字段 | 解析为时间字符串 | 从自然语言中提取时间，整理为 `HH:mm` | `validate_field_metadata.py` 校验格式 |
+| 百分比字段 | 解析为百分比字符串 | 从自然语言中提取百分比 | `validate_field_metadata.py` 按「数字」校验，`coerce_value.py` 按 `number_format` 转换 |
+| 单选字段 | 解析选项文本 | **用 LLM 语义理解选择最匹配选项** | `validate_field_metadata.py` 校验值在选项列表中 |
+| 多选字段 | 解析选项数组 | 用 LLM 语义理解选择多个匹配选项 | `validate_field_metadata.py` 校验每个元素在选项列表中 |
+| 日期字段 | 解析 YYYY-MM-DD | 整理为 YYYY-MM-DD | `validate_field_metadata.py` 校验格式 |
+| 文本字段 | 原样读取 | 提取文本内容 | `validate_field_metadata.py` 任意字符串通过 |
+| 公式字段 | 读取计算结果 | **不提取、不写入** | `validate_field_metadata.py` 返回跳过错误 |
+| BMI | 读取静态数值 | Agent 根据身高和晨起体重计算 | `validate_field_metadata.py` 按「数字」校验 |
 
-**真实转换的唯一权威：**
-- 写入前调用 `lark-sheets` skill 的 `read_column_formats` 模式一次性读取每列的 `number_format` 和 `data_validation`
-- `coerce_value.py` 根据这些真实约束把原始值转为 Sheets 可接受的值
-- 字段元数据子表中的「类型」列仅作为语义提示，当元数据与真实表格不一致时，以 `read_column_formats` 结果为准
+**写入流程（三层校验）：**
+
+1. **语义提取层**：`collect-data` 用 LLM 从自然语言中提取字段和候选值
+2. **元数据类型校验层**：`write-verify` 调用 `validate_field_metadata.py`，按字段元数据子表的「类型」和「选项」做硬校验
+3. **真实格式转换层**：`coerce_value.py` 根据 `read_column_formats` 读取的真实 `number_format` / `data_validation` 做最终转换
+
+**校验原则：**
+- 字段元数据子表是「设计意图」的唯一权威：`write-verify` 必须按子表的「类型」校验值
+- `read_column_formats` 是「真实约束」的唯一权威：`coerce_value.py` 按真实单元格格式做最终转换
+- 当两者不一致时（如元数据说「时间」但真实列不是时间格式），返回 `FIELD_TYPE_MISMATCH` warning，以真实约束为准写入，但提示用户检查表格配置
 
 **选项来源（Sheets 后端）**：
 - 优先调用 `lark-sheets` skill 的 `read_column_formats` 模式一次性读取全部列的数据验证：
