@@ -44,6 +44,7 @@
 5. **新增 `references/lark-sheets-bridge.md`**：按规范五章格式，收敛飞书表格调用契约
 6. **知识库文件增加桥接指针**：`xunji-api-guide.md` 与 `sheets-calling-patterns.md` 顶部增加指向新桥接文件的说明
 7. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.3.0` 升级到 `v3.4.0`
+8. **collect-data 标签与 Cron 场景澄清**：Step 6 `[需确认]` 改为 `[等待用户回复]`；Step 5 硬闸门补充 Cron 触发时不等待用户、直接返回失败的降级说明
 
 ---
 
