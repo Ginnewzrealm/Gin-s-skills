@@ -18,6 +18,25 @@
 
 ---
 
+### v3.4.1 — 2026-08-29
+
+**更新类型**：修复
+
+**涉及文件**：
+- `knowledge/sheets-calling-patterns.md`
+- `skills/write-verify/SKILL.md`
+- `SKILL.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **修复 `+cells-set` 写入导致列格式丢失问题**：写入时在每个 cell JSON 中显式附带 `number_format`，从源头保持百分比、时间等列的显示格式
+2. **更新 `write_fields_by_name` 调用示例**：百分比列传小数（如 `0.216`）并附带 `"number_format": "0.00%"`，时间列附带 `"h:mm"` / `"HH:mm:ss"`
+3. **明确 `number_format` 来源**：来自 `read_column_formats` 返回的 `column_constraints[col].number_format`
+4. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.4.0` 升级到 `v3.4.1`
+
+---
+
 ### v3.4.0 — 2026-08-29
 
 **更新类型**：优化

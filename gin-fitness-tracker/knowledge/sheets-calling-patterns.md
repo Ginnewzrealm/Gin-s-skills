@@ -177,7 +177,7 @@ lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记�
 **步骤：**
 1. 健身追踪内部根据 `read_header` 得到的映射，把字段名转换成列字母
 2. 根据 `read_column_formats` 得到的 `column_constraints`，把原始值转换为符合列格式/验证的值
-3. 构造 `+cells-set` 的 `--writes` 批量写入请求
+3. 构造 `+cells-set` 的 `--writes` 批量写入请求：**每个 cell 必须附带 `number_format`**，防止 `+cells-set` 写入时把原列格式重置为 General
 4. 调用 `lark-sheets` skill 执行
 
 **命令：**
@@ -185,12 +185,17 @@ lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记�
 lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记录" --writes - <<'JSON'
 {
   "writes": [
-    {"sheet_name": "每日记录", "range": "C<row>:C<row>", "cells": [[{"value": 67.65}]]},
-    {"sheet_name": "每日记录", "range": "D<row>:D<row>", "cells": [[{"value": 21.6}]]}
+    {"sheet_name": "每日记录", "range": "C<row>:C<row>", "cells": [[{"value": 67.65, "number_format": "0.00"}]]},
+    {"sheet_name": "每日记录", "range": "D<row>:D<row>", "cells": [[{"value": 0.216, "number_format": "0.00%"}]]}
   ]
 }
 JSON
 ```
+
+**注意：**
+- `number_format` 来自 `read_column_formats` 返回的 `column_constraints[col].number_format`
+- 百分比列必须传小数（如 `0.216` 表示 21.6%），并附带 `"number_format": "0.00%"`，飞书才会渲染为 `21.60%`
+- 不传 `number_format` 时，`+cells-set` 会覆盖原单元格样式为 General，导致格式丢失
 
 **输入参数：**
 - `fitness.sheets.url`

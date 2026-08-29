@@ -348,18 +348,26 @@ JSON
 
 Sheets 后端通过 `lark-sheets` skill 的 `write_fields_by_name` 模式写入单元格。
 
+**关键原则：** `+cells-set` 写入时会覆盖单元格整个对象（包括样式），因此必须在每个 cell JSON 中显式附带 `number_format`，否则原列的 `0.00%`、`h:mm` 等格式会被重置为 General。
+
 **调用命令：**
 
 ```bash
 lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记录" --writes - <<'JSON'
 {
   "writes": [
-    {"sheet_name": "每日记录", "range": "C<row>:C<row>", "cells": [[{"value": 67.65}]]},
-    {"sheet_name": "每日记录", "range": "D<row>:D<row>", "cells": [[{"value": 21.6}]]}
+    {"sheet_name": "每日记录", "range": "C<row>:C<row>", "cells": [[{"value": 67.65, "number_format": "0.00"}]]},
+    {"sheet_name": "每日记录", "range": "D<row>:D<row>", "cells": [[{"value": 0.216, "number_format": "0.00%"}]]}
   ]
 }
 JSON
 ```
+
+**`number_format` 来源：**
+- 写入前 `read_column_formats` 已读取每列真实 `number_format`，保存在 `column_constraints[col].number_format`
+- 构造 `--writes` 时，把目标列的 `number_format` 一并写入每个 cell 的 JSON
+- 百分比列传小数（如 `0.216`）+ `"0.00%"`，飞书会渲染为 `21.60%`
+- 时间列传 Excel 时间小数 + `"h:mm"` 或 `"HH:mm:ss"`
 
 健身追踪内部根据 `read_header` 得到的「字段名 → 列字母」映射，把字段名转换成列字母，构造上述 `--writes` 批量写入请求，由 `lark-sheets` skill 执行具体 CLI。
 
@@ -380,7 +388,7 @@ JSON
 
 ### 按字段类型传值
 
-Agent 只负责传语义原始值，`coerce_value.py` 根据 `read_column_formats` 返回的真实约束自动转换。具体显示格式由飞书表格单元格格式决定，Agent 不需要也不应该自己补零或转换。
+Agent 只负责传语义原始值，`coerce_value.py` 根据 `read_column_formats` 返回的真实约束自动转换。具体显示格式由飞书表格单元格格式决定，Agent 不需要也不应该自己补零或转换；但必须在 cell JSON 中附带 `number_format`，否则写入后格式会被重置为 General。
 
 | 真实列约束 | Agent 应传值 | 示例 | coerce_value.py 处理后 |
 |------------------|-------------|------|------------------------|
