@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.18.2（2026-08-29）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.18.3（2026-08-30）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -135,7 +135,7 @@ Progress:
 3. **JD 分类**：`jd_classifier.py --jd <jd>` → 技术/销售/运营/产品/管理，**展示给用户确认**，不确认则重分
 4. **跨行业检测**：分类结果 career_switch_hint=true 时询问是否启用转行模式
 5. **事实挑选**：`fact_selector.py --jd <jd> --json-out picked.json`（转行加 --career-switch），默认不限制 bullet 数量，按 JD 相关度排序后展示全部候选，由用户在渲染前确认环节手动删减
-6. **改写**：`bullet_rewriter.py --selected picked.json --out bullets.json` 产出硬事实层 → Claude 在此基础上润色表达（三层控制：硬事实自动校验、表达风格不校验、灰区 {?} 用户确认）。写作规范读 `references/resume-writing-methodology.md` 与 `references/writing-formulas.md`；板块字段结构（核心职责/关键业绩/专业能力/荣誉奖项、项目描述/职责与行动/成果与影响、岗位胜任、技能）必须读 `references/resume-section-standard.md`
+6. **改写**：`bullet_rewriter.py --selected picked.json --out bullets.json` 按 X-Y-Z / CAR 公式做**规则化改写**，输出唯一确定的 `rewritten`；硬事实（数字、公司、职位、时间）原样保留，表达强制中性、禁用贬义词。无法拆分或检测到贬义/负面表达时自动标注 `{?}`，由 Claude 引导用户补全或确认。写作规范读 `references/resume-writing-methodology.md` 与 `references/writing-formulas.md`；板块字段结构（核心职责/关键业绩/专业能力/荣誉奖项、项目描述/职责与行动/成果与影响、岗位胜任、技能）必须读 `references/resume-section-standard.md`
 7. **强主张审计**：`strong_claim_auditor.py --bullets bullets.json`；含「主导/负责/0→1/核心/Owner」但无具体决策/结果时，降级为「参与」或标注【待确认】
 8. **主张绑定**：`claim_binder.py --bullets bullets.json [--claims user_inputs.json]`；每条通过的 bullet 生成 claim 记录，写入 `原始事实/claims/`，并追问用户确认 boundary 与 interview_details
 9. **溯源校验**：`provenance_verifier.py --bullets bullets.json`；退出码 2 = 有拦截 / 退出码 3 = 事实冲突 → 引导用户补事实/修正/删除/裁决 → 重写 → 再校，不得跳过
