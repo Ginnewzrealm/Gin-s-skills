@@ -61,6 +61,20 @@ def prepare_write_request(payload: Dict[str, Any]) -> Dict[str, Any]:
     writes: List[Dict[str, Any]] = []
     errors: Dict[str, str] = {}
 
+    # 硬闸门：header_map 是字段定位的唯一权威，缺失/无效时禁止写入
+    if not header_map:
+        return {
+            "writes": [],
+            "errors": {"_header_map": "HEADER_MAP_MISSING: 必须提供有效的 header_map，禁止按位置推断列字母"},
+        }
+
+    # 硬闸门：column_constraints 用于保持单元格 number_format，缺失时禁止写入
+    if not column_constraints:
+        return {
+            "writes": [],
+            "errors": {"_column_constraints": "COLUMN_CONSTRAINTS_MISSING: 必须提供 column_constraints，禁止重置单元格格式为 General"},
+        }
+
     for field_name, value in coerced_values.items():
         if table == "user_config":
             field_row = row_map.get(field_name)

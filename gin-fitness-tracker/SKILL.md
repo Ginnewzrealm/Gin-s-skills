@@ -4,10 +4,10 @@ description: >
   健身数据追踪技能。用户说「健身追踪」、报告具体健康数据字段、查询健身数据、补录数据、同步讯记或配置时触发。
   触发后必须立即发送反馈"🏃 健身追踪技能已激活，正在连接数据..."，然后再执行任何操作。
   不用于制定训练计划、每周复盘分析、推荐健身房/补剂/动作或提供健身建议。
-version: "v3.5.1"
+version: "v3.5.2"
 ---
 
-# 健身追踪 v3.3.0
+# 健身追踪 v3.5.2
 
 ## 概述
 
@@ -18,6 +18,19 @@ version: "v3.5.1"
 - 不覆盖用户主动录入的数据
 - 所有写入必须复查验证
 - **用户始终知道技能正在执行哪一步**
+
+## ⚠️ Agent 硬规则（本 skill 内的写入唯一入口）
+
+**本 skill 管辖范围内的一切数据写入，必须通过本 skill 完成。**
+
+1. **禁止直接调用 `lark-cli sheets` 写入「每日记录」表或「用户配置」表。**
+2. **所有写入必须经过 `write-verify` 子技能或 `scripts/record_fields_once.py` 脚本。**
+3. **写入前必须读取表头，并通过 `scripts/build_header_map.py` 生成 `header_map.json`。**
+4. **`scripts/prepare_write_request.py` 是构造 `+cells-set` range 的唯一入口，Agent 不得自己推断列字母或构造 range。**
+5. **如果写入验证失败，本 skill 会自动换工具重试并自动重新读取表头重跑完整流程。Agent 不得在同一 turn 内用 `lark-cli` 逐格手动修复。**
+6. **违反以上任意一条，视为 bypass 本 skill，必须停止并重新触发本 skill 执行。**
+
+这些规则是 skill 内部约定。OpenClaw 系统层面的强制约束由系统侧的 `AGENTS.md` 负责，不在本 skill 文件范围内。
 
 ## 何时使用
 
@@ -156,6 +169,60 @@ JSON
 即：write-verify 返回 failed 或 partial 时，禁止发送 "✅ 数据记录完成" 反馈。
 
 触发反馈发送后，如果本次进入新子模块，紧接着输出该子模块的场景定位句 + micro-checklist。
+
+---
+
+## 群聊静默模式
+
+当 `context.channel_type == "group"` 时，技能进入**群聊静默模式**：内部仍然完整执行所有 stage 和校验，但对用户的反馈做精简，避免在群里刷屏。
+
+### 输入中的通道类型
+
+子模块调用输入应包含：
+
+```json
+{
+  "mode": "reply_entry",
+  "date": "2026-08-30",
+  "user_input": "今早体重68.5",
+  "context": {
+    "channel_type": "group" | "private"
+  }
+}
+```
+
+- `private`：正常展示 Progress Checklist 和每步状态反馈
+- `group`：进入静默模式
+
+### 静默模式反馈规则
+
+| 信息类型 | group 模式 | private 模式 |
+|---------|-----------|-------------|
+| 触发反馈 | ✅ `🏃 健身追踪技能已激活，正在处理...` | ✅ `🏃 健身追踪技能已激活，正在连接数据...` |
+| 子模块状态反馈 | ❌ 不展示 | ✅ 展示 |
+| Progress Checklist 每一步 | ❌ 不展示 | ✅ 展示 |
+| 写入失败 / 正在重试 | ✅ 展示 | ✅ 展示 |
+| 硬闸门需要用户确认 | ✅ 展示并等待 | ✅ 展示并等待 |
+| 完成摘要 | ✅ 最终一条消息 | ✅ 最终一条消息 |
+
+### 静默模式示例
+
+**群聊触发**：
+```
+🏃 健身追踪技能已激活，正在处理...
+```
+
+**群聊结束（成功）**：
+```
+✅ 已记录 2 个字段：晨起体重 68.5 kg、入睡时间 00:30
+```
+
+**群聊结束（有失败字段）**：
+```
+⚠️ 部分成功：晨起体重已记录；体脂率写入失败，原因：... 可回复「重来」重新执行
+```
+
+**重要**：静默模式只隐藏"进度展示"，不隐藏"异常"和"需要确认"的硬闸门。
 
 ---
 
@@ -317,9 +384,17 @@ JSON
   "mode": "daily_poll" | "reply_entry" | "makeup" | "query" | "init" | "sync",
   "date": "2026-07-26",
   "user_input": "用户原始消息或回复",
-  "context": {}
+  "context": {
+    "channel_type": "group" | "private"
+  }
 }
 ```
+
+`context.channel_type` 用于控制反馈粒度：
+- `private`：展示完整 Progress Checklist 和每步状态反馈
+- `group`：进入群聊静默模式，只展示触发反馈、异常、硬闸门和最终摘要
+
+如果 `context.channel_type` 缺失，默认按 `private` 处理。
 
 ### 输出
 
@@ -454,6 +529,18 @@ const DataStore = {
 | | `config/user-profile-schema.md` | 用户配置表结构（权威定义） |
 | | `config/openclaw-config.md` | OpenClaw 配置键与事件入口 |
 | **维护** | `CHANGELOG.md` | 更新日志 |
+| **工具脚本** | `scripts/build_header_map.py` | 表头行 → 字段名→列字母映射 |
+| | `scripts/build_column_constraints.py` | 真实列约束解析 |
+| | `scripts/prepare_write_request.py` | 构造 `+cells-set` payload |
+| | `scripts/validate_field_metadata.py` | 字段元数据类型校验 |
+| | `scripts/coerce_value.py` | 按真实列约束转换值形态 |
+| | `scripts/check_existing_values.py` | 检查字段是否已有值 |
+| | `scripts/compare_written_values.py` | 写入值 vs 回读值对比 |
+| | `scripts/detect_option_pollution.py` | 检测未授权新增选项 |
+| | `scripts/stage_validator.py` | Progress Checklist 阶段产物校验 |
+| | `scripts/progress_reporter.py` | 进度汇报格式化 |
+| | `scripts/trigger_classifier.py` | 触发意图分类 |
+| | `scripts/record_fields_once.py` | 一键完成校验→转换→已有值检查→写入计划 |
 | **测试** | `evals/evals.json` | 测试用例 |
 
 

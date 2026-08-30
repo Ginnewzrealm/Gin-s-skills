@@ -14,13 +14,13 @@
     },
     {
       "id": "eval-2",
-      "name": "版本号已更新到 v3.3.0",
+      "name": "版本号已更新到 v3.5.2",
       "input": "读取 SKILL.md",
       "checks": [
         {
           "type": "file_contains",
           "path": "SKILL.md",
-          "value": "version: \"v3.3.0\""
+          "value": "version: \"v3.5.2\""
         }
       ]
     },
@@ -990,6 +990,120 @@
           "type": "file_contains",
           "path": "CHANGELOG.md",
           "value": "trigger_classifier.py"
+        }
+      ]
+    },
+    {
+      "id": "eval-51",
+      "name": "record_fields_once.py 脚本存在且功能明确",
+      "input": "读取 scripts/record_fields_once.py 和 SKILL.md",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "scripts/record_fields_once.py"
+        },
+        {
+          "type": "file_contains",
+          "path": "scripts/record_fields_once.py",
+          "value": "record_fields_once"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "scripts/record_fields_once.py"
+        }
+      ]
+    },
+    {
+      "id": "eval-52",
+      "name": "prepare_write_request.py 对 header_map 和 column_constraints 有硬闸门",
+      "input": "读取 scripts/prepare_write_request.py 和 tests/test_prepare_write_request.py",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "scripts/prepare_write_request.py",
+          "value": "HEADER_MAP_MISSING"
+        },
+        {
+          "type": "file_contains",
+          "path": "scripts/prepare_write_request.py",
+          "value": "COLUMN_CONSTRAINTS_MISSING"
+        },
+        {
+          "type": "file_contains",
+          "path": "tests/test_prepare_write_request.py",
+          "value": "test_missing_header_map_fails_hard"
+        },
+        {
+          "type": "file_contains",
+          "path": "tests/test_prepare_write_request.py",
+          "value": "test_missing_column_constraints_fails_hard"
+        }
+      ]
+    },
+    {
+      "id": "eval-53",
+      "name": "write-verify 有透明自动重试机制",
+      "input": "读取 skills/write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "透明自动重试机制"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "自动重新执行一次完整流程"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "禁止"
+        }
+      ]
+    },
+    {
+      "id": "eval-54",
+      "name": "SKILL.md 有群聊静默模式和 Agent 硬规则",
+      "input": "读取 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "群聊静默模式"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "channel_type"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "Agent 硬规则"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "禁止直接调用 `lark-cli sheets`"
+        }
+      ]
+    },
+    {
+      "id": "eval-55",
+      "name": "CHANGELOG 包含 v3.5.2 技能加固条目",
+      "input": "读取 CHANGELOG.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "CHANGELOG.md",
+          "value": "v3.5.2"
+        },
+        {
+          "type": "file_contains",
+          "path": "CHANGELOG.md",
+          "value": "record_fields_once.py"
         }
       ]
     }

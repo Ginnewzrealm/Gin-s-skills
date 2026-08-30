@@ -105,6 +105,8 @@ Sheets 后端读取方式：
 
 `collect-data`、`query-data`、`init` 等子技能**不直接调用** `DataStore.writeDailyRecord()` 或 `DataStore.updateUserConfig()`。所有写入必须经过 `write-verify` 子技能统一入口，由 `write-verify` 完成字段校验、单选匹配、公式字段跳过、写入后回读验证，再委托给 `lark-sheets` skill 执行具体 CLI。
 
+**快捷入口**：对于已经拿到 `header_map`、`column_constraints`、`field_metadata` 和 `current_row_values` 的场景，可以先调用 `scripts/record_fields_once.py` 一次性完成：字段元数据校验 → 真实列约束转换 → 已有值检查 → 构造 `write_plan`。然后直接把 `write_plan.json` 交给 `lark-cli sheets +cells-set` 执行，最后再调用 `compare_written_values.py` 复查。
+
 ### LocalJsonStore 实现方式
 
 存储目录下的 JSON 文件：

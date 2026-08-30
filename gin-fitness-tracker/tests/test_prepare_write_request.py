@@ -92,6 +92,44 @@ class TestPrepareWriteRequest(unittest.TestCase):
         self.assertEqual(result["writes"], [])
         self.assertIn("ROW_MAP_MISSING", result["errors"]["当前体重"])
 
+    def test_missing_header_map_fails_hard(self):
+        payload = {
+            "table": "daily_record",
+            "row": 42,
+            "column_constraints": {
+                "C": {"number_format": "0.00", "data_validation": None},
+            },
+            "coerced_values": {"晨起体重": 68.5},
+        }
+        result = run_script(payload)
+        self.assertEqual(result["writes"], [])
+        self.assertIn("HEADER_MAP_MISSING", result["errors"]["_header_map"])
+
+    def test_empty_header_map_fails_hard(self):
+        payload = {
+            "table": "daily_record",
+            "row": 42,
+            "header_map": {},
+            "column_constraints": {
+                "C": {"number_format": "0.00", "data_validation": None},
+            },
+            "coerced_values": {"晨起体重": 68.5},
+        }
+        result = run_script(payload)
+        self.assertEqual(result["writes"], [])
+        self.assertIn("HEADER_MAP_MISSING", result["errors"]["_header_map"])
+
+    def test_missing_column_constraints_fails_hard(self):
+        payload = {
+            "table": "daily_record",
+            "row": 42,
+            "header_map": {"日期": "A", "晨起体重": "C"},
+            "coerced_values": {"晨起体重": 68.5},
+        }
+        result = run_script(payload)
+        self.assertEqual(result["writes"], [])
+        self.assertIn("COLUMN_CONSTRAINTS_MISSING", result["errors"]["_column_constraints"])
+
 
 if __name__ == "__main__":
     unittest.main()

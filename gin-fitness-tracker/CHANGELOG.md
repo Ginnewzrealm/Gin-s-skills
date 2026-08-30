@@ -37,6 +37,34 @@
 
 ---
 
+### v3.5.2 — 2026-08-30
+
+**更新类型**：优化
+
+**涉及文件**：
+- `SKILL.md`
+- `skills/write-verify/SKILL.md`
+- `knowledge/field-guide.md`
+- `scripts/prepare_write_request.py`
+- `scripts/record_fields_once.py`
+- `tests/test_prepare_write_request.py`
+- `tests/test_build_header_map.py`
+- `tests/test_record_fields_once.py`
+- `evals/evals.json`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **新增 `scripts/record_fields_once.py` 一键录入脚本**：输入字段名+值即可一次性完成字段元数据校验、真实列约束转换、已有值检查、构造 `write_plan`，降低 Agent 直接调 `lark-cli` 的动机
+2. **强化 `prepare_write_request.py` 硬闸门**：缺失 `header_map` 或 `column_constraints` 时直接返回错误，禁止按位置推断列字母或重置单元格格式
+3. **强化 `build_header_map.py` 空列检测**：新增真实场景回归测试，确保空列（如睡前体重、早晚体重差）不会导致后续字段错位
+4. **`write-verify` 透明自动重试**：写入失败后先换工具重试，仍失败则自动重新读取表头并重跑完整 `LOAD_DEFS → VALIDATE → WRITE → REPORT` 流程；每次重试/重跑都向用户发送状态消息，不隐藏过程
+5. **新增群聊静默模式**：`context.channel_type == "group"` 时隐藏 Progress Checklist 中间广播，但仍展示触发反馈、异常、硬闸门和最终摘要
+6. **`SKILL.md` 增加 Agent 硬规则**：明确禁止在同一 turn 内直接调用 `lark-cli sheets` 写入健身追踪管辖的表，所有写入必须经过 `write-verify` 或 `record_fields_once.py`
+7. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.5.1` 升级到 `v3.5.2`
+
+---
+
 ### v3.5.1 — 2026-08-30
 
 **更新类型**：优化

@@ -75,11 +75,36 @@ class TestBuildHeaderMap(unittest.TestCase):
             [{"field": "晨起体重", "cols": ["B", "D"]}],
         )
 
-    def test_plain_header_array_is_accepted(self):
-        payload = {"headers": ["日期", "晨起体重", "", "体脂率"]}
+    def test_realistic_empty_weight_columns_do_not_shift(self):
+        """Regression: 真实表格中睡前体重/早晚体重差为空列时，后续字段不能错位。"""
+        payload = {
+            "annotated_csv": [[
+                "日期", "周编号", "晨起体重", "体脂率", "BMI", "腰围", "臀围",
+                "腰臀比", "", "", "大解状态", "入睡时间",
+                "起床时间", "睡眠时长", "晨起心率（次/分）",
+            ]],
+            "col_indices": [
+                "A", "B", "C", "D", "E", "F", "G",
+                "H", "I", "J", "K", "L",
+                "M", "N", "O",
+            ],
+        }
         result = run_script(payload)
         self.assertTrue(result["valid"])
-        self.assertEqual(result["header_map"]["体脂率"], "D")
+        self.assertEqual(result["header_map"]["晨起体重"], "C")
+        self.assertEqual(result["header_map"]["腰臀比"], "H")
+        self.assertEqual(result["header_map"]["大解状态"], "K")
+        self.assertEqual(result["header_map"]["晨起心率（次/分）"], "O")
+        self.assertEqual(result["empty_cols"], ["I", "J"])
+
+    def test_whitespace_only_header_treated_as_empty(self):
+        payload = {
+            "headers": ["日期", "  ", "晨起体重"],
+        }
+        result = run_script(payload)
+        self.assertTrue(result["valid"])
+        self.assertEqual(result["header_map"]["晨起体重"], "C")
+        self.assertEqual(result["empty_cols"], ["B"])
 
 
 if __name__ == "__main__":
