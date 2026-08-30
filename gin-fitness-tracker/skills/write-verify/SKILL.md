@@ -24,21 +24,21 @@
 当前场景：gin-fitness-tracker — write-verify
 
 Progress:
-- [ ] Step 1 发送模块状态反馈 [自动]
-- [ ] Step 2 接收写入请求 [自动]
-- [ ] Step 3 读取字段元数据 + 表头行 [自动]
-- [ ] Step 4 读取每列真实格式与验证约束 [自动]
-- [ ] Step 5 写入前强制检查清单 [硬闸门]
-- [ ] Step 6 字段名白名单校验 [自动]
-- [ ] Step 7 跳过公式字段 [自动]
-- [ ] Step 8 字段已有值检查 [硬闸门]
-- [ ] Step 9 按真实列约束转换原始值 [自动]
-- [ ] Step 10 单选/多选字段匹配表格选项 [硬闸门]
-- [ ] Step 11 执行写入 [自动]
-- [ ] Step 12 写入值 vs 复查值对比 [自动]
-- [ ] Step 13 选项污染检测 [自动]
-- [ ] Step 14 换工具重试 [自动]
-- [ ] Step 15 汇总成功/失败列表 [自动]
+- [ ] Stage 1 LOAD_DEFS：读取表头、列约束、字段元数据 [自动]
+- [ ] Stage 2 VALIDATE：类型校验、值转换、已有值检查 [硬闸门]
+- [ ] Stage 3 WRITE：构造写入请求、执行写入、回读校验 [自动]
+- [ ] Stage 4 REPORT：汇总成功/失败列表 [自动]
+
+每个 Stage 结束后调用 `stage_validator.py` 校验产物；任一产物缺失或 `header_map` 无效 → 停止并输出阻塞原因。
+
+Stage 产物清单：
+
+| Stage | 产物 |
+|-------|------|
+| LOAD_DEFS | `write_request`, `header_map`, `field_metadata`, `column_constraints` |
+| VALIDATE | 上述 + `validated_values`, `coerced_values`, `existing_values` |
+| WRITE | 上述 + `write_plan`, `write_response`, `verify_result`, `polluted_options` |
+| REPORT | 上述 + `write_result` |
 
 禁止：
 - 不要静默覆盖用户已有数据
@@ -50,50 +50,45 @@ Progress:
     ↓
 ① 发送模块状态反馈：✍️ 正在写入并校验数据...
     ↓
-② 接收写入请求
+② 接收写入请求 → 产物 write_request.json
     ↓
-②b 读取字段元数据 + 表头行（获取每个字段的列位置、写入方、语义说明）
+③ LOAD_DEFS [自动]
+   ③a 调用 read_header 读取表头行 → raw_header.json
+   ③b build_header_map.py → header_map.json（字段名→列字母，识别空列/重复字段）
+   ③c 调用 read_column_formats 读取真实列约束 → raw_column_formats.json
+   ③d build_column_constraints.py → column_constraints.json
+   ③e stage_validator.py 校验 LOAD_DEFS 产物
+    ↓ 任一产物缺失 / header_map 无效 → 停止，输出阻塞原因
     ↓
-②c **Discover real column constraints**：调用 `read_column_formats` 读取每列真实 `number_format` 和 `data_validation`
+④ VALIDATE [硬闸门]
+   ④a 读取字段元数据子表 → field_metadata.json
+   ④b validate_field_metadata.py → validated_values.json
+   ④c coerce_value.py → coerced_values.json
+   ④d 读取目标行当前值 → current_row_values.json
+   ④e check_existing_values.py → existing_values.json
+       ↓ existing 非空 → REPORT (needs_user_input)
+   ④f stage_validator.py 校验 VALIDATE 产物
     ↓
-②d **写入前强制检查清单**（任何一项不通过 → 停止该字段写入）
-       - 字段名是否在表头行白名单中
-       - 字段是否为可写入类型（非公式）
-       - 该列真实约束是否已成功读取
-       - **字段值是否符合字段元数据子表的「类型」和「选项」要求**
-       - 原始值是否能被该列的真实格式/验证成功转换
-       - 单选值是否在真实下拉选项中
+⑤ WRITE [自动]
+   ⑤a prepare_write_request.py → write_plan.json（构造 +cells-set payload）
+       ↓ write_plan.errors 非空 → REPORT (partial, FIELD_NOT_FOUND / ...)
+   ⑤b stage_validator.py 校验 WRITE 产物
+   ⑤c 调用 lark-cli sheets +cells-set --writes - < write_plan.json → write_response.json
+   ⑤d 调用 verify_row_values 回读目标行 → verify_row.json
+   ⑤e compare_written_values.py → verify_result.json
+   ⑤f detect_option_pollution.py → polluted_options.json
+       ↓ 回读不一致 → 换工具重试一次 → 仍不一致 → REPORT (partial, FIELD_WRITE_FAILED)
     ↓
-②e 字段名白名单校验：不在白名单中的字段名 → 返回 `FIELD_NOT_FOUND`
-    ↓
-③ 逐字段处理（每个字段独立走以下流程）
-    ↓
-④ 跳过公式字段（字段元数据中「写入方」为 Sheets 或「类型」为公式）
-    ↓ 目标字段为公式字段 → 跳过，记录原因
-⑤ 字段已有值检查
-    ↓ 已有值 → 返回 needs_user_input，询问是否覆盖
-    ↓ 无值 → 继续
-⑥ 按真实列约束转换原始值
-    ↓ 转换失败 → 返回对应错误码（INVALID_OPTION / FORMAT_ERROR 等）
-    ↓ 转换成功 → 继续
-⑦ 单选/多选字段匹配表格选项（以 `read_column_formats` 返回的真实 items 为准）
-    ↓ 无法匹配 → 返回 INVALID_OPTION 错误，列出全部现有选项
-    ↓ 匹配成功 → 用表格选项原文构造写入值
-⑧ 执行写入（必须按「字段名→值」映射，禁止按数组顺序）
-    ↓
-⑨ 写入值 vs 复查值对比
-    ↓ 一致 → 此字段验证通过
-    ↓ 不一致 → 换工具重试
-⑩ 选项污染检测（仅单选/多选字段）
-    ↓ 选项数量较写入前增加 → 告警：提示用户手动删除被静默新建的选项
-⑪ 换工具重试
-    ↓ 重试后一致 → 验证通过
-    ↓ 重试后仍不一致 → 返回 FIELD_WRITE_FAILED
-    ↓
-⑫ 所有字段完成后，汇总成功/失败列表
+⑥ REPORT [自动]
+   汇总成功/失败列表 → write_result.json
     ↓
 返回结构化结果
 ```
+
+**核心控制原则**：
+- `header_map.json` 是字段名→列字母的唯一权威；Agent 不得凭记忆推断列位置。
+- `prepare_write_request.py` 是构造 `+cells-set` range 的唯一入口；Agent 不得自己拼接 `range`。
+- `stage_validator.py` 是阶段硬闸门；缺少产物时不得进入下一阶段。
 
 ## 返回格式
 
@@ -228,18 +223,38 @@ JSON
 
 ### 按字段名映射写入（禁止按位置/顺序）
 
-**致命错误模式**：把字段值按数组顺序拼接写入。正确做法是：
+**致命错误模式**：Agent 凭记忆或位置顺序把字段值拼接到列字母上。例如：
 
 ```json
-{
-  "日期": "2026-08-22",
-  "晨起体重": 67.65,
-  "体脂率": 21.6,
-  "总热量": 1768
-}
+// ❌ 错误：按位置推断
+[
+  {"range": "C<row>:C<row>", "cells": [[{"value": 68.5}]]},
+  {"range": "D<row>:D<row>", "cells": [[{"value": 0.238}]]}
+]
 ```
 
-写入时必须明确每个值对应的字段名，通过 `lark-sheets` skill 按字段名定位列，再写入单元格。禁止任何基于列顺序的隐式写入。
+正确做法：**只传字段名和值给脚本，由脚本查表头决定列字母**。
+
+```bash
+cat <<'JSON' | python3 scripts/prepare_write_request.py
+{
+  "table": "daily_record",
+  "row": 42,
+  "header_map": {"晨起体重": "C", "体脂率": "E"},
+  "column_constraints": {...},
+  "coerced_values": {"晨起体重": 68.5, "体脂率": 0.238}
+}
+JSON
+```
+
+**禁止：**
+- ❌ Agent 自己构造 `range` 或列字母
+- ❌ 使用记忆中固定的列字母（如"晨起体重一定是 C 列"）
+- ❌ 按字段顺序递增列字母（C、D、E...）
+
+**允许：**
+- ✅ 使用 `build_header_map.py` 生成的 `header_map`
+- ✅ 使用 `prepare_write_request.py` 生成的 `write_plan`
 
 ### 字段类型与写入方式
 
@@ -340,10 +355,22 @@ JSON
 
 ### 锁 3（写入后·选项数对比）
 
-1. 写入单选/多选字段前，记录该字段的选项数量 N
-2. 单元格复查通过后，重新从 `read_column_formats` 返回的 `column_constraints[col].data_validation.items` 读取该字段下拉选项数量（可与写入前缓存对比）
-3. **数量增加** → 说明有未授权选项被创建，立即单独告警用户：「⚠️ 检测到字段[XXX]被新增未授权选项[YYY]，请到飞书字段设置中手动删除」
-4. 该告警不影响本次写入的成功状态，但必须明确告知用户，不得静默忽略
+1. 写入单选/多选字段前，通过 `build_column_constraints.py` 记录该字段的选项数量 N（写入前 `column_constraints_before.json`）
+2. 单元格复查通过后，重新调用 `read_column_formats` 读取约束，并通过 `build_column_constraints.py` 生成 `column_constraints_after.json`
+3. 调用 `detect_option_pollution.py` 对比前后选项数量：
+
+   ```bash
+   cat <<'JSON' | python3 scripts/detect_option_pollution.py
+   {
+     "before": {"E": {"data_validation": {"items": ["🟢正常", "🔴异常"]}}},
+     "after": {"E": {"data_validation": {"items": ["🟢正常", "🔴异常", "🟡待定"]}}},
+     "header_map": {"大解状态": "E"}
+   }
+   JSON
+   ```
+
+4. **数量增加** → 说明有未授权选项被创建，立即单独告警用户：「⚠️ 检测到字段[XXX]被新增未授权选项[YYY]，请到飞书字段设置中手动删除」
+5. 该告警不影响本次写入的成功状态，但必须明确告知用户，不得静默忽略
 
 ## 执行写入
 
@@ -351,26 +378,82 @@ Sheets 后端通过 `lark-sheets` skill 的 `write_fields_by_name` 模式写入�
 
 **关键原则：** `+cells-set` 写入时会覆盖单元格整个对象（包括样式），因此必须在每个 cell JSON 中显式附带 `number_format`，否则原列的 `0.00%`、`h:mm` 等格式会被重置为 General。
 
-**调用命令：**
+**字段定位硬闸门：**
+- Agent **禁止**自己把字段名转成列字母，也 **禁止** 自己构造 `range`。
+- 所有 `range` 必须由 `prepare_write_request.py` 根据当前 `header_map.json` 生成。
+- 写入前必须调用 `stage_validator.py` 校验 WRITE stage 产物。
+
+**调用流程：**
 
 ```bash
-lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记录" --writes - <<'JSON'
+# 1. 构造 write_plan.json（由脚本确保列字母、number_format 正确）
+cat <<'JSON' | python3 scripts/prepare_write_request.py > write_plan.json
 {
-  "writes": [
-    {"sheet_name": "每日记录", "range": "C<row>:C<row>", "cells": [[{"value": 67.65, "number_format": "0.00"}]]},
-    {"sheet_name": "每日记录", "range": "D<row>:D<row>", "cells": [[{"value": 0.216, "number_format": "0.00%"}]]}
-  ]
+  "table": "daily_record",
+  "row": 42,
+  "header_map": {"日期": "A", "晨起体重": "C", "体脂率": "E"},
+  "column_constraints": {
+    "C": {"number_format": "0.00", "data_validation": null},
+    "E": {"number_format": "0.00%", "data_validation": null}
+  },
+  "coerced_values": {"晨起体重": 67.65, "体脂率": 0.216}
 }
 JSON
+
+# 2. 校验 WRITE stage 产物
+cat <<'JSON' | python3 scripts/stage_validator.py
+{
+  "stage": "WRITE",
+  "artifacts": {
+    "write_request": {"table": "daily_record", "date": "2026-08-22", "fields": {...}},
+    "header_map": {"valid": true, "header_map": {"晨起体重": "C", "体脂率": "E"}},
+    "field_metadata": {...},
+    "column_constraints": {...},
+    "validated_values": {...},
+    "coerced_values": {"晨起体重": 67.65, "体脂率": 0.216},
+    "existing_values": {"existing": [], "blank": ["晨起体重", "体脂率"]},
+    "write_plan": <write_plan.json 内容>
+  }
+}
+JSON
+
+# 3. 执行写入（直接使用 write_plan.json，不修改其中 range）
+lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记录" --writes - < write_plan.json
+```
+
+**`write_plan.json` 示例：**
+
+```json
+{
+  "writes": [
+    {"sheet_name": "每日记录", "range": "C42:C42", "cells": [[{"value": 67.65, "number_format": "0.00"}]], "field_name": "晨起体重"},
+    {"sheet_name": "每日记录", "range": "E42:E42", "cells": [[{"value": 0.216, "number_format": "0.00%"}]], "field_name": "体脂率"}
+  ],
+  "errors": {}
+}
 ```
 
 **`number_format` 来源：**
 - 写入前 `read_column_formats` 已读取每列真实 `number_format`，保存在 `column_constraints[col].number_format`
-- 构造 `--writes` 时，把目标列的 `number_format` 一并写入每个 cell 的 JSON
+- `prepare_write_request.py` 构造 `--writes` 时把目标列的 `number_format` 一并写入每个 cell 的 JSON
 - 百分比列传小数（如 `0.216`）+ `"0.00%"`，飞书会渲染为 `21.60%`
 - 时间列传 Excel 时间小数 + `"h:mm"` 或 `"HH:mm:ss"`
 
-健身追踪内部根据 `read_header` 得到的「字段名 → 列字母」映射，把字段名转换成列字母，构造上述 `--writes` 批量写入请求，由 `lark-sheets` skill 执行具体 CLI。
+**用户配置表写入：**
+
+`user_config` 是行-based 存储，需要额外传入 `row_map`：
+
+```bash
+cat <<'JSON' | python3 scripts/prepare_write_request.py
+{
+  "table": "user_config",
+  "header_map": {"配置选项": "A", "值": "B"},
+  "column_constraints": {"B": {"number_format": "0.00"}},
+  "coerced_values": {"当前体重": 68.5},
+  "row_map": {"当前体重": 5}
+}
+JSON
+```
 
 ### 写入后必须记录成功证据
 
@@ -464,9 +547,18 @@ Agent 只需要保证：
 
 ### 列定位
 
-- 写入前根据表头行建立「字段名 → 列字母」映射
+- 写入前必须调用 `read_header`，再由 `build_header_map.py` 建立「字段名 → 列字母」映射
+- `build_header_map.py` 会识别空列、重复字段，并返回 `valid` 状态；`valid=false` 时禁止写入
 - 每个字段独立定位到自己的列
 - **禁止假设字段顺序**：即使今天第 3 列是「体脂率」，明天也不能假设它还是第 3 列
+- 所有 range 由 `prepare_write_request.py` 生成，Agent 不得自行拼接
+
+### 字段名存在性校验
+
+写入前由 `prepare_write_request.py` 再次核对：
+- 字段名必须存在于当前 `header_map`
+- 字段名必须存在于字段元数据子表（由 `validate_field_metadata.py` 校验）
+- 任一不存在 → 返回 `FIELD_NOT_FOUND`，不写入
 
 ## 写入后回读验证
 
@@ -474,7 +566,7 @@ Agent 只需要保证：
 
 ### 写入值 vs 复查值对比
 
-**复查基准：以表头行返回的字段全集为准，禁止以写入时内存中的字段映射为基准。**
+**复查基准：以 `header_map` 和 `write_plan` 为准，禁止以写入时内存中的字段映射为基准。**
 
 调用 `lark-sheets` skill 的 `verify_row_values` 模式读取目标行：
 
@@ -484,14 +576,35 @@ lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录
 
 `LAST_COL` 来自 `read_header` 返回的 `col_indices[-1]`。若整行数据较大，改用 `--output-path ./verify-row.json` 读取文件内容再核对。
 
-按表头行字段全集逐一核对读取值与写入值：
+读取到 `verify_row.json` 后，调用 `compare_written_values.py`：
+
+```bash
+cat <<'JSON' | python3 scripts/compare_written_values.py
+{
+  "write_plan": <write_plan.json 内容>,
+  "verify_row_values": {"晨起体重": 67.65, "体脂率": 0.216}
+}
+JSON
+```
+
+输出：
+
+```json
+{
+  "matched": ["晨起体重"],
+  "mismatched": [{"field": "体脂率", "expected": 0.216, "actual": 0.238}],
+  "missing": []
+}
+```
+
+按结果处理：
 
 ```
-读取值 vs 写入的值（按表头行字段全集逐一核对）
+compare_written_values.py 结果
     ↓
-    ├─ 全部一致 → 此字段验证通过
-    ├─ 写入值 vs 复查值不一致 → 执行换工具重试
-    └─ 无法读取到目标行/单元格 → 视为写入失败，不得标记为 success
+    ├─ matched 包含全部写入字段 → 此字段验证通过
+    ├─ mismatched 非空 → 执行换工具重试
+    └─ missing 非空 → 视为写入失败，不得标记为 success
 ```
 
 ### 验证通过的硬性标准
@@ -622,6 +735,16 @@ lark-cli sheets +csv-get --url "<fitness.sheets.url>" --sheet-name "每日记录
 原因：写入后字段[XXX]的选项数量增加，存在未授权选项[YYY]
 操作：请到飞书表格的字段设置中手动删除该选项
 影响：本次写入值本身有效，但选项列表被污染
+
+❌ 表头存在重复字段[XXX]
+原因：字段[XXX]在当前表头行中出现多次（如 C 列和 G 列），无法确定写入哪一列
+操作：请检查飞书表格表头，删除或重命名重复字段
+影响：该字段未写入，返回 `DUPLICATE_HEADER`
+
+❌ 当前阶段缺少必要产物[YYY]
+原因：Progress Checklist 阶段[XXX]的必要产物未生成或无效，无法继续执行
+操作：请检查前置步骤是否成功完成，或回复「重来」从 Stage 1 开始
+影响：写入流程被硬闸门阻塞，未执行任何写入
 ```
 
 ## 输入输出示例

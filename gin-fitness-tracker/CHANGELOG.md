@@ -37,6 +37,38 @@
 
 ---
 
+### v3.5.0 — 2026-08-30
+
+**更新类型**：重构/优化
+
+**涉及文件**：
+- `skills/write-verify/SKILL.md`
+- `knowledge/sheets-calling-patterns.md`
+- `knowledge/field-guide.md`
+- `scripts/build_header_map.py`
+- `scripts/build_column_constraints.py`
+- `scripts/prepare_write_request.py`
+- `scripts/check_existing_values.py`
+- `scripts/compare_written_values.py`
+- `scripts/detect_option_pollution.py`
+- `scripts/stage_validator.py`
+- `scripts/progress_reporter.py`
+- `tests/`
+- `SKILL.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **Progress Checklist 控制层补强**：把 `write-verify` 从 prompt 级 checklist 升级为 4 Stage（LOAD_DEFS → VALIDATE → WRITE → REPORT）脚本驱动状态机
+2. **新增字段定位硬闸门**：`build_header_map.py` 从表头建立字段名→列字母映射，识别空列、重复字段；`prepare_write_request.py` 生成 `+cells-set` payload，Agent 禁止自己构造 range
+3. **新增列约束规范化脚本**：`build_column_constraints.py` 把 `lark-cli +cells-get` 输出转换为标准 `column_constraints`
+4. **新增写入校验脚本**：`check_existing_values.py`、`compare_written_values.py`、`detect_option_pollution.py` 分别负责已有值检查、回读对比、选项污染检测
+5. **新增阶段校验与进度渲染脚本**：`stage_validator.py` 校验阶段产物，`progress_reporter.py` 输出 micro-checklist
+6. **新增单元测试**：覆盖空列不错位、重复字段、字段映射、阶段校验等场景（共 21 个测试）
+7. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.4.2` 升级到 `v3.5.0`
+
+---
+
 ### v3.4.2 — 2026-08-29
 
 **更新类型**：优化

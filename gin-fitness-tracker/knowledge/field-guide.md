@@ -150,16 +150,19 @@ storage:
 | 公式字段 | 读取计算结果 | **不提取、不写入** | `validate_field_metadata.py` 返回跳过错误 |
 | BMI | 读取静态数值 | Agent 根据身高和晨起体重计算 | `validate_field_metadata.py` 按「数字」校验 |
 
-**写入流程（三层校验）：**
+**写入流程（四层校验）：**
 
 1. **语义提取层**：`collect-data` 用 LLM 从自然语言中提取字段和候选值
 2. **元数据类型校验层**：`write-verify` 调用 `validate_field_metadata.py`，按字段元数据子表的「类型」和「选项」做硬校验
 3. **真实格式转换层**：`coerce_value.py` 根据 `read_column_formats` 读取的真实 `number_format` / `data_validation` 做最终转换
+4. **字段定位硬闸门**：`build_header_map.py` 建立字段名→列字母映射，`prepare_write_request.py` 构造 `+cells-set` payload，Agent 不得自己推断列位置
 
 **校验原则：**
 - 字段元数据子表是「设计意图」的唯一权威：`write-verify` 必须按子表的「类型」校验值
 - `read_column_formats` 是「真实约束」的唯一权威：`coerce_value.py` 按真实单元格格式做最终转换
+- `build_header_map.py` 是「字段位置」的唯一权威：所有 range 必须由 `prepare_write_request.py` 生成
 - 当两者不一致时（如元数据说「时间」但真实列不是时间格式），返回 `FIELD_TYPE_MISMATCH` warning，以真实约束为准写入，但提示用户检查表格配置
+- 当表头存在重复字段或空列导致位置歧义时，`build_header_map.py` 返回 `DUPLICATE_HEADER` 或正确跳过空列，禁止 Agent 按位置推断
 
 **选项来源（Sheets 后端）**：
 - 优先调用 `lark-sheets` skill 的 `read_column_formats` 模式一次性读取全部列的数据验证：
@@ -197,13 +200,13 @@ DataStore 写入后必须回读验证。若回读不一致：
 
 - ❌ 错误做法：不重新读取字段定义，凭记忆组织字段映射写入
 - 后果：字段名或结构与飞书实际表不一致，数据写错字段
-- ✅ 正确做法：写入前必须重新读取字段定义，以其实时返回的字段名组织写入内容
+- ✅ 正确做法：写入前必须重新读取字段定义，并由 `build_header_map.py` 生成 `header_map`；以 `prepare_write_request.py` 输出的 range 为唯一写入依据
 
 ### 错误3：按位置/顺序构造写入内容
 
-- ❌ 错误做法：把字段值按数组顺序拼接写入
-- 后果：值被写入错误的字段
-- ✅ 正确做法：写入内容必须组织为"字段名→值"键值对，通过对应 skill 按字段映射写入
+- ❌ 错误做法：把字段值按数组顺序拼接写入，或根据记忆推断列字母（如"第1个字段→C列、第2个→D列"）
+- 后果：当表头中间插入空列或字段顺序变化时，值被写入错误字段
+- ✅ 正确做法：写入内容必须组织为"字段名→值"键值对，通过 `prepare_write_request.py` 按当前 `header_map` 生成 range；Agent 禁止自己构造列字母
 
 ### 错误4：把语义理解的结果直接写入单选字段
 

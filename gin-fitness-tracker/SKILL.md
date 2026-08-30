@@ -12,7 +12,7 @@ description: >
   讯记同步与初始化配置。
   **触发后必须立即发送反馈"🏃 健身追踪技能已激活，正在连接数据..."，然后再执行任何操作。**
   不用于制定训练计划、每周复盘分析、推荐健身房/补剂/动作或提供健身建议。
-version: "v3.4.2"
+version: "v3.5.0"
 ---
 
 # 健身追踪 v3.3.0
@@ -301,6 +301,8 @@ version: "v3.4.2"
 | `LARK_SKILL_UNAVAILABLE` | 所选后端依赖的 lark-sheets skill 未安装或不可用 | 检查是否已安装 lark-sheets skill |
 | `FIELD_TYPE_MISMATCH` | 字段元数据中的类型/选项与真实表格列验证不一致 | 返回 warning，提示用户检查表格字段配置；不阻塞其他字段写入 |
 | `FIELD_NOT_FOUND` | 写入请求包含表头行中不存在的字段名 | 停止该字段写入；字段名必须来自运行时读取的表头行白名单 |
+| `DUPLICATE_HEADER` | 表头行中存在重复字段名 | 停止写入；提示用户检查并删除/重命名重复字段 |
+| `ROW_MAP_MISSING` | 用户配置表写入时缺少字段→行号映射 | 停止该字段写入；必须提供 `row_map` |
 | `FIELD_WRITE_FAILED` | 字段写入失败 | 换工具重试后仍失败，不阻塞其他字段 |
 | `INVALID_OPTION` | 选项无效 | 给出可选值列表，请用户重选；一律禁止新建选项（飞书 API 会静默自动创建） |
 | `XUNJI_UNAVAILABLE` | 讯记不可用 | 提示安装对应讯记 skill，继续运行 |

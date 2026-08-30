@@ -175,27 +175,52 @@ lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记�
 **前提：** 必须先完成 `read_header` 和 `read_column_formats`，得到 `header_map` 和 `column_constraints`，并根据约束完成值转换。
 
 **步骤：**
-1. 健身追踪内部根据 `read_header` 得到的映射，把字段名转换成列字母
-2. 根据 `read_column_formats` 得到的 `column_constraints`，把原始值转换为符合列格式/验证的值
-3. 构造 `+cells-set` 的 `--writes` 批量写入请求：**每个 cell 必须附带 `number_format`**，防止 `+cells-set` 写入时把原列格式重置为 General
-4. 调用 `lark-sheets` skill 执行
+1. 必须先完成 `read_header` 和 `read_column_formats`，得到 `header_map` 和 `column_constraints`
+2. 调用 `scripts/build_header_map.py` 从 `read_header` 输出生成 `header_map.json`
+3. 调用 `scripts/build_column_constraints.py` 从 `read_column_formats` 输出生成 `column_constraints.json`
+4. 调用 `scripts/coerce_value.py` 把原始值转换为符合列格式/验证的值
+5. 调用 `scripts/prepare_write_request.py` 构造 `+cells-set` 的 `--writes` 批量写入请求：**每个 cell 必须附带 `number_format`**，防止 `+cells-set` 写入时把原列格式重置为 General
+6. 调用 `lark-sheets` skill 执行
 
-**命令：**
+**`prepare_write_request.py` 调用示例：**
+
 ```bash
-lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记录" --writes - <<'JSON'
+cat <<'JSON' | python3 scripts/prepare_write_request.py > write_plan.json
 {
-  "writes": [
-    {"sheet_name": "每日记录", "range": "C<row>:C<row>", "cells": [[{"value": 67.65, "number_format": "0.00"}]]},
-    {"sheet_name": "每日记录", "range": "D<row>:D<row>", "cells": [[{"value": 0.216, "number_format": "0.00%"}]]}
-  ]
+  "table": "daily_record",
+  "row": 42,
+  "header_map": {"晨起体重": "C", "体脂率": "E"},
+  "column_constraints": {
+    "C": {"number_format": "0.00", "data_validation": null},
+    "E": {"number_format": "0.00%", "data_validation": null}
+  },
+  "coerced_values": {"晨起体重": 67.65, "体脂率": 0.216}
 }
 JSON
+```
+
+**`write_plan.json` 输出示例（直接作为 `--writes` 参数）：**
+
+```json
+{
+  "writes": [
+    {"sheet_name": "每日记录", "range": "C42:C42", "cells": [[{"value": 67.65, "number_format": "0.00"}]], "field_name": "晨起体重"},
+    {"sheet_name": "每日记录", "range": "E42:E42", "cells": [[{"value": 0.216, "number_format": "0.00%"}]], "field_name": "体脂率"}
+  ]
+}
+```
+
+**执行写入命令：**
+
+```bash
+lark-cli sheets +cells-set --url "<fitness.sheets.url>" --sheet-name "每日记录" --writes - < write_plan.json
 ```
 
 **注意：**
 - `number_format` 来自 `read_column_formats` 返回的 `column_constraints[col].number_format`
 - 百分比列必须传小数（如 `0.216` 表示 21.6%），并附带 `"number_format": "0.00%"`，飞书才会渲染为 `21.60%`
 - 不传 `number_format` 时，`+cells-set` 会覆盖原单元格样式为 General，导致格式丢失
+- **Agent 禁止自己构造 `range` 或列字母**；所有 `--writes` 必须由 `prepare_write_request.py` 生成
 
 **输入参数：**
 - `fitness.sheets.url`

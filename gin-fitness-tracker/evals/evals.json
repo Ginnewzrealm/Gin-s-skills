@@ -804,6 +804,112 @@
           "value": "具体字段规则"
         }
       ]
+    },
+    {
+      "id": "eval-41",
+      "name": "版本号已更新到 v3.5.0",
+      "input": "读取 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "version: \"v3.5.0\""
+        }
+      ]
+    },
+    {
+      "id": "eval-42",
+      "name": "字段定位脚本存在",
+      "input": "读取 scripts/ 目录",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "scripts/build_header_map.py"
+        },
+        {
+          "type": "file_exists",
+          "path": "scripts/build_column_constraints.py"
+        },
+        {
+          "type": "file_exists",
+          "path": "scripts/prepare_write_request.py"
+        }
+      ]
+    },
+    {
+      "id": "eval-43",
+      "name": "write-verify 使用 Stage 状态机",
+      "input": "读取 write-verify/SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "Stage 1 LOAD_DEFS"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "stage_validator.py"
+        },
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "字段定位硬闸门"
+        }
+      ]
+    },
+    {
+      "id": "eval-44",
+      "name": "Agent 禁止自己构造 range",
+      "input": "读取 write-verify/SKILL.md 和 sheets-calling-patterns.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "skills/write-verify/SKILL.md",
+          "value": "Agent 不得自己构造 range"
+        },
+        {
+          "type": "file_contains",
+          "path": "knowledge/sheets-calling-patterns.md",
+          "value": "Agent 禁止自己构造 `range` 或列字母"
+        }
+      ]
+    },
+    {
+      "id": "eval-45",
+      "name": "新增字段定位相关单元测试",
+      "input": "读取 tests/ 目录",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "tests/test_build_header_map.py"
+        },
+        {
+          "type": "file_exists",
+          "path": "tests/test_prepare_write_request.py"
+        },
+        {
+          "type": "file_exists",
+          "path": "tests/test_stage_validator.py"
+        }
+      ]
+    },
+    {
+      "id": "eval-46",
+      "name": "CHANGELOG 包含 v3.5.0 条目",
+      "input": "读取 CHANGELOG.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "CHANGELOG.md",
+          "value": "v3.5.0"
+        },
+        {
+          "type": "file_contains",
+          "path": "CHANGELOG.md",
+          "value": "Progress Checklist 控制层补强"
+        }
+      ]
     }
   ]
 }
