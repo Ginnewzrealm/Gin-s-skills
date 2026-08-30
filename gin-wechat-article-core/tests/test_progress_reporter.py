@@ -33,7 +33,7 @@ def test_render_macro_shows_current_phase():
     assert "阶段 3/6：大纲生成与确认" in result
     assert "展示候选大纲" in result
     assert "← 当前" in result
-    assert "- [x]" in result
+    assert "- [✓]" in result
     assert "- [ ]" in result
 
 
@@ -74,8 +74,8 @@ def test_render_macro_completed_phases_marked():
             {"name": "按章节逐段生成正文", "tags": ["自动"], "status": "current"},
         ],
     )
-    assert "阶段 1/6：初始化与需求澄清 [x]" in result
-    assert "阶段 2/6：素材诊断与角度选择 [x]" in result
-    assert "阶段 3/6：大纲生成与确认 [x]" in result
+    assert "阶段 1/6：初始化与需求澄清 [✓]" in result
+    assert "阶段 2/6：素材诊断与角度选择 [✓]" in result
+    assert "阶段 3/6：大纲生成与确认 [✓]" in result
     assert "阶段 4/6：正文写作与人工改写" in result
     assert "阶段 5/6：润色、小标题与标题优化 [待开始]" in result

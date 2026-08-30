@@ -36,7 +36,7 @@ PHASE_NAMES = {
 
 def _render_step(step: dict, is_current: bool, seq: int) -> str:
     status = step.get("status", "pending")
-    checkbox = "[x]" if status == "done" else "[ ]"
+    checkbox = "[✓]" if status == "done" else "[ ]"
     tags = " ".join(f"[{tag}]" for tag in step.get("tags", []))
     current_marker = "  ← 当前" if is_current else ""
     return f"- {checkbox} Step {seq} {step['name']} {tags}{current_marker}"
@@ -67,7 +67,7 @@ def render_macro(
     for phase_num in range(1, 7):
         phase_title = PHASE_NAMES[phase_num]
         if phase_num < current_phase_num:
-            lines.append(f"{phase_title} [x]")
+            lines.append(f"{phase_title} [✓]")
         elif phase_num == current_phase_num:
             lines.append(f"{phase_title}")
             if steps:
