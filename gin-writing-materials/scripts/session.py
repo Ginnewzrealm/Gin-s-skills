@@ -15,6 +15,7 @@ def load_or_create(material_root, topic):
             return json.load(f)
     default = {
         "topic": topic,
+        "stage": "project_located",
         "rounds": 0,
         "methods_used": [],
         "domain": None,
@@ -59,6 +60,12 @@ def record_fragment(material_root, topic, fragment_id, direction, confidence):
 def set_domain(material_root, topic, domain):
     s = load_or_create(material_root, topic)
     s["domain"] = domain
+    save(material_root, topic, s)
+
+
+def set_stage(material_root, topic, stage):
+    s = load_or_create(material_root, topic)
+    s["stage"] = stage
     save(material_root, topic, s)
 
 

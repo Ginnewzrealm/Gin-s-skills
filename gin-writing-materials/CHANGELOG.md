@@ -1,4 +1,11 @@
 # CHANGELOG
+## 2026-08-30 · v0.4.0 · minor
+- 新增 Progress Checklist 进度可视化设计
+- 新增 `scripts/progress_reporter.py` 统一渲染 mine/review/correct/build 各动作 checklist
+- 新增 `scripts/stage_validator.py` 阶段决策与跳转合法性校验
+- `scripts/session.py` 增加 `stage` 字段持久化，支持会话恢复时重建 checklist
+- `SKILL.md` 增加 Progress Checklist 使用规则、步骤标签、阻塞提示与禁止项
+
 ## 2026-08-23 · v0.3.0 · minor
 - 重构输出结构：每个主题一个 `{日期}-{中文主题名}/` 项目文件夹
 - 新增内部文件命名：`00-主题定义.md`、`01-会话状态.json`、`02-素材碎片/`、`03-素材文档.md`
