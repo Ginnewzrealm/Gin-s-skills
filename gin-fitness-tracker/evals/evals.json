@@ -807,13 +807,13 @@
     },
     {
       "id": "eval-41",
-      "name": "版本号已更新到 v3.5.0",
+      "name": "版本号已更新到 v3.5.1",
       "input": "读取 SKILL.md",
       "checks": [
         {
           "type": "file_contains",
           "path": "SKILL.md",
-          "value": "version: \"v3.5.0\""
+          "value": "version: \"v3.5.1\""
         }
       ]
     },
@@ -908,6 +908,88 @@
           "type": "file_contains",
           "path": "CHANGELOG.md",
           "value": "Progress Checklist 控制层补强"
+        }
+      ]
+    },
+    {
+      "id": "eval-47",
+      "name": "触发分类脚本存在",
+      "input": "读取 scripts/ 目录",
+      "checks": [
+        {
+          "type": "file_exists",
+          "path": "scripts/trigger_classifier.py"
+        },
+        {
+          "type": "file_contains",
+          "path": "scripts/trigger_classifier.py",
+          "value": "triggered"
+        },
+        {
+          "type": "file_contains",
+          "path": "scripts/trigger_classifier.py",
+          "value": "reply_entry"
+        }
+      ]
+    },
+    {
+      "id": "eval-48",
+      "name": "SKILL.md 触发规则基于 trigger_classifier.py",
+      "input": "读取 SKILL.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "scripts/trigger_classifier.py"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "字段指纹"
+        },
+        {
+          "type": "file_contains",
+          "path": "SKILL.md",
+          "value": "否定触发词"
+        }
+      ]
+    },
+    {
+      "id": "eval-49",
+      "name": "触发测试覆盖边界场景",
+      "input": "读取 tests/test_trigger_classifier.py",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "tests/test_trigger_classifier.py",
+          "value": "test_negative_pdca"
+        },
+        {
+          "type": "file_contains",
+          "path": "tests/test_trigger_classifier.py",
+          "value": "test_makeup_too_vague"
+        },
+        {
+          "type": "file_contains",
+          "path": "tests/test_trigger_classifier.py",
+          "value": "test_sleep_time_fingerprint"
+        }
+      ]
+    },
+    {
+      "id": "eval-50",
+      "name": "CHANGELOG 包含 v3.5.1 触发优化条目",
+      "input": "读取 CHANGELOG.md",
+      "checks": [
+        {
+          "type": "file_contains",
+          "path": "CHANGELOG.md",
+          "value": "v3.5.1"
+        },
+        {
+          "type": "file_contains",
+          "path": "CHANGELOG.md",
+          "value": "trigger_classifier.py"
         }
       ]
     }

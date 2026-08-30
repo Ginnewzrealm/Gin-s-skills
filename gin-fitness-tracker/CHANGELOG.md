@@ -37,6 +37,32 @@
 
 ---
 
+### v3.5.1 — 2026-08-30
+
+**更新类型**：优化
+
+**涉及文件**：
+- `SKILL.md`
+- `config/openclaw-config.md`
+- `scripts/trigger_classifier.py`
+- `tests/test_trigger_classifier.py`
+- `evals/evals.json`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **新增触发分类脚本 `trigger_classifier.py`**：把触发逻辑从 prompt 中抽离为可测试脚本，输出 `triggered`/`mode`/`reason`/`excluded_by`
+2. **增强语义触发词表**：覆盖身体/睡眠/饮食/训练字段的同义词（如"体重"→"晨起体重"、"昨晚12点睡的"→"入睡时间"）
+3. **引入字段指纹触发**：消息含字段名/同义词 + 数值/时间/选项时触发 `reply_entry`
+4. **增加否定触发词**：避免与 `gin-fitness-pdca`（PDCA/周报/分析/总结）和 `gin-workout-planner`（练胸/计划/安排/打卡）冲突
+5. **明确触发意图分类**：`daily_poll` / `reply_entry` / `makeup` / `query` / `init` / `sync`
+6. **重写 `SKILL.md` 触发与路由章节**：基于 `trigger_classifier.py` 的 `mode` 路由，不再依赖 Agent 自行推断
+7. **更新 `config/openclaw-config.md`**：`user_message` 入口先经过 `trigger_classifier.py`
+8. **新增触发相关单元测试 17 个**：覆盖字面触发、字段指纹、查询、补数据、配置、同步、否定触发、模糊词
+9. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.5.0` 升级到 `v3.5.1`
+
+---
+
 ### v3.5.0 — 2026-08-30
 
 **更新类型**：重构/优化
