@@ -180,8 +180,9 @@ def rewrite(selected):
             _, cleaned = common.extract_responsibility_level(original)
             clauses = _split_clauses(cleaned)
 
-            action, rest = _extract_action(clauses)
-            result, rest = _extract_result(rest)
+            # 先拆结果（Z 最 distinctive：带数字+结果提示词），再拆动作（X）
+            result, rest = _extract_result(clauses)
+            action, rest = _extract_action(rest)
             task = "、".join(rest) if rest else ""
 
             capability = _extract_capability_tag(original)
