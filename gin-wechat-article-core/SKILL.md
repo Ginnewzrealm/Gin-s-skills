@@ -90,11 +90,12 @@ checklist 步骤标签：
    由主 skill 写入 `context.md.optional_deps`。
 6. 创建或读取 `output_dir/<article_id>/context.md`；若同目录下 `progress.md` 存在，则读取并恢复 `stage` 与关键决策，按 `blocked.md` 继续等待用户确认；否则按初始 stage 启动新流程。
 7. **会话恢复时输出**：若同目录下 `progress.md` 已存在，主 skill 先调用 `progress_reporter.render_macro()` 输出完整 6 阶段进度状态（含当前步骤高亮），再继续后续流程。
-8. **调用 `scripts/stage_validator.py` 决定并校验下一步：**
-   - 主 skill 调用 `stage_validator.decide_next_stage(progress.md)` 获取当前 stage。
-   - 每次推进到下一个 stage 前，调用 `stage_validator.validate_next_step()` 校验阶段转换、必要字段、模板白名单和 narrative_protocol 完整性。
-   - 校验失败时，主 skill 停留在当前 stage，展示错误信息并等待用户处理。
-   - 校验通过后，主 skill 调用 `progress_reporter.render_macro()` 输出当前宏观 6 阶段进度仪表盘，再进入子 skill 或硬闸门等待。
+8. **调用 `scripts/flow_controller.py` 决定并校验下一步（强制）：**
+   - 主 skill 每次启动时，先调用 `flow_controller.py` 获取当前 stage 和下一步校验结果。
+   - 每次推进到下一个 stage 前，**必须**再次调用 `flow_controller.py --next-stage <target_stage>`。
+   - `flow_controller.py` 内部会调用 `stage_validator.validate_next_step()` 校验阶段转换、必要字段、子 skill 执行证据、模板白名单和 narrative_protocol 完整性。
+   - 如果 `flow_controller.py` 返回 `can_proceed: false`，主 skill **必须**停止推进，输出 `⚠️ 当前阻塞：...`，展示跳过的步骤，并等待用户处理。
+   - 只有在 `can_proceed: true` 时，主 skill 才允许更新 `context.md.stage` 并进入下一步。
 9. 根据当前 `stage` 调用对应子技能（后续流程在已选风格语境下进行）。
 
 每个 AI 输出节点（大纲候选、正文初稿、润色稿、标题候选、自检报告）之后均设置人工审阅节点，用户可确认、修改或要求重生成。
@@ -174,9 +175,10 @@ checklist 步骤标签：
    → polished → titled → title_confirmed → quality_checked
    → finalized → markdown_output → publish_decision
    ```
-   - 每个 AI/人工节点结束后，主 skill 必须更新 `context.md.stage` 到下一阶段。
-   - 主 skill 每次启动时，先调用 `stage_validator.decide_next_stage(progress.md)` 恢复当前阶段，再调用 `stage_validator.validate_next_step()` 校验下一步合法性。
+   - 每个 AI/人工节点结束后，主 skill 必须调用 `scripts/flow_controller.py` 校验下一步是否合法。
+   - 主 skill 每次启动时，先调用 `flow_controller.py` 恢复当前阶段，再校验下一步合法性。
    - 不允许跳过任何 stage 或核心子 skill。
+   - **推进 stage 的唯一方式**：`flow_controller.py --next-stage <target_stage>` 返回 `can_proceed: true`。禁止主 skill 在 `can_proceed: false` 时自行更新 `context.md.stage`。
 
 3. **核心子 skill 缺失时停止，不自动 fallback**
    - 如果 `gin-wechat-article-writer`、`gin-wechat-article-polish`、`gin-wechat-article-outline`、`gin-wechat-article-quality` 任一核心子 skill 缺失或调用失败，主 skill 应明确提示用户并**暂停流程**，等待用户处理。
@@ -458,6 +460,9 @@ version: 0.3.5
 - `scripts/style_selector.py`：接收输入目录路径和可用模板列表，扫描素材并基于 `match_signals` 推荐最匹配的风格。主 skill 将结果写入 `context.md.selected_template` 和 `context.md.materials_summary`。
 - `scripts/dep_checker.py`：读取 `config.yaml` 的 `optional_dependencies`，检查可选外部 skill 的安装状态并返回。主 skill 将其写入 `context.md.optional_deps`。
 - `scripts/template_loader.py`：接收默认模板目录和用户模板目录，加载/合并 YAML 模板规则，供主 skill 和其他子技能使用。
+- `scripts/stage_validator.py`：校验 stage 转换合法性、必要字段、子 skill 执行证据、模板白名单和 narrative_protocol 完整性。
+- `scripts/sub_skill_guard.py`：检查某个子 skill 是否真正执行过（输出文件是否存在、是否晚于 context.md）。
+- `scripts/flow_controller.py`：**主 skill 推进 stage 的唯一入口**，封装了读取 progress.md、读取 context.md、调用 stage_validator、渲染 Progress Checklist 的完整流程。
 
 ## 输出目录结构
 

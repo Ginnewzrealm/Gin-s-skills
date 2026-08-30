@@ -110,3 +110,35 @@ def render_micro(
         lines.append(_render_step(step, is_current, idx))
 
     return "\n".join(lines)
+
+
+def render_skipped_warnings(skipped_sub_skills: list[dict]) -> str:
+    """渲染被跳过子 skill 的警告信息。"""
+    if not skipped_sub_skills:
+        return ""
+
+    lines = ["", "⚠️ 检测到流程异常："]
+    for item in skipped_sub_skills:
+        lines.append(f"- [跳过了] {item['sub_skill']}")
+        if "reason" in item:
+            lines.append(f"  原因：{item['reason']}")
+
+    lines.append("")
+    lines.append("建议：")
+    lines.append("- 输入「补做」回到对应子 skill 执行")
+    lines.append("- 或输入「继续」强制推进（不推荐）")
+    return "\n".join(lines)
+
+
+def render_blocker(step_name: str, errors: list[str]) -> str:
+    """渲染阻塞提示。"""
+    lines = [
+        f"⚠️ 当前阻塞：{step_name}",
+        "",
+        "原因：",
+    ]
+    for err in errors:
+        lines.append(f"- {err}")
+    lines.append("")
+    lines.append("流程已暂停。请修复上述问题后再继续。")
+    return "\n".join(lines)

@@ -38,6 +38,88 @@ STAGE_TRANSITIONS = {
     "publish_decision": [],
 }
 
+# 硬闸门 stage：用户必须明确确认才能推进
+HARD_GATE_STAGES = {
+    "clarify",
+    "role_boundary",
+    "outline_generated",
+    "outline_selected",
+    "draft_written",
+    "titled",
+    "quality_checked",
+    "publish_decision",
+}
+
+
+def is_hard_gate(stage: str) -> bool:
+    """判断 stage 是否为硬闸门。"""
+    return stage in HARD_GATE_STAGES
+
+
+# 每个 stage 依赖的子 skill 及其输出产物（文件路径相对于 output_dir/<article_id>/）
+STAGE_SUB_SKILL_REQUIREMENTS: Dict[str, Dict[str, Any]] = {
+    "role_boundary": {
+        "sub_skill": "gin-wechat-article-angle",
+        "context_keys": ["angle_candidates", "diagnosis_report"],
+        "output_files": ["reports/diagnosis_report.md"],
+    },
+    "angle_matched": {
+        "sub_skill": "gin-wechat-article-angle",
+        "context_keys": ["angle_candidates", "diagnosis_report"],
+        "output_files": ["reports/diagnosis_report.md"],
+    },
+    "outline_generated": {
+        "sub_skill": "gin-wechat-article-outline",
+        "context_keys": ["outline_candidates"],
+        "output_files": ["outlines/outline_candidates.md"],
+    },
+    "outline_selected": {
+        "sub_skill": "gin-wechat-article-outline",
+        "context_keys": ["outline_candidates"],
+        "output_files": ["outlines/outline_candidates.md"],
+    },
+    "outline_confirmed": {
+        "sub_skill": "gin-wechat-article-outline",
+        "context_keys": ["selected_outline"],
+        "output_files": ["outlines/outline_candidates.md"],
+    },
+    "draft_written": {
+        "sub_skill": "gin-wechat-article-writer",
+        "context_keys": ["draft_path"],
+        "output_files": ["drafts/article_draft.md"],
+    },
+    "draft_revised": {
+        "sub_skill": "gin-wechat-article-writer",
+        "context_keys": ["draft_path"],
+        "output_files": ["drafts/article_draft.md"],
+    },
+    "polished": {
+        "sub_skill": "gin-wechat-article-polish",
+        "context_keys": ["polished_draft_path"],
+        "output_files": ["drafts/polished_draft.md"],
+    },
+    "titled": {
+        "sub_skill": "gin-wechat-article-title",
+        "context_keys": ["title_candidates"],
+        "output_files": ["titles/title_candidates.md"],
+    },
+    "title_confirmed": {
+        "sub_skill": "gin-wechat-article-title",
+        "context_keys": ["selected_title"],
+        "output_files": ["titles/title_candidates.md"],
+    },
+    "quality_checked": {
+        "sub_skill": "gin-wechat-article-quality",
+        "context_keys": ["quality_report"],
+        "output_files": ["reports/quality_report.md"],
+    },
+    "finalized": {
+        "sub_skill": "gin-wechat-article-quality",
+        "context_keys": ["quality_report"],
+        "output_files": ["reports/quality_report.md"],
+    },
+}
+
 # 每个 stage 进入前必须存在的字段（context.md 中）
 STAGE_REQUIRED_FIELDS: Dict[str, List[str]] = {
     "init": [],
@@ -144,11 +226,68 @@ def decide_next_stage(
     return default_stage
 
 
+def validate_sub_skill_execution(
+    stage: str,
+    context: Dict[str, Any],
+    article_dir: Optional[Path] = None,
+) -> List[str]:
+    """校验进入 stage 前，依赖的子 skill 是否已经真正执行过。
+
+    检查维度：
+    1. context.md 中必须存在对应的输出 key
+    2. 如果有 article_dir，检查输出文件是否真实存在且晚于 context.md
+    """
+    errors = []
+    req = STAGE_SUB_SKILL_REQUIREMENTS.get(stage)
+    if not req:
+        return errors
+
+    sub_skill = req["sub_skill"]
+
+    # 检查 context key
+    missing_keys = []
+    empty_keys = []
+    for key in req.get("context_keys", []):
+        value = context.get(key)
+        if value is None:
+            missing_keys.append(key)
+        elif isinstance(value, (dict, list)) and not value:
+            empty_keys.append(key)
+        elif isinstance(value, str) and not value.strip():
+            empty_keys.append(key)
+
+    if missing_keys:
+        errors.append(
+            f"子 skill {sub_skill} 似乎被跳过：context.md 缺少字段 {missing_keys}，"
+            f"进入阶段 {stage} 前必须先执行 {sub_skill}"
+        )
+    if empty_keys:
+        errors.append(
+            f"子 skill {sub_skill} 输出为空：context.md 中 {empty_keys} 没有实际内容"
+        )
+
+    # 检查输出文件
+    if article_dir:
+        for rel_file in req.get("output_files", []):
+            file_path = article_dir / rel_file
+            if not file_path.exists():
+                errors.append(
+                    f"子 skill {sub_skill} 输出文件缺失：{rel_file}"
+                )
+            elif file_path.stat().st_size == 0:
+                errors.append(
+                    f"子 skill {sub_skill} 输出文件 {rel_file} 为空"
+                )
+
+    return errors
+
+
 def validate_next_step(
     current_stage: str,
     next_stage: str,
     context: Dict[str, Any],
     available_templates: Optional[List[Dict[str, Any]]] = None,
+    article_dir: Optional[Path] = None,
 ) -> List[str]:
     """综合校验下一步是否可执行。
 
@@ -157,6 +296,7 @@ def validate_next_step(
     errors = []
     errors.extend(validate_stage_transition(current_stage, next_stage))
     errors.extend(validate_stage_prerequisites(next_stage, context))
+    errors.extend(validate_sub_skill_execution(next_stage, context, article_dir))
 
     if available_templates and "selected_template" in context:
         template_id = context.get("selected_template", {}).get("id")

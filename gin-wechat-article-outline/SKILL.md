@@ -64,9 +64,32 @@ Progress:
 7. 数量不足时提示用户补充素材。
 8. 用户要求重生成时，使用不同角度组合避免重复。
 
-## 输出
+## 被跳过检测
 
-- 候选方案 A/B/C/D，按推荐度从高到低排列。
+如果主 skill 调用本 skill 时，发现 `context.md` 中以下任一条件不满足，说明前置子 skill 可能未执行，本 skill 应返回错误并暂停流程：
+
+1. `narrative_protocol` 不存在或为空
+2. `angle_candidates` 不存在或为空
+3. `diagnosis_report` 不存在或为空
+4. `materials_summary.materials_path` 不存在或 `materials_full.md` 文件不存在
+
+**返回错误格式**：
+
+```text
+❌ 前置条件缺失，无法生成候选大纲（gin-wechat-article-outline）。
+原因：context.md 中缺少 {具体字段}
+操作：请先完成素材诊断（gin-wechat-article-angle）和人-AI 协作契约书确认（role_boundary），再调用本 skill。
+影响：本 skill 未执行，未生成 outline_candidates。
+```
+
+**输出文件证据**：
+
+本 skill 执行完成后，必须在 `output_dir/<article_id>/outlines/` 目录下生成 `outline_candidates.md`，并在 `context.md` 中写入：
+
+- `outline_candidates`：候选大纲列表
+- `selected_outline`：用户选定的大纲（在 outline_selected 阶段写入）
+
+主 skill 进入 `draft_written` 前，应检查上述字段和文件是否存在。
 - 每份候选附带：核心立场、副观点、说服策略、情绪目标、情绪曲线、计划金句、结尾互动、章节结构、切入角度、主/次情绪触发点、认知落差说明、排序、推荐理由、适用场景、风险点。
 - 最终写入 `context.md` 的 `outline_candidates` 列表，每项至少包含：
   - `rank`

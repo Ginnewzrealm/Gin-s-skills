@@ -15,6 +15,8 @@ validate_stage_prerequisites = stage_validator.validate_stage_prerequisites
 validate_template_whitelist = stage_validator.validate_template_whitelist
 validate_narrative_protocol = stage_validator.validate_narrative_protocol
 validate_next_step = stage_validator.validate_next_step
+validate_sub_skill_execution = stage_validator.validate_sub_skill_execution
+is_hard_gate = stage_validator.is_hard_gate
 
 
 def test_valid_stage_transition():
@@ -92,3 +94,72 @@ def test_validate_next_step_combined():
     templates = [{"id": "shangye-guancha"}]
     errors = validate_next_step("clarify", "template_loaded", context, templates)
     assert errors == []
+
+
+def test_validate_sub_skill_execution_missing_keys():
+    context = {"selected_template": {"confirmed": True}, "requirements": {}, "narrative_protocol": {}}
+    errors = validate_sub_skill_execution("role_boundary", context)
+    assert any("angle_candidates" in err for err in errors)
+    assert any("diagnosis_report" in err for err in errors)
+
+
+def test_validate_sub_skill_execution_missing_output_file(tmp_path):
+    context = {
+        "selected_template": {"confirmed": True},
+        "requirements": {},
+        "narrative_protocol": {},
+        "angle_candidates": [{"id": "A1"}],
+        "diagnosis_report": {"summary": "..."},
+    }
+    errors = validate_sub_skill_execution("role_boundary", context, article_dir=tmp_path)
+    assert any("reports/diagnosis_report.md" in err for err in errors)
+
+
+def test_validate_sub_skill_execution_with_empty_file(tmp_path):
+    (tmp_path / "reports").mkdir()
+    report_path = tmp_path / "reports" / "diagnosis_report.md"
+    report_path.write_text("", encoding="utf-8")
+
+    context = {
+        "selected_template": {"confirmed": True},
+        "requirements": {},
+        "narrative_protocol": {},
+        "angle_candidates": [{"id": "A1"}],
+        "diagnosis_report": {"summary": "..."},
+    }
+    errors = validate_sub_skill_execution("role_boundary", context, article_dir=tmp_path)
+    assert any("为空" in err for err in errors)
+
+
+def test_validate_sub_skill_execution_with_existing_file(tmp_path):
+    (tmp_path / "reports").mkdir()
+    report_path = tmp_path / "reports" / "diagnosis_report.md"
+    report_path.write_text("# diagnosis", encoding="utf-8")
+
+    context = {
+        "selected_template": {"confirmed": True},
+        "requirements": {},
+        "narrative_protocol": {},
+        "angle_candidates": [{"id": "A1"}],
+        "diagnosis_report": {"summary": "..."},
+    }
+    errors = validate_sub_skill_execution("role_boundary", context, article_dir=tmp_path)
+    assert errors == []
+
+
+def test_is_hard_gate():
+    assert is_hard_gate("role_boundary") is True
+    assert is_hard_gate("template_loaded") is False
+
+
+def test_validate_next_step_detects_skipped_sub_skill(tmp_path):
+    (tmp_path / "context.md").write_text("---\n---\n", encoding="utf-8")
+    context = {
+        "selected_template": {"id": "shangye-guancha", "confirmed": True},
+        "requirements": {},
+        "narrative_protocol": {"fully_loaded": True, "sections": [{"name": "开头"}]},
+    }
+    errors = validate_next_step(
+        "angle_diagnosed", "role_boundary", context, article_dir=tmp_path
+    )
+    assert any("gin-wechat-article-angle" in err for err in errors)

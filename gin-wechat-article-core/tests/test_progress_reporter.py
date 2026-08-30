@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from progress_reporter import render_macro, render_micro, STAGE_TO_PHASE
+from progress_reporter import render_macro, render_micro, STAGE_TO_PHASE, render_skipped_warnings, render_blocker
 
 
 def test_stage_to_phase_has_all_stages():
@@ -79,3 +79,19 @@ def test_render_macro_completed_phases_marked():
     assert "阶段 3/6：大纲生成与确认 [✓]" in result
     assert "阶段 4/6：正文写作与人工改写" in result
     assert "阶段 5/6：润色、小标题与标题优化 [待开始]" in result
+
+
+def test_render_skipped_warnings():
+    result = render_skipped_warnings([
+        {"sub_skill": "gin-wechat-article-angle", "reason": "缺少 angle_candidates"}
+    ])
+    assert "⚠️ 检测到流程异常" in result
+    assert "[跳过了] gin-wechat-article-angle" in result
+    assert "补做" in result
+
+
+def test_render_blocker():
+    result = render_blocker("无法进入 role_boundary", ["缺少 angle_candidates"])
+    assert "⚠️ 当前阻塞：无法进入 role_boundary" in result
+    assert "缺少 angle_candidates" in result
+    assert "流程已暂停" in result
