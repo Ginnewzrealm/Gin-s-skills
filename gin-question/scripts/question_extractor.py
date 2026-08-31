@@ -69,6 +69,14 @@ NON_QUESTION_PATTERNS = [
     r"^\s*当[^\n]{0,50}[？?]\s*$",           # 句子片段：当...
     r"^[【《「][^】》」\n]{0,20}[？?]\s*$",   # 配对符号内 < 20 字符
     r"^.{0,40}[〈《].{0,15}[？?]\s*$",        # 含书名号 + 短片段（"在MV〈你好嗎？"）
+    r"^[✕×✖✗✓✔]\s*[/\s]",                 # UI 关闭符号 + 注释
+    r"^\s*[/\*]{1,2}.*[/\*]{1,2}\s*$",      # 代码注释 // /* */
+    r"^.{0,30}\s+/\s+.{0,30}[？?]\s*$",      # 含 JS 注释 / 的 UI 提示
+    r"Notion.{0,30}模板",                     # UI 推广 Notion 模板
+    r"打包成.{0,30}模板",                      # UI 推广：打包成模板
+    r"顺手收藏",                              # UI 操作提示
+    r"点击查看",                              # UI 操作提示
+    r"立即获取",                              # UI 操作提示
 ]
 
 # 段落长度上限（超过视为正文片段而非问题）
@@ -168,6 +176,42 @@ TOPIC_TERMS = {
         "高血压遗传", "家族史", "高血压预防",
         "高血压标准", "高血压分级", "高血压诊断",
         "三高", "高血脂", "高血糖", "糖尿病",
+    ],
+    "时间管理": [
+        "时间管理", "Time Management", "时间规划", "时间调度",
+        "Scheduling", "GTD", "Getting Things Done", "戴维·艾伦", "David Allen",
+        "番茄工作法", "Pomodoro", "番茄钟", "弗朗西斯科·西里洛", "Cirillo",
+        "四象限", "艾森豪威尔矩阵", "Eisenhower Matrix", "史蒂芬·柯维", "Stephen Covey",
+        "二八法则", "帕累托", "80/20", "Pareto",
+        "SMART", "smart 原则",
+        "时间块", "Time Blocking",
+        "吃青蛙", "Eat That Frog", "博恩·崔西",
+        "两分钟法则", "Two-minute Rule",
+        "ABCDE", "艾维·利", "Ivy Lee",
+        "柳比歇夫", "时间统计法",
+        "高能要事", "重要紧急",
+        "6点优先工作制",
+        "康奈尔笔记", "Cornell",
+        "聚光法则",
+        "晨间日记", "佐藤传",
+        "待办", "Todoist", "Trello", "Asana", "Notion",
+        "专注", "专注力", "focus",
+        "拖延", "拖延症", "Procrastination",
+        "分心", "Distraction",
+        "效率", "效能", "Productivity", "Efficiency",
+        "优先级", "Priority",
+        "截止", "Deadline", "DDL",
+        "多任务", "单任务", "Multitask", "Single-task",
+        "委托", "Delegate",
+        "批量处理", "Batch Process",
+        "职业倦怠", "Burnout",
+        "上下文切换", "Context Switching",
+        "时间审计", "Time Audit",
+        "日程", "日历", "Calendar",
+        "待办清单", "to-do",
+        "碎片时间", "深度工作", "Deep Work",
+        "晨间", "晚间", "黄金时间",
+        "Excel", "GTD 软件", "时间追踪", "Toggl",
     ],
 }
 
