@@ -61,6 +61,44 @@ def test_pipeline_run():
         shutil.rmtree(tmpdir)
 
 
+def test_pipeline_tracks_source_and_reachability_in_audit():
+    """审计报告应包含问题来源统计和源可触达率。"""
+    manifest = {
+        "topic": "减脂",
+        "expanded_terms": ["减肥"],
+        "retrieval_rounds": 1,
+        "search_results": [
+            {
+                "perspective": "基础",
+                "sub_dimension": "What",
+                "query": "减脂是什么",
+                "results": [
+                    {"title": "减脂怎么吃？", "url": "https://example.com/1"},
+                    {"title": "减脂原理是什么？", "url": "https://example.com/2"},
+                ],
+            },
+        ],
+        "fetched_pages": {
+            "https://example.com/1": "<html><h1>减脂怎么吃？</h1></html>",
+        },
+    }
+    tmpdir = tempfile.mkdtemp()
+    try:
+        result = pipeline.run(manifest, tmpdir, is_abstract=False)
+        assert result["confirmed_count"] + result["pending_count"] >= 1
+
+        with open(os.path.join(tmpdir, "audit_report.json"), "r", encoding="utf-8") as f:
+            audit = json.load(f)
+        assert "from_fetched_pages" in audit
+        assert "from_search_title" in audit
+        assert "source_reachability" in audit
+        # 2 个 URL，1 个抓取成功，可触达率 0.5
+        assert audit["source_reachability"] == 0.5
+    finally:
+        shutil.rmtree(tmpdir)
+
+
 if __name__ == "__main__":
     test_pipeline_run()
+    test_pipeline_tracks_source_and_reachability_in_audit()
     print("test_pipeline OK")

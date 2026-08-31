@@ -43,7 +43,11 @@ def load_manifest(path):
 
 
 def build_candidates(manifest):
-    """从 manifest 中构建问题候选。"""
+    """从 manifest 中构建问题候选。
+
+    返回：(valid_candidates, invalid_candidates)
+    只接受 extracted_from 为 content 或 search_title 的问题。
+    """
     candidates = []
     fetched_pages = manifest.get("fetched_pages", {})
     topic = manifest.get("topic")
@@ -71,7 +75,16 @@ def build_candidates(manifest):
                     q["sub_dimension"] = sub_dimension
                     candidates.append(q)
 
-    return candidates
+    # 真实性校验：只接受来自 content 或 search_title 的问题
+    valid = []
+    invalid = []
+    for c in candidates:
+        src = c.get("extracted_from")
+        if src in ("content", "search_title"):
+            valid.append(c)
+        else:
+            invalid.append(c)
+    return valid, invalid
 
 
 def aggregate_sources(candidates):
@@ -139,11 +152,26 @@ def assign_ids(problems, prefix="P"):
     return problems
 
 
+def _compute_source_reachability(manifest):
+    """计算源可触达率：唯一 URL 中被成功抓取的比例。"""
+    fetched_pages = manifest.get("fetched_pages", {})
+    urls = set()
+    for group in manifest.get("search_results", []):
+        for r in group.get("results", []):
+            url = r.get("url", "")
+            if url:
+                urls.add(url)
+    if not urls:
+        return 0.0
+    fetched = sum(1 for url in urls if url in fetched_pages)
+    return round(fetched / len(urls), 2)
+
+
 def run(manifest, output_dir, is_abstract=False):
     topic = manifest["topic"]
 
     # 1. 构建候选
-    candidates = build_candidates(manifest)
+    candidates, invalid_candidates = build_candidates(manifest)
 
     # 2. QM 过滤
     filtered = filter_questions(candidates)
@@ -179,12 +207,17 @@ def run(manifest, output_dir, is_abstract=False):
         "exit_reason": "saturated",
         "retrieval_rounds": manifest.get("retrieval_rounds", 1),
         "search_terms_total": len(manifest.get("search_results", [])),
-        "candidates_total": len(candidates) + len(qm_rejected),
+        "candidates_total": len(candidates) + len(qm_rejected) + len(invalid_candidates),
         "duplicates_merged": dedup_result.get("duplicates_merged", 0),
         "qm1_rejected": 0,
         "qm2_rejected": 0,
         "qm3_rejected": qm3_counts,
         "frequency_rejected": len(pending),
+        "from_fetched_pages": sum(1 for c in candidates if c.get("extracted_from") == "content"),
+        "from_search_title": sum(1 for c in candidates if c.get("extracted_from") == "search_title"),
+        "from_invalid_source": len(invalid_candidates),
+        "source_reachability": _compute_source_reachability(manifest),
+        "fetch_failures": [],
         "perspective_coverage": coverage["matrix"],
         "agent_failures": [],
         "empty_perspectives": [f"{p}/{s}" for p, s in coverage["missing"]],
@@ -193,6 +226,7 @@ def run(manifest, output_dir, is_abstract=False):
         "notes": [
             "问题来源优先级：已抓取页面正文 > 搜索结果页面标题。",
             "未抓取页面且标题非疑问句的结果被丢弃。",
+            "extracted_from 不合法的问题被直接丢弃，不计入 candidates_total。",
         ],
     }
 
