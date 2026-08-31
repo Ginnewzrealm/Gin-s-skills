@@ -35,13 +35,14 @@ description: |
 ## 输入
 
 ```bash
-gin-question --topic "主题" [--output-dir ./output]
+gin-question --topic "主题" [--output-dir ./output] [--max-search-calls 100]
 ```
 
 | 参数 | 必填 | 说明 |
 |---|---|---|
 | `--topic` | 是 | 任意主题字符串，任意粒度 |
 | `--output-dir` | 否 | 输出目录，默认当前目录 |
+| `--max-search-calls` | 否 | 安全阀，限制最大 WebSearch 调用次数，默认 100 |
 
 ## 输出
 
@@ -88,7 +89,7 @@ Progress:
 
 **Agent 失败处理**：失败 Agent 先重试 1 次，再用更宽泛检索词补搜，最多 3 次。仍失败则标记该视角"暂缺"。
 
-**重要约束**：每个检索 Agent 必须直接调用 WebSearch/WebFetch 完成自己的工作，不得再 spawn 子 Agent，避免递归消耗搜索配额。单次执行建议总 WebSearch 调用不超过 30 次，可通过 `--max-search-calls` 参数控制。
+**重要约束**：每个检索 Agent 必须直接调用 WebSearch/WebFetch 完成自己的工作，不得再 spawn 子 Agent，避免递归消耗搜索配额。
 
 ### Step 3：统一抽取 Agent
 
@@ -98,7 +99,11 @@ Progress:
 1. 正则初筛：匹配疑问句式
 2. LLM 二筛：判断是否为真实用户的求知性问题
 
-**WebFetch 失败降级**：若目标网页（如知乎、百度知道）被安全策略拦截无法抓取，允许从 WebSearch 返回的 `title` / `snippet` 中推断问题文本，并在 `audit_report.json` 的 `notes` 中标注 `"source_extracted_from_search_result": true`。该来源仍保留 URL，但可信度降级为 `search_snippet`（不入 primary/secondary/tertiary 分级统计）。
+**来源真实性要求**：
+- 问题文本必须来自真实网页：问题详情页的标题、正文中的引用、或问答列表中的真实提问。
+- 不允许从搜索引擎摘要、AI 聚合回答、或内容总结中推断/改写问题。
+- 若 WebFetch 无法抓取某域名（如知乎、百度知道），可改用该网页在搜索结果中的 **页面标题**（title）作为问题来源——页面标题对于问答类页面通常就是用户提出的原始问题。但不可使用摘要正文（snippet）进行推断或改写。
+- 无法验证真实性的来源 → 直接丢弃，不进入候选集。
 
 **剔除**：广告、修辞反问、命令句、AI 倒推痕迹、过度抽象、严重残缺。
 
@@ -154,6 +159,12 @@ Progress:
 ```
 
 取消硬时间限制。
+
+**检索成本控制**：
+- 本 skill 的核心目标是"全面"，因此优先使用饱和终止条件，不设硬性 WebSearch 调用上限。
+- 为防止极端主题或异常运行导致无限消耗，可提供可选参数 `--max-search-calls` 作为安全阀，建议默认值 100（足够覆盖大多数主题的多轮补搜）。
+-  Orchestrator/上游调用时应通过此参数控制预算；普通用户直接使用时不应感受到上限约束。
+- 真正需要限制的是 Agent 递归 spawn，而非总搜索次数。
 
 输出 `problem_list.json` + `problem_list.md` + `audit_report.json`。
 
