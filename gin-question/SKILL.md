@@ -52,6 +52,16 @@ gin-question --topic "主题" [--output-dir ./output] [--max-search-calls 100]
 | `problem_list.md` | 人类可读的问题清单 |
 | `audit_report.json` | 检索审计报告 |
 
+## 执行模式
+
+本 skill 支持两种执行方式：
+
+1. **Claude 主导模式（默认）**：Claude 按 SKILL.md 流程直接调用 WebSearch/WebFetch/OpenCLI 完成种子扩展、4 视角检索、页面抓取，再把收集结果写入 `manifest.json`，最后调用 `python3 scripts/pipeline.py --manifest manifest.json --output-dir ./output` 生成最终文件。
+
+2. **脚本处理模式**：如果你已经手动或通过其他工具收集好了搜索结果，可直接调用 `pipeline.py` 处理 manifest 文件。manifest 格式见 `examples/manifest-example.json`。
+
+当前 `scripts/` 下的模块主要负责确定性处理（去重、过滤、分级、渲染），**不直接调用 Claude 的 WebSearch 工具**；网络发现部分由 Claude 按 SKILL.md 执行，或需配置外部搜索 API（未来扩展）。
+
 ---
 
 ## 执行流程
@@ -102,7 +112,11 @@ Progress:
 **来源真实性要求**：
 - 问题文本必须来自真实网页：问题详情页的标题、正文中的引用、或问答列表中的真实提问。
 - 不允许从搜索引擎摘要、AI 聚合回答、或内容总结中推断/改写问题。
-- 若 WebFetch 无法抓取某域名（如知乎、百度知道），可改用该网页在搜索结果中的 **页面标题**（title）作为问题来源——页面标题对于问答类页面通常就是用户提出的原始问题。但不可使用摘要正文（snippet）进行推断或改写。
+- 抓取优先级：
+  1. `scripts/fetch_url.py` 直接 HTTP 抓取页面正文
+  2. 若 HTTP 失败，使用 OpenCLI browser（真实 Chrome）抓取
+  3. 若以上均失败，使用该网页在搜索结果中的 **页面标题**（title）作为问题来源——页面标题对于问答类页面通常就是用户提出的原始问题
+- 不可使用摘要正文（snippet）进行推断或改写。
 - 无法验证真实性的来源 → 直接丢弃，不进入候选集。
 
 **剔除**：广告、修辞反问、命令句、AI 倒推痕迹、过度抽象、严重残缺。
@@ -333,24 +347,29 @@ gin-question/
 │   ├── objective-rules.md
 │   ├── search-templates.md
 │   └── output-schema.json
-├── scripts/                    # 待实现可执行脚本
-│   ├── pipeline.py             # 统一入口
-│   ├── seed_expander.py
-│   ├── parallel_agents.py
-│   ├── retry_agent.py
-│   ├── question_extractor.py
-│   ├── dedupe_questions.py
-│   ├── judge_questions.py
-│   ├── source_grader.py
-│   ├── coverage_matrix.py
-│   ├── saturation_checker.py
-│   └── output_renderer.py
-├── tests/                      # 待实现单元测试
+├── scripts/                    # 可执行脚本（已实现）
+│   ├── pipeline.py             # 统一入口：处理收集到的 manifest
+│   ├── common.py               # 公共工具
+│   ├── fetch_url.py            # HTTP → OpenCLI 兜底抓取
+│   ├── seed_expander.py        # 从搜索结果提取扩展词
+│   ├── parallel_agents.py      # 4 视角检索词生成
+│   ├── retry_agent.py          # 重试逻辑
+│   ├── question_extractor.py   # 从页面/标题提取真实问题
+│   ├── dedupe_questions.py     # 精确 + 语义 + 子集去重
+│   ├── judge_questions.py      # QM1-QM3 过滤
+│   ├── source_grader.py        # 来源分级
+│   ├── coverage_matrix.py      # 16 格覆盖度
+│   ├── saturation_checker.py   # 饱和终止判断
+│   └── output_renderer.py      # JSON/Markdown 输出
+├── tests/                      # 单元测试（已实现）
 │   ├── test_pipeline.py
 │   ├── test_judge_questions.py
-│   └── test_source_grader.py
+│   ├── test_source_grader.py
+│   └── test_dedupe_questions.py
 ├── evals/
 │   └── evals.json
+├── examples/                   # 示例输入
+│   └── manifest-example.json
 └── output/                     # 示例输出（测试产物）
     ├── problem_list.json
     ├── problem_list.md
@@ -358,4 +377,19 @@ gin-question/
     └── test-report.md
 ```
 
-**当前状态**：`scripts/` 和 `tests/` 目录为空， skill 目前为规范文档 + 参考规则，需补充可执行代码后才能作为原子 skill 被上游编排器直接调用。
+**脚本运行方式**：
+
+```bash
+# 1. 由 Claude 按 SKILL.md 流程完成种子词扩展、4 视角检索、网页抓取，生成 manifest.json
+# 2. 使用 pipeline.py 处理 manifest，生成最终输出
+python3 scripts/pipeline.py --manifest examples/manifest-example.json --output-dir ./output
+```
+
+**单元测试**：
+
+```bash
+python3 tests/test_judge_questions.py
+python3 tests/test_source_grader.py
+python3 tests/test_dedupe_questions.py
+python3 tests/test_pipeline.py
+```
