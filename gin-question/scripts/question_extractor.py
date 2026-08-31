@@ -186,6 +186,20 @@ def clean_head(text):
     text = re.sub(r"^(作者|来源|编辑|记者|笔者|整理|摘录)[：:][^。]+[。,]?\s*", "", text)
     # 去掉本站/标签前缀
     text = re.sub(r"^(此刻新闻|热点新闻|首页|推荐|热门|专题|正文|导读|摘要)[：:、\s]*", "", text)
+    # 去掉导航前缀
+    text = re.sub(r"^(上一篇|下一篇|上一条|下一条|相关阅读|延伸阅读|相关推荐|推荐阅读|猜你喜欢)[：:、\s]*", "", text)
+    # 去掉 FAQ 标记前缀（多轮，直到无变化）
+    for _ in range(5):
+        prev = text
+        # 多种常见 FAQ/导航/章节前缀
+        text = re.sub(
+            r"^(常见问题FAQ|常见问题|FAQ|问题|Q&A|Q|A|目录|章节|章|节|第\d+[章节]|Chapter|Topic)"
+            r"[：:、\.\s]*",
+            "", text)
+        # 数字编号前缀
+        text = re.sub(r"^\d{1,3}[、\.\)\s]+", "", text)
+        if text == prev:
+            break
     # 去掉陈述句前缀：所以 / 因此 / 总之 / 综合 / 看来 / 也就是说 / 简单来说
     text = re.sub(r"^(所以|因此|总之|综合|看来|也就是说|简单来说|简言之|换言之|其实|可见到|结果|可见|那么说|看得出来)[，,\s]*", "", text)
     # 去掉逗号/顿号开头的残缺
@@ -237,7 +251,8 @@ def extract_from_content(html, source_url, topic=None, max_candidates=50):
             candidates.append(q)
 
     # 2. 按句子切分，提取疑问句
-    sentences = re.split(r"(?<=[。！？?\n])", text)
+    # 在 。！？? \n 以及各种成对引号/括号后切分
+    sentences = re.split(r"(?<=[。！？?\n“”‘’「」『』()（）])", text)
     for s in sentences:
         s = s.strip()
         if is_obviously_not_question(s):
