@@ -213,6 +213,50 @@ TOPIC_TERMS = {
         "晨间", "晚间", "黄金时间",
         "Excel", "GTD 软件", "时间追踪", "Toggl",
     ],
+    "AI编程": [
+        "AI编程", "AI Coding", "AI 辅助编程", "AI-Assisted Development", "AI 原生开发",
+        "AI-Native Development", "对话式编程", "CHOP", "Chat-Oriented Programming",
+        "氛围编程", "Vibe Coding", "Andrej Karpathy",
+        "提示驱动开发", "Prompt-Driven Development", "生成式编程", "Generative Programming",
+        "语音编程", "Speech-to-Code", "Addy Osmani",
+        "伪代码", "Pseudocode", "SudoLang",
+        "规约驱动", "Specification-Driven", "Dave Farley",
+        "Coding Agent", "编程智能体", "IDE Copilot", "CLI Agent",
+        "Inline IDE Assistant", "Chat Assistant", "Autonomous Development Loop",
+        "Multi-Model Systems", "AI Pair Programmer",
+        "RAG", "检索增强生成", "Retrieval-Augmented Generation",
+        "MCP", "Model Context Protocol", "模型上下文协议",
+        "Function Calling", "函数调用",
+        "Agentic AI", "Agentic Coding", "智能体",
+        "Context Window", "上下文窗口",
+        "Prompt Engineering", "提示工程",
+        "Zero-shot", "Few-shot", "零样本", "少样本",
+        "Multi-file Editing", "Codebase Indexing",
+        "Code Completion", "Code Generation", "Code Translation",
+        "Code Review", "Sandboxing", "Telemetry",
+        "Vector Database", "向量数据库", "Synthetic Data",
+        "SWE-bench", "Cargo-Cult Programming",
+        "GitHub Copilot", "Copilot", "微软", "Microsoft",
+        "Cursor", "Anysphere",
+        "Claude Code", "Anthropic", "Claude",
+        "Windsurf", "Codeium", "Cognition", "Cascade",
+        "Gemini Code Assist", "Google", "Antigravity",
+        "Amazon Q Developer", "AWS", "Q Developer",
+        "OpenAI Codex", "Codex", "OpenAI",
+        "Tabnine", "Replit Ghostwriter", "Tabby",
+        "OpenCode", "Anomaly", "Cline",
+        "VS Code", "JetBrains", "PyCharm", "IntelliJ",
+        "代码补全", "代码生成", "代码审查", "代码库索引",
+        "Autonomy", "自主性", "Execution Environment", "执行环境",
+        "Review Surface", "审查界面",
+        "AGI", "大模型", "LLM", "GPT", "Claude", "Gemini", "Llama", "Qwen",
+        "Prompt", "Token", "Embedding",
+        "API", "SDK", "JSON", "YAML",
+        "ChatGPT", "Claude.ai", "Gemini", "文心一言", "通义千问",
+        "Agent", "智能体", "AutoGPT", "Devin",
+        "Autonomous", "自主代理",
+        "上下文", "上下文工程", "Context Engineering",
+    ],
 }
 
 
@@ -291,7 +335,7 @@ def clean_head(text):
         prev = text
         # 多种常见 FAQ/导航/章节前缀
         text = re.sub(
-            r"^(常见问题FAQ|常见问题|FAQ|问题|Q&A|Q|A|目录|章节|章|节|第\d+[章节]|Chapter|Topic)"
+            r"^(常见问题FAQ|常见问题|FAQ|问题|问|Q&A|Q|A|目录|章节|章|节|第\d+[章节]|Chapter|Topic)"
             r"[：:、\.\s]*",
             "", text)
         # 数字编号前缀
