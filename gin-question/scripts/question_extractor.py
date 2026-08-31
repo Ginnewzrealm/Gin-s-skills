@@ -44,6 +44,21 @@ NON_QUESTION_PATTERNS = [
     r"\.cn",
     r"\.html",
     r"@",
+    r"您访问的链接即将离开",                # 政府网站跳转提示
+    r"是否继续",
+    r"门户网站",
+    r"访问.*即将",
+    r"继续访问",
+    r"您即将",
+    r"温馨提示",
+    r"使用.*浏览器",
+    r"建议使用",
+    r"分辨率",
+    r"主办单位",
+    r"承办单位",
+    r"网站地图",
+    r"返回首页",
+    r"首页\s*>\s*",
 ]
 
 # 段落长度上限（超过视为正文片段而非问题）
@@ -80,6 +95,40 @@ CORE_TERMS = [
     "节食", "代餐", "轻食", "低脂",
 ]
 
+# 主题相关词集合（按主题分类）—— 主题不同时使用不同集合
+TOPIC_TERMS = {
+    "减脂": CORE_TERMS,
+    "一棵树": [
+        "树", "树木", "乔木", "灌木", "藤本", "古树", "名木", "行道树", "观赏树",
+        "用材林", "防护林", "经济林", "林木", "树苗", "苗木", "树苗",
+        "银杏", "松树", "柏树", "槐树", "柳树", "杨树", "梧桐", "榕树",
+        "桂花", "梅花", "桃花", "樱花", "海棠", "玉兰", "紫薇",
+        "石榴", "柿子", "枣树", "桔树", "黄杨", "罗汉松",
+        "树根", "树干", "树皮", "树叶", "树枝", "树冠", "树龄",
+        "种植", "栽培", "修剪", "移栽", "养护", "施肥", "浇水",
+        "光合作用", "落叶", "常绿", "针叶", "阔叶", "木本",
+        "风水", "寓意", "庭院", "绿化",
+    ],
+    "新能源汽车": [
+        "新能源", "电动汽车", "电车", "纯电", "混动", "插混", "增程",
+        "电池", "续航", "充电", "快充", "慢充", "换电",
+        "比亚迪", "特斯拉", "蔚来", "小鹏", "理想", "小米",
+        "SU7", "Model", "BYD", "汉", "秦", "宋", "海豹",
+    ],
+}
+
+
+def is_relevant(text, topic=None):
+    """判断问题是否与指定主题相关。
+
+    topic 为 None 时使用减脂核心词。
+    要求：至少出现一个核心词。
+    """
+    terms = TOPIC_TERMS.get(topic, CORE_TERMS)
+    if any(w in text for w in terms):
+        return True
+    return False
+
 # 辅助相关词——单独不够，但配合核心词可提高相关度
 AUX_TERMS = [
     "体脂", "体脂率", "热量", "卡路里", "大卡", "千卡", "千焦",
@@ -95,23 +144,15 @@ AUX_TERMS = [
 ]
 
 
-def is_relevant(text):
-    """判断问题是否以「减脂」为主题。
-
-    要求：至少出现一个核心动作词。
-    """
-    if any(w in text for w in CORE_TERMS):
-        return True
-    return False
-
-
 def clean_tail(text):
     """清理问题末尾的站点名 / 展开 / 分隔符尾巴。"""
-    text = re.sub(r"\s*[\-–—|]\s*(民福康|百度|百度健康|薄荷|家庭医生在线|知乎|简书|新浪|网易|腾讯|凤凰|搜狐|健康之路|三九养生堂|99健康|39健康|寻医问药|杏林普康|好大夫|丁香医生|百度百科|百度文库)\s*$", "", text)
+    text = re.sub(r"\s*[\-–—|]\s*(民福康|百度|百度健康|薄荷|家庭医生在线|知乎|简书|新浪|网易|腾讯|凤凰|搜狐|健康之路|三九养生堂|99健康|39健康|寻医问药|杏林普康|好大夫|丁香医生|百度百科|百度文库|湖南省林业局|安徽省林业局|国家林业和草原局|北京市园林绿化局|科普中国|生命教育|问诊|林业局)\s*$", "", text)
     text = re.sub(r"\s*展开\s*$", "", text)
     text = re.sub(r"\s*收起\s*$", "", text)
     text = re.sub(r"\s*[\.]{3,}\s*$", "", text)
     text = re.sub(r"\s*[\-–—\|]+\s*$", "", text)
+    # 末尾的"！"或"!": 视为感叹/修辞 → 改为问号（如有疑问词则保留）
+    # 但感叹号结尾的内容大多是修辞句，让 judge_questions 处理
     text = text.strip()
     return text
 
@@ -120,8 +161,14 @@ def clean_head(text):
     """清理问题开头的引述/反问/前缀。"""
     # 去掉前后成对引号
     text = text.strip()
-    # 成对引号（含英文/中文/日文）
-    pairs = [('"', '"'), ('"', '"'), ('「', '」'), ('『', '』'), ('《', '》'), ('(', ')'), ('（', '）')]
+    # 成对引号（含英文/中文/日文 + Unicode 引号）
+    pairs = [
+        ('"', '"'), ('“', '”'),  # 直双引号 + 弯双引号
+        ("'", "'"), ('‘', '’'),  # 直单引号 + 弯单引号
+        ('「', '」'), ('『', '』'),
+        ('《', '》'),
+        ('(', ')'), ('（', '）'),
+    ]
     for l, r in pairs:
         if text.startswith(l) and text.endswith(r):
             text = text[1:-1].strip()
@@ -131,20 +178,24 @@ def clean_head(text):
     text = re.sub(r'[」』》"\'\)]+$', '', text)
     # 去掉常见反问/引述前缀
     text = re.sub(
-        r"^(可是|但是|然而|不过|那么|反之|若是|如果|因为|由于|虽然|尽管|其实|实际上|不夸张地说|有人会说|有人说|商家说|我们说|据说|据悉)",
+        r"^(可是|但是|然而|不过|那么|反之|若是|如果|因为|由于|虽然|尽管|其实|实际上|不夸张地说|有人会说|有人说|商家说|我们说|据说|据悉|笔者|笔者认为|笔者觉得|笔者通过|笔者结合|笔者在|作者认为|有人认为|有人说|很多人说|据了解|据专家|据介绍|据悉)",
         "", text)
     # 去掉括号式作者/出处前缀：例如 "【光明图片】xxx"
     text = re.sub(r"^【[^】]*】", "", text)
     # 去掉"作者：xxx" "来源：xxx"
-    text = re.sub(r"^(作者|来源|编辑|记者)[：:][^。]+[。,]?\s*", "", text)
+    text = re.sub(r"^(作者|来源|编辑|记者|笔者|整理|摘录)[：:][^。]+[。,]?\s*", "", text)
     # 去掉本站/标签前缀
-    text = re.sub(r"^(此刻新闻|热点新闻|首页|推荐|热门|专题)[：:、\s]*", "", text)
+    text = re.sub(r"^(此刻新闻|热点新闻|首页|推荐|热门|专题|正文|导读|摘要)[：:、\s]*", "", text)
+    # 去掉陈述句前缀：所以 / 因此 / 总之 / 综合 / 看来 / 也就是说 / 简单来说
+    text = re.sub(r"^(所以|因此|总之|综合|看来|也就是说|简单来说|简言之|换言之|其实|可见到|结果|可见|那么说|看得出来)[，,\s]*", "", text)
+    # 去掉逗号/顿号开头的残缺
+    text = re.sub(r"^[，,、；;:\s]+", "", text)
     # 去掉末尾残留的"?"、"？"前后多余空格
     text = text.strip()
     return text
 
 
-def extract_from_title(title):
+def extract_from_title(title, topic=None):
     """从页面标题中提取问题。"""
     if not title:
         return None
@@ -156,14 +207,17 @@ def extract_from_title(title):
     title = clean_head(title)
     if is_obviously_not_question(title):
         return None
+    # 标题也要求严格：问号/吗/呢结尾
+    if not (title.endswith("？") or title.endswith("?") or title.endswith("吗") or title.endswith("呢")):
+        return None
     if is_question_like(title):
         normalized = normalize_text(title)
-        if is_relevant(normalized):
+        if is_relevant(normalized, topic=topic):
             return normalized
     return None
 
 
-def extract_from_content(html, source_url, max_candidates=50):
+def extract_from_content(html, source_url, topic=None, max_candidates=50):
     """从 HTML 正文中提取候选问题。
 
     策略：
@@ -178,7 +232,7 @@ def extract_from_content(html, source_url, max_candidates=50):
     headings = re.findall(r"<h[1-3][^>]*>(.*?)</h[1-3]>", html, flags=re.DOTALL)
     for h in headings:
         h = strip_html(h).strip()
-        q = extract_from_title(h)
+        q = extract_from_title(h, topic=topic)
         if q and q not in candidates:
             candidates.append(q)
 
@@ -188,11 +242,14 @@ def extract_from_content(html, source_url, max_candidates=50):
         s = s.strip()
         if is_obviously_not_question(s):
             continue
+        # 严格过滤：必须以问号、问号词结尾
+        if not (s.endswith("？") or s.endswith("?") or s.endswith("吗") or s.endswith("呢") or s.endswith("啊？") or s.endswith("？")):
+            continue
         if is_question_like(s):
             q = normalize_text(s)
             q = clean_tail(q)
             q = clean_head(q)
-            if not is_relevant(q):
+            if not is_relevant(q, topic=topic):
                 continue
             if q not in candidates:
                 candidates.append(q)
@@ -202,9 +259,9 @@ def extract_from_content(html, source_url, max_candidates=50):
     return [{"text": q, "source_url": source_url, "extracted_from": "content"} for q in candidates]
 
 
-def extract_from_search_result(title, url):
+def extract_from_search_result(title, url, topic=None):
     """当页面无法抓取时，使用搜索结果的页面标题作为问题来源。"""
-    q = extract_from_title(title)
+    q = extract_from_title(title, topic=topic)
     if q:
         return {"text": q, "source_url": url, "extracted_from": "search_title"}
     return None

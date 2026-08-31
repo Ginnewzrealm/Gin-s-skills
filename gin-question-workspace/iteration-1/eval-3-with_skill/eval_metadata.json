@@ -1,0 +1,51 @@
+{
+  "eval_id": 3,
+  "eval_name": "新能源汽车真问题检索",
+  "prompt": "真实用户关于新能源汽车都在问什么？去网上检索一下",
+  "assertions": [
+    {
+      "name": "输出文件齐全",
+      "description": "problem_list.json, problem_list.md, audit_report.json 三个文件都存在",
+      "check": "file_exists",
+      "files": ["problem_list.json", "problem_list.md", "audit_report.json"]
+    },
+    {
+      "name": "JSON 格式有效",
+      "description": "problem_list.json 符合 output-schema.json",
+      "check": "json_schema",
+      "file": "problem_list.json"
+    },
+    {
+      "name": "主清单非空",
+      "description": "problems 数组至少包含 5 条问题",
+      "check": "min_array_length",
+      "file": "problem_list.json",
+      "path": "problems",
+      "min": 5
+    },
+    {
+      "name": "问题有来源",
+      "description": "每条问题至少有一个 source_url",
+      "check": "all_have_field",
+      "file": "problem_list.json",
+      "path": "problems",
+      "field": "sources"
+    },
+    {
+      "name": "多视角覆盖",
+      "description": "problems 覆盖至少 2 个 retrieval_perspective",
+      "check": "min_unique_values",
+      "file": "problem_list.json",
+      "path": "problems",
+      "field": "retrieval_perspective",
+      "min": 2
+    },
+    {
+      "name": "审计报告完整",
+      "description": "audit_report.json 包含 perspective_coverage 和 qm3_rejected",
+      "check": "has_fields",
+      "file": "audit_report.json",
+      "fields": ["perspective_coverage", "qm3_rejected", "candidates_total"]
+    }
+  ]
+}

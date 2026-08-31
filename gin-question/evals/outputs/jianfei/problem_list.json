@@ -1,12 +1,12 @@
 {
   "topic": "减脂",
-  "generated_at": "2026-08-31T14:55:11Z",
+  "generated_at": "2026-08-31T15:07:09Z",
   "exit_reason": "saturated",
   "retrieval_rounds": 1,
   "problems": [
     {
-      "text": "科学减脂，这么做事半功倍",
-      "original": "科学减脂，这么做事半功倍",
+      "text": "当BMI＜24kg/㎡时，就不需要减重了吗？",
+      "original": "当BMI＜24kg/㎡时，就不需要减重了吗？",
       "retrieval_perspective": "旅程",
       "sub_dimension": "认知期",
       "sources": [
@@ -14,22 +14,17 @@
           "url": "https://m.cyol.com/gb/articles/2024-12/07/content_aj2BEwHBVx.html",
           "type": "tertiary",
           "frequency": 3
-        },
-        {
-          "url": "https://www.cyol.com/gb/articles/2024-12/07/content_aj2BEwHBVx.html",
-          "type": "tertiary",
-          "frequency": 1
         }
       ],
-      "total_frequency": 4,
-      "source_count": 2,
+      "total_frequency": 3,
+      "source_count": 1,
       "duplicates": [],
       "status": "confirmed",
       "id": "P001"
     },
     {
-      "text": "，当BMI＜24kg/㎡时，就不需要减重了吗？",
-      "original": "，当BMI＜24kg/㎡时，就不需要减重了吗？",
+      "text": "BMI超出正常范围，就一定需要减重吗？",
+      "original": "BMI超出正常范围，就一定需要减重吗？",
       "retrieval_perspective": "旅程",
       "sub_dimension": "认知期",
       "sources": [
@@ -44,24 +39,6 @@
       "duplicates": [],
       "status": "confirmed",
       "id": "P002"
-    },
-    {
-      "text": "，BMI超出正常范围，就一定需要减重吗？",
-      "original": "，BMI超出正常范围，就一定需要减重吗？",
-      "retrieval_perspective": "旅程",
-      "sub_dimension": "认知期",
-      "sources": [
-        {
-          "url": "https://m.cyol.com/gb/articles/2024-12/07/content_aj2BEwHBVx.html",
-          "type": "tertiary",
-          "frequency": 3
-        }
-      ],
-      "total_frequency": 3,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "confirmed",
-      "id": "P003"
     },
     {
       "text": "新华社发循序渐进，坚持必有所获运动和饮食控制是减脂利器，两种方法中哪个效率更高呢？",
@@ -79,7 +56,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "confirmed",
-      "id": "P004"
+      "id": "P003"
     },
     {
       "text": "减脂效果如何评估？",
@@ -97,11 +74,11 @@
       "source_count": 1,
       "duplicates": [],
       "status": "confirmed",
-      "id": "P005"
+      "id": "P004"
     },
     {
-      "text": "，健身究竟是先增肌还是先减脂？",
-      "original": "，健身究竟是先增肌还是先减脂？",
+      "text": "健身究竟是先增肌还是先减脂？",
+      "original": "健身究竟是先增肌还是先减脂？",
       "retrieval_perspective": "旅程",
       "sub_dimension": "认知期",
       "sources": [
@@ -115,46 +92,10 @@
       "source_count": 1,
       "duplicates": [],
       "status": "confirmed",
-      "id": "P006"
-    },
-    {
-      "text": "减脂、燃脂、刷脂有什么区别？减肥前先搞清这些概念",
-      "original": "减脂、燃脂、刷脂有什么区别？减肥前先搞清这些概念",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "What",
-      "sources": [
-        {
-          "url": "https://www.sohu.com/a/214625395_100093838",
-          "type": "secondary",
-          "frequency": 2
-        }
-      ],
-      "total_frequency": 2,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "confirmed",
-      "id": "P007"
+      "id": "P005"
     }
   ],
   "pending_validation": [
-    {
-      "text": "一般减肥多少天见效",
-      "original": "一般减肥多少天见效",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "When",
-      "sources": [
-        {
-          "url": "https://m.fh21.com.cn/article/view/402544.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV001"
-    },
     {
       "text": "该如何瘦小腹呢 ？",
       "original": "该如何瘦小腹呢 ？",
@@ -171,7 +112,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV002"
+      "id": "PV001"
     },
     {
       "text": "怎样可以快速瘦下来？",
@@ -189,7 +130,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV003"
+      "id": "PV002"
     },
     {
       "text": "减肥该吃什么蔬菜？",
@@ -207,7 +148,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV004"
+      "id": "PV003"
     },
     {
       "text": "猪肉适合减肥吃吗",
@@ -225,7 +166,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV005"
+      "id": "PV004"
     },
     {
       "text": "减肥需要多久能见效呢",
@@ -243,25 +184,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV006"
-    },
-    {
-      "text": "减肥一天应该摄入多少卡路里",
-      "original": "减肥一天应该摄入多少卡路里",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://www.mfk.com/ask/23523423.shtml",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV007"
+      "id": "PV005"
     },
     {
       "text": "减肥能吃凤梨吗？",
@@ -279,7 +202,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV008"
+      "id": "PV006"
     },
     {
       "text": "什么减肥药可以有效的减肥？",
@@ -297,7 +220,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV009"
+      "id": "PV007"
     },
     {
       "text": "减肥的方法有哪些呢？",
@@ -315,7 +238,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV010"
+      "id": "PV008"
     },
     {
       "text": "醋加蜂蜜能减肥吗",
@@ -333,43 +256,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV011"
-    },
-    {
-      "text": "每天摄入多少卡路里可以减肥",
-      "original": "每天摄入多少卡路里可以减肥",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://www.bohe.cn/ask/view/110287246.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV012"
-    },
-    {
-      "text": "减脂一天摄入多少大卡",
-      "original": "减脂一天摄入多少大卡",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://www.mfk.com/ask/23363814.shtml",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV013"
+      "id": "PV009"
     },
     {
       "text": "现在可以吃减肥药吗",
@@ -387,7 +274,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV014"
+      "id": "PV010"
     },
     {
       "text": "什么花茶有减肥的功效呢？",
@@ -405,7 +292,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV015"
+      "id": "PV011"
     },
     {
       "text": "肠清茶可以减肥吗",
@@ -423,25 +310,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV016"
-    },
-    {
-      "text": "晚上适合吃什么怎样减肥",
-      "original": "晚上适合吃什么怎样减肥",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://www.mfk.com/ask/23363814.shtml",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV017"
+      "id": "PV012"
     },
     {
       "text": "三七能减肥吗",
@@ -459,7 +328,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV018"
+      "id": "PV013"
     },
     {
       "text": "三七减肥有用吗？",
@@ -477,7 +346,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV019"
+      "id": "PV014"
     },
     {
       "text": "减肥可以吃减脂粉吗",
@@ -495,61 +364,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV020"
-    },
-    {
-      "text": "减肥的时候一天要消耗多少卡路里",
-      "original": "减肥的时候一天要消耗多少卡路里",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://www.mfk.com/ask/26418645.shtml",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV021"
-    },
-    {
-      "text": "减肥一天消耗多少卡路里合适",
-      "original": "减肥一天消耗多少卡路里合适",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://www.fh21.com.cn/article/view/b54q1rzmkr78l6t.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV022"
-    },
-    {
-      "text": "减肥每天摄入多少千卡",
-      "original": "减肥每天摄入多少千卡",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://mip.mfk.com/ask/26417008.shtml",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV023"
+      "id": "PV015"
     },
     {
       "text": "减肥一天摄入多少大卡？",
@@ -567,43 +382,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV024"
-    },
-    {
-      "text": "减脂怎么算每日热量",
-      "original": "减脂怎么算每日热量",
-      "retrieval_perspective": "基础",
-      "sub_dimension": "How much",
-      "sources": [
-        {
-          "url": "https://sopen.35jk.com/sasknews/e1155673ebb286cb.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV025"
-    },
-    {
-      "text": "成人零基础如何通过燃脂运动锻炼来减肥",
-      "original": "成人零基础如何通过燃脂运动锻炼来减肥",
-      "retrieval_perspective": "旅程",
-      "sub_dimension": "认知期",
-      "sources": [
-        {
-          "url": "https://m.pingguolv.com/ask/rfhhUUickdfs.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV026"
+      "id": "PV016"
     },
     {
       "text": "生理期减肥更容易瘦吗",
@@ -621,7 +400,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV027"
+      "id": "PV017"
     },
     {
       "text": "月经期间减肥和平时有区别吗",
@@ -639,25 +418,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV028"
-    },
-    {
-      "text": "生理期为什么减肥不掉秤",
-      "original": "生理期为什么减肥不掉秤",
-      "retrieval_perspective": "人群场景",
-      "sub_dimension": "场景差异",
-      "sources": [
-        {
-          "url": "https://www.fh21.com.cn/article/view/6e4gructkxdcqw6.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV029"
+      "id": "PV018"
     },
     {
       "text": "月经期间减肥快吗",
@@ -675,7 +436,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV030"
+      "id": "PV019"
     },
     {
       "text": "荞麦茶能减肥吗",
@@ -693,7 +454,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV031"
+      "id": "PV020"
     },
     {
       "text": "胡萝卜加蜂蜜能减肥吗",
@@ -711,7 +472,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV032"
+      "id": "PV021"
     },
     {
       "text": "大腿粗怎么减肥呢",
@@ -729,7 +490,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV033"
+      "id": "PV022"
     },
     {
       "text": "紫薯可以减肥吗？",
@@ -747,25 +508,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV034"
-    },
-    {
-      "text": "有什么办法能瘦肚子",
-      "original": "有什么办法能瘦肚子",
-      "retrieval_perspective": "人群场景",
-      "sub_dimension": "场景差异",
-      "sources": [
-        {
-          "url": "https://www.mfk.com/ask/21394571.shtml",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV035"
+      "id": "PV023"
     },
     {
       "text": "经期减肥有效吗",
@@ -783,45 +526,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV036"
-    },
-    {
-      "text": "来事为什么不能减肥",
-      "original": "来事为什么不能减肥",
-      "retrieval_perspective": "人群场景",
-      "sub_dimension": "场景差异",
-      "sources": [
-        {
-          "url": "https://health.baidu.com/m/detail/ar_5802439155885628025",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [],
-      "status": "single_source",
-      "id": "PV037"
-    },
-    {
-      "text": "大姨妈期间减肥 vs 平时减肥，差别竟然这么大_家庭医生在线",
-      "original": "大姨妈期间减肥 vs 平时减肥，差别竟然这么大_家庭医生在线",
-      "retrieval_perspective": "人群场景",
-      "sub_dimension": "场景差异",
-      "sources": [
-        {
-          "url": "https://m.familydoctor.com.cn/202503/3239978.html",
-          "type": "tertiary",
-          "frequency": 1
-        }
-      ],
-      "total_frequency": 1,
-      "source_count": 1,
-      "duplicates": [
-        "大姨妈期间减肥 vs 平时减肥，差别竟然这么大"
-      ],
-      "status": "single_source",
-      "id": "PV038"
+      "id": "PV024"
     },
     {
       "text": "二、减脂期遇到月经期，如何科学应对？",
@@ -839,7 +544,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV039"
+      "id": "PV025"
     },
     {
       "text": "来月经减肥会更快吗",
@@ -857,7 +562,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV040"
+      "id": "PV026"
     },
     {
       "text": "“商家说这样一个月可以瘦10斤，可这不就是节食吗？",
@@ -875,7 +580,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV041"
+      "id": "PV027"
     },
     {
       "text": "刷刷牙就能瘦\"，為啥有人信？",
@@ -895,7 +600,7 @@
         "刷刷牙就能瘦？"
       ],
       "status": "single_source",
-      "id": "PV042"
+      "id": "PV028"
     },
     {
       "text": "运动减肥的禁忌人群有哪些？",
@@ -913,7 +618,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV043"
+      "id": "PV029"
     },
     {
       "text": "减脂适合什么人做？减脂不适合什么人做？",
@@ -931,7 +636,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV044"
+      "id": "PV030"
     },
     {
       "text": "> 如何选择适合自己的减肥健身器材？",
@@ -951,7 +656,7 @@
         "如何选择适合自己的减肥健身器材？"
       ],
       "status": "single_source",
-      "id": "PV045"
+      "id": "PV031"
     },
     {
       "text": "四、减肥的“关键”：找到能让你坚持的运动很多人问，跑步好还是跳操好？",
@@ -969,7 +674,7 @@
       "source_count": 1,
       "duplicates": [],
       "status": "single_source",
-      "id": "PV046"
+      "id": "PV032"
     }
   ]
 }

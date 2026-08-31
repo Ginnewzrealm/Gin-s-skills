@@ -88,6 +88,10 @@ def judge(text, source_url=None):
     if not (text.endswith("？") or text.endswith("?") or _has_any(text, {"吗", "呢", "么", "怎么", "什么", "为什么", "为何", "多少", "哪些", "哪个", "是不是", "能不能", "可不可以", "如何", "哪里", "何时", "谁"})):
         return {"passed": False, "qm3_category": "E", "reason": "非疑问句式，不满足 QM1"}
 
+    # 感叹号结尾但不是疑问句：判定为陈述/感叹 (QM3-B)
+    if (text.endswith("！") or text.endswith("!")) and not (text.endswith("？") or text.endswith("?")):
+        return {"passed": False, "qm3_category": "B", "reason": "以感叹号结尾，多为感叹/修辞，QM3-B"}
+
     # QM3-A: 虚构类 / AI 倒推
     if _has_any(text, AI_HINTS):
         return {"passed": False, "qm3_category": "A", "reason": "含 AI 倒推痕迹，QM3-A"}

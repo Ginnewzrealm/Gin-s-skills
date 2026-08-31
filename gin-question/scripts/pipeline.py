@@ -46,6 +46,7 @@ def build_candidates(manifest):
     """从 manifest 中构建问题候选。"""
     candidates = []
     fetched_pages = manifest.get("fetched_pages", {})
+    topic = manifest.get("topic")
 
     for group in manifest.get("search_results", []):
         perspective = group.get("perspective")
@@ -57,14 +58,14 @@ def build_candidates(manifest):
             # 1. 优先从已抓取的页面内容中提取
             html = fetched_pages.get(url)
             if html:
-                extracted = extract_from_content(html, url)
+                extracted = extract_from_content(html, url, topic=topic)
                 for e in extracted:
                     e["retrieval_perspective"] = perspective
                     e["sub_dimension"] = sub_dimension
                     candidates.append(e)
             else:
                 # 2. 未抓取到页面：尝试用搜索结果页面标题
-                q = extract_from_search_result(title, url)
+                q = extract_from_search_result(title, url, topic=topic)
                 if q:
                     q["retrieval_perspective"] = perspective
                     q["sub_dimension"] = sub_dimension
@@ -187,6 +188,8 @@ def run(manifest, output_dir, is_abstract=False):
         "perspective_coverage": coverage["matrix"],
         "agent_failures": [],
         "empty_perspectives": [f"{p}/{s}" for p, s in coverage["missing"]],
+        "is_abstract": is_abstract,
+        "exempt": coverage.get("exempt", []),
         "notes": [
             "问题来源优先级：已抓取页面正文 > 搜索结果页面标题。",
             "未抓取页面且标题非疑问句的结果被丢弃。",

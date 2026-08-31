@@ -1,0 +1,21 @@
+{
+  "eval_id": 3,
+  "eval_name": "新能源汽车真问题检索-基线",
+  "prompt": "真实用户关于新能源汽车都在问什么？去网上检索一下",
+  "assertions": [
+    {
+      "name": "输出文件齐全",
+      "description": "problem_list.json, problem_list.md, audit_report.json 三个文件都存在",
+      "check": "file_exists",
+      "files": ["problem_list.json", "problem_list.md", "audit_report.json"]
+    },
+    {
+      "name": "主清单非空",
+      "description": "problems 数组至少包含 5 条问题",
+      "check": "min_array_length",
+      "file": "problem_list.json",
+      "path": "problems",
+      "min": 5
+    }
+  ]
+}
