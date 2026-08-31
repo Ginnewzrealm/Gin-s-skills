@@ -88,6 +88,8 @@ Progress:
 
 **Agent 失败处理**：失败 Agent 先重试 1 次，再用更宽泛检索词补搜，最多 3 次。仍失败则标记该视角"暂缺"。
 
+**重要约束**：每个检索 Agent 必须直接调用 WebSearch/WebFetch 完成自己的工作，不得再 spawn 子 Agent，避免递归消耗搜索配额。单次执行建议总 WebSearch 调用不超过 30 次，可通过 `--max-search-calls` 参数控制。
+
 ### Step 3：统一抽取 Agent
 
 从所有 Agent 返回的网页内容中抽取真实用户提出的求知性问题。
@@ -95,6 +97,8 @@ Progress:
 **两步法**：
 1. 正则初筛：匹配疑问句式
 2. LLM 二筛：判断是否为真实用户的求知性问题
+
+**WebFetch 失败降级**：若目标网页（如知乎、百度知道）被安全策略拦截无法抓取，允许从 WebSearch 返回的 `title` / `snippet` 中推断问题文本，并在 `audit_report.json` 的 `notes` 中标注 `"source_extracted_from_search_result": true`。该来源仍保留 URL，但可信度降级为 `search_snippet`（不入 primary/secondary/tertiary 分级统计）。
 
 **剔除**：广告、修辞反问、命令句、AI 倒推痕迹、过度抽象、严重残缺。
 
@@ -108,7 +112,7 @@ Progress:
 
 ### Step 5：QM1-QM3 过滤
 
-应用 `references/qm-rules.md` 中的规则。
+应用 `references/objective-rules.md` 中的规则。
 
 **QM1 真问题**：来源真实、疑问句式、可客观回答。  
 **QM2 有效问题**：有真实来源、认知缺口、客观应答域、非简单常识。  
@@ -127,11 +131,18 @@ Progress:
 | 二手源 | ≥2 个 | 权威媒体、行业报告、深度原创 |
 | 三手源 | ≥3 个 | 论坛、社交媒体、问答社区 |
 
-任一满足 → 主清单；都不满足 → 待验证清单。
+**状态判定**：
+- `confirmed`：满足上述任一门槛，或来源包含一手源。
+- `single_source`：仅单一来源，但问题真实且能覆盖当前缺失的 16 格，可入选主清单。
+
+任一满足 → 主清单；都不满足 → 待验证清单（`pending_validation`）。
 
 ### Step 7：16 格子覆盖度检查
 
-检查 16 个格子（基础 7 + 旅程 5 + 人群场景 2 + 争议时效 2）是否全部 ≥1。
+检查 16 个格子（基础 7 + 旅程 5 + 人群场景 2 + 争议时效 2）。
+
+**默认规则**：16 格全部 ≥1。
+**放宽规则**：对于抽象主题（如自然物、概念词），允许 `How much` 和 `争议` 两个格子为 0，但必须在 `audit_report.empty_perspectives` 中标注。其余 14 格必须覆盖。
 
 0 覆盖 → 针对缺失格子补搜（不计入新增率统计）。
 
@@ -239,6 +250,8 @@ How much: "{扩展词} 多少 / 标准 / 剂量 / 成本"
 }
 ```
 
+`pending_validation` 存放未达频次门槛、但由 primary/secondary 来源提出的问题，或单来源但高价值的问题，供人工/下游二次确认。若不存在此类问题，返回空数组。
+
 ### audit_report.json
 
 ```json
@@ -309,8 +322,8 @@ gin-question/
 │   ├── objective-rules.md
 │   ├── search-templates.md
 │   └── output-schema.json
-├── scripts/
-│   ├── pipeline.py
+├── scripts/                    # 待实现可执行脚本
+│   ├── pipeline.py             # 统一入口
 │   ├── seed_expander.py
 │   ├── parallel_agents.py
 │   ├── retry_agent.py
@@ -321,10 +334,17 @@ gin-question/
 │   ├── coverage_matrix.py
 │   ├── saturation_checker.py
 │   └── output_renderer.py
-├── tests/
+├── tests/                      # 待实现单元测试
 │   ├── test_pipeline.py
 │   ├── test_judge_questions.py
 │   └── test_source_grader.py
-└── evals/
-    └── evals.json
+├── evals/
+│   └── evals.json
+└── output/                     # 示例输出（测试产物）
+    ├── problem_list.json
+    ├── problem_list.md
+    ├── audit_report.json
+    └── test-report.md
 ```
+
+**当前状态**：`scripts/` 和 `tests/` 目录为空， skill 目前为规范文档 + 参考规则，需补充可执行代码后才能作为原子 skill 被上游编排器直接调用。
