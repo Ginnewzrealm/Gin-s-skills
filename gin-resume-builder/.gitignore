@@ -1,0 +1,2 @@
+# Company research cache files (keep directory with .gitkeep, ignore JSON caches)
+company_research/*.json
