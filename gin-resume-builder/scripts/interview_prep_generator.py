@@ -18,6 +18,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
+import company_researcher
 
 GENERIC_BANK = [
     ("通用", "请用 2 分钟做一下自我介绍。"),
@@ -70,11 +71,20 @@ def build_questions(facts, jd_text, count):
     return out
 
 
-def render(questions, has_jd, star_exists):
+def render(questions, has_jd, star_exists, company=None, cached=None):
     mode = "岗位针对性模式（基于 JD）" if has_jd else "通用模式（无 JD）"
     L = ["# 面试问题清单（%s）" % mode, ""]
     if not has_jd:
         L.append("> 提示：有具体 JD 的话发我，能针对性出题。")
+        L.append("")
+    if company:
+        if cached:
+            L.append("> 公司研究缓存（%s）：" % company)
+            for src, info in cached.get("sources", {}).items():
+                if info.get("notes"):
+                    L.append("> - %s：%s" % (src, info["notes"]))
+        else:
+            L.append("> 公司研究缓存：未命中 %s。" % company)
         L.append("")
     for i, (typ, q, rel, star) in enumerate(questions, 1):
         L.append("%d. **【%s】%s**" % (i, typ, q))
@@ -87,6 +97,7 @@ def main():
     ap.add_argument("--jd", default=None)
     ap.add_argument("--count", type=int, default=18)
     ap.add_argument("--kb", default=None)
+    ap.add_argument("--company", default=None, help="目标公司名称，用于查询研究缓存")
     args = ap.parse_args()
     root = common.kb_root(args.kb)
 
@@ -102,7 +113,8 @@ def main():
         with open(args.jd, encoding="utf-8") as f:
             jd_text = f.read()
     questions = build_questions(facts, jd_text, args.count)
-    md = render(questions, bool(jd_text), True)
+    cached = company_researcher.load_cache(root, args.company) if args.company else None
+    md = render(questions, bool(jd_text), True, company=args.company, cached=cached)
     out = common.out_path(root, "interview_prep", "面试清单-%s.md" % common.stamp())
     with open(out, "w", encoding="utf-8") as f:
         f.write(md)

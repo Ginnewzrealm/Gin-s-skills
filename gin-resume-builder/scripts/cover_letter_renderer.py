@@ -22,6 +22,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import fact_selector
+import company_researcher
 
 TEMPLATES = {
     "standard": ["开场钩子：一句话点明应聘岗位与最匹配的卖点",
@@ -66,6 +67,7 @@ def main():
     ap.add_argument("--template", choices=list(TEMPLATES), default="standard")
     ap.add_argument("--check", default=None, help="校验成稿字数（区间随 --template，默认 standard 300-500）")
     ap.add_argument("--kb", default=None)
+    ap.add_argument("--company", default=None, help="目标公司名称，用于查询研究缓存")
     ap.add_argument("--out", default=None)
     args = ap.parse_args()
 
@@ -98,6 +100,15 @@ def main():
     L.append("> 署名：%s｜以下是结构槽位，请 Claude 基于亮点事实填充成 %d-%d 中文字成稿%s。"
              % (name, lo, hi if args.template != "boss" else 120,
                 "（上限 %d）" % hi if args.template == "boss" else ""))
+    if args.company:
+        cached = company_researcher.load_cache(root, args.company)
+        if cached:
+            L.append("> 公司研究缓存（%s，%s 天内有效）：" % (args.company, 30))
+            for src, info in cached.get("sources", {}).items():
+                if info.get("notes"):
+                    L.append("> - %s：%s" % (src, info["notes"]))
+        else:
+            L.append("> 公司研究缓存：未命中 %s，如需引用公司动态请先研究。" % args.company)
     L.append("")
     for i, slot in enumerate(TEMPLATES[args.template], 1):
         L.append("## 段落 %d：%s" % (i, slot))

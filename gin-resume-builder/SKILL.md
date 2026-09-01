@@ -149,6 +149,8 @@ Progress:
 
 #### 求职信 / 打招呼语
 
+写求职信前，先检查 `company_research/<company>.json` 缓存。若缓存存在且未过期，则优先复用；若不存在或过期，再联网研究并写回缓存。
+
 **Progress：**
 - [ ] Step 1 确认岗位与模板（标准/推荐人/转行/应届/boss）`[需确认]`
 - [ ] Step 2 提取匹配点与公司动态钩子 `[自动]`
@@ -178,6 +180,8 @@ Progress:
 命令：`star_story_generator.py` 出骨架 → Claude 对话补全 A/R → 三版本。参考 `references/star-story-bank.md`。
 
 #### 面试清单
+
+准备面试前，先检查 `company_research/<company>.json` 缓存。若缓存存在且未过期，则优先复用；若不存在或过期，再联网研究并写回缓存。
 
 **Progress：**
 - [ ] Step 1 读取 JD 与公司背景 `[自动]`
