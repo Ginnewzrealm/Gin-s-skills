@@ -15,6 +15,25 @@
 .edit-block{white-space:pre-wrap;min-height:1em}.edit-block:focus{outline:1px dashed #4d79c7;background:#f5f8ff}.edit-block:empty:before{content:'输入内容';color:#a6adb5}.selected-block{outline:2px solid #74a2d8!important}
 body.print-preflight{background:#fff}body.print-preflight .page{margin:0;box-shadow:none;width:210mm;height:295.5mm;max-height:295.5mm}body.print-preflight .toolbar,body.print-preflight #warning{display:none!important}
 @media print{html,body{width:210mm;height:auto;margin:0!important;padding:0!important;background:#fff}.toolbar,#warning{display:none!important}.page{display:block;margin:0!important;box-shadow:none;width:210mm;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible;break-after:avoid-page;page-break-after:avoid}.edit-block:empty:before{content:''}@page{size:A4;margin:0}}
+/* 补充：适配 build_body 生成的简历结构 */
+.header{border-bottom:1.5pt solid var(--accent);padding-bottom:10px;margin-bottom:var(--section-gap)}
+.header .name{font-size:22pt;font-weight:700;color:var(--accent);margin-bottom:6px}
+.contact-row{display:flex;flex-wrap:wrap;gap:0;font-size:9.5pt;color:#555}
+.contact-item::before{content:"";display:inline-block;width:0;height:8px;margin:0 10px;border-left:0.6pt solid #d0d0d0}
+.contact-item:first-child::before{display:none}
+.section{margin-bottom:var(--section-gap)}
+.section-title{font-size:12pt;font-weight:700;color:var(--accent);border-bottom:1px solid var(--accent);padding-bottom:3px;margin-bottom:8px}
+.section-title .en{font-size:8pt;margin-left:8px;opacity:.7}
+.entry{margin-bottom:10px}
+.entry-header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
+.entry-company{font-weight:700}
+.entry-position{color:#555}
+.entry-meta{white-space:nowrap;color:#555;font-size:9.5pt}
+.field-line{margin:3px 0;font-size:9.5pt}
+.field-label{font-weight:700;margin-right:4px;color:var(--accent)}
+.bullet-list{padding-left:18px;margin:3px 0}
+.metric{font-weight:700;color:var(--accent)}
+.bullet-tag{font-weight:700;color:var(--accent)}
 </style>
 </head>
 <body>
