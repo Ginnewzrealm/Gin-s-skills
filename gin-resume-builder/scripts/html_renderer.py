@@ -281,7 +281,43 @@ def build_body(resume):
     return "\n".join(L)
 
 
-def render(resume):
+def _editable_template_path():
+    return os.path.join(common.SKILL_DIR, "assets", "editable_resume_base.html")
+
+
+def _make_editable(body_html):
+    """给 body 中的文本容器添加 edit-block 与 contenteditable 属性。"""
+    # 给无 class 的 block 元素添加 edit-block；保留已有 class 的元素
+    def add_edit_block(m):
+        tag = m.group(1)
+        attrs = m.group(2)
+        if 'class="' in attrs:
+            attrs = attrs.replace('class="', 'class="edit-block ')
+        else:
+            attrs += ' class="edit-block"'
+        return '<%s%s contenteditable="true">' % (tag, attrs)
+
+    # 只处理直接的文本容器：h1, h2, p, li
+    pattern = re.compile(r'<(h1|h2|p|li)([^>]*)>')
+    body_html = pattern.sub(add_edit_block, body_html)
+    return body_html
+
+
+def _render_editable(resume):
+    """使用可编辑 HTML 母版渲染简历。"""
+    with open(_editable_template_path(), encoding="utf-8") as f:
+        tpl = f.read()
+    body = _make_editable(build_body(resume))
+    # 替换 <main id="page" class="page">...</main> 中的内容
+    main_pat = re.compile(r'(<main id="page" class="page">).*?(</main>)', re.S)
+    html = main_pat.sub(lambda m: '%s\n%s\n%s' % (m.group(1), body, m.group(2)), tpl)
+    title = resume.get("title", "简历")
+    return html.replace("<title>可编辑单页简历</title>", "<title>%s</title>" % esc(title))
+
+
+def render(resume, editable=False):
+    if editable:
+        return _render_editable(resume)
     with open(TEMPLATE, encoding="utf-8") as f:
         tpl = f.read()
     title = resume.get("title", "简历")
