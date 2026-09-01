@@ -39,9 +39,9 @@ Skill(skill="{xunji_training_skill_name}", args={
 
 ## 字段构造规则
 
-- `title`：≤ 4 个汉字。部位名映射：胸部→练胸日、背部→练背日、肩臂部→练肩日、臀髋部→练臀日、腿部→练腿日、核心腹部→练腹日。
+- `title`：≤ 4 个汉字。部位名映射：胸部→练胸日、背部→练背日、肩臂部→练肩日、臀腿部→练臀腿日、核心腹部→练腹日。
 - `datestr`：当天日期。
-- `body_part`：使用健身助手内部一级部位名（胸部/背部/肩臂部/臀髋部/腿部/核心腹部）。
+- `body_part`：使用健身助手内部一级部位名（胸部/背部/肩臂部/臀腿部/核心腹部）。
 - `client_request_id`：`gin-workout-planner-{datestr}-{body_part_pinyin}-{plan_hash}`，同一 datestr + body_part + plan_hash 必须相同。`plan_hash` 取计划内容的短哈希或 8 位随机字符。
 - `plan.movements`：从本次计划「今日动作清单」提取；动作名须是训记标准动作名；`sets` 按清单中的「组数×次数」和「负荷」展开，全部 `done: false`。
 - `localid`：去重记录中已有同日期同部位记录且用户选择「覆盖」时，传入旧 `localid`。

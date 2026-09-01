@@ -3,9 +3,8 @@
   "evals": [
     {
       "id": 1,
-      "eval_name": "leg-day-plan-and-xunji-writeback-intent",
-      "prompt": "今天练腿，帮我做一个训练计划。输出计划后，假设我已经回复'OK，就按这个练'，并且你问我'要不要写入训记 App'时我回答'要'。请继续执行完整流程：输出计划、询问确认、询问写入训记、说明去重检查与单写保证、输出你会构造的 write_plan 参数（不要真正调用 Skill 或训记接口）。",
-      "expected_output": "生成腿部训练计划（含检查表+四板块），询问用户确认，询问是否写入训记，并展示 write_plan 参数：title≤4字、client_request_id 格式正确、包含 movements/sets、提及去重日志与锁文件。",
+      "eval_name": "glute-leg-day-plan-and-xunji-writeback-intent",
+      "prompt": "今天练臀腿，帮我做一个训练计划。输出计划后，假设我已经回复'OK，就按这个练'，并且你问我'要不要写入训记 App'时我回答'要'。请继续执行完整流程：输出计划、询问确认、询问写入训记、说明去重检查与单写保证、输出你会构造的 write_plan 参数（不要真正调用 Skill 或训记接口）。","expected_output": "生成臀腿部训练计划（含检查表+四板块），询问用户确认，询问是否写入训记，并展示 write_plan 参数：title≤4字、client_request_id 格式正确、包含 movements/sets、提及去重日志与锁文件。",
       "files": [],
       "expectations": [
         "输出包含完整的训练计划检查表和四板块正文",
@@ -21,8 +20,8 @@
     },
     {
       "id": 2,
-      "eval_name": "xunji-writeback-failure-no-auto-retry",
-      "prompt": "假设你刚刚尝试把今天的腿部训练计划写入训记，xunji-training 返回：{\"success\": false, \"error\": \"too frequent, retry after 45s\"}。请按 references/trains-train-writeback.md 的约定处理这个响应，说明你会如何反馈给用户、是否会自动重试、是否会更新本地写回记录。",
+      "eval_name": "xunji-writeback-failure-no-auto-retry-glute-leg",
+      "prompt": "假设你刚刚尝试把今天的臀腿部训练计划写入训记，xunji-training 返回：{\"success\": false, \"error\": \"too frequent, retry after 45s\"}。请按 references/trains-train-writeback.md 的约定处理这个响应，说明你会如何反馈给用户、是否会自动重试、是否会更新本地写回记录。",
       "expected_output": "向用户展示 error 信息，明确说明不会自动重试，不更新本地写回记录，告诉用户等待 45 秒后再说'重新试'。",
       "files": [],
       "expectations": [
@@ -35,8 +34,8 @@
     },
     {
       "id": 3,
-      "eval_name": "duplicate-writeback-log-handling",
-      "prompt": "假设今天的日期是 2026-08-22，你正在为腿部生成训练计划。用户已确认并同意写入训记。读取 .xunji-writeback/plan-writeback-log.json 时发现它已经存在一条 datestr=2026-08-22、body_part=腿部的记录。请按 references/trains-train-writeback.md 的约定处理，说明你接下来会怎么做。",
+      "eval_name": "duplicate-writeback-log-handling-glute-leg",
+      "prompt": "假设今天的日期是 2026-08-22，你正在为臀腿部生成训练计划。用户已确认并同意写入训记。读取 .xunji-writeback/plan-writeback-log.json 时发现它已经存在一条 datestr=2026-08-22、body_part=臀腿部的记录。请按 references/trains-train-writeback.md 的约定处理，说明你接下来会怎么做。",
       "expected_output": "停下来向用户展示旧记录并询问覆盖/新建/取消，而不是静默新建。",
       "files": [],
       "expectations": [
