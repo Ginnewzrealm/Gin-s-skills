@@ -22,7 +22,7 @@ def test_matrix_classifies_direct_match():
     }
     facts = {
         "facts": [
-            {"fact_id": "W1", "type": "work", "bullets": ["负责丽水 560 万 B2B 合同谈判"]}
+            {"fact_id": "W1", "type": "work", "role": "B2B 销售经理", "bullets": ["5 年 B2B 销售经验，负责丽水 560 万合同谈判"]}
         ]
     }
     matrix = build_matrix(jd, facts)
