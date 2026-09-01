@@ -100,6 +100,7 @@ def main():
     L.append("> 署名：%s｜以下是结构槽位，请 Claude 基于亮点事实填充成 %d-%d 中文字成稿%s。"
              % (name, lo, hi if args.template != "boss" else 120,
                 "（上限 %d）" % hi if args.template == "boss" else ""))
+    L.append("> 生成成稿前必读 `references/writing-style-guide.md`：禁止陈词滥调、禁止无根据的公司声明、必须面向未来框定。")
     if args.company:
         cached = company_researcher.load_cache(root, args.company)
         if cached:
