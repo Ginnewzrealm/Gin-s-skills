@@ -40,6 +40,8 @@ import json
 import os
 import re
 import sys
+from datetime import date
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
@@ -324,20 +326,92 @@ def render(resume, editable=False):
     return tpl.replace("{{TITLE}}", esc(title)).replace("{{BODY}}", build_body(resume))
 
 
+def _resume_to_markdown(resume):
+    """把简历数据结构转成中性的 Markdown，用于基础简历.md。"""
+    lines = ["# 基础简历\n", ""]
+    basic = resume.get("basic", {})
+    if basic:
+        lines.append("## 基本信息\n")
+        for k, v in basic.items():
+            lines.append("- %s：%s\n" % (k, v))
+        lines.append("\n")
+    for sec in resume.get("sections", []):
+        title = sec.get("title", "")
+        lines.append("## %s\n" % title)
+        if sec.get("items"):
+            for item in sec["items"]:
+                if isinstance(item, dict):
+                    lines.append("- %s：%s\n" % (item.get("tag", ""), item.get("text", "")))
+                else:
+                    lines.append("- %s\n" % item)
+        for e in sec.get("entries", []):
+            org = e.get("org", "")
+            role = e.get("role", "")
+            period = e.get("period", "")
+            header = " ".join(p for p in [org, "｜" + role if role else "", period] if p)
+            lines.append("- %s\n" % header)
+            if e.get("summary"):
+                lines.append("  - 核心职责：%s\n" % e["summary"])
+            for b in e.get("bullets", []):
+                lines.append("  - %s\n" % b)
+            if e.get("skills"):
+                lines.append("  - 专业能力：%s\n" % e["skills"])
+            if e.get("impact"):
+                lines.append("  - 成果与影响：%s\n" % e["impact"])
+            if e.get("honor"):
+                lines.append("  - 荣誉奖项：%s\n" % e["honor"])
+        lines.append("\n")
+    return "".join(lines)
+
+
+def _style_to_markdown(style_profile):
+    """把版式参数转成 Markdown，用于简历版式档案.md。"""
+    lines = ["# 简历版式档案\n", ""]
+    lines.append("本文件记录当前默认简历的视觉与结构参数，便于后续复用。\n\n")
+    for k, v in sorted(style_profile.items()):
+        lines.append("- %s：%s\n" % (k, v))
+    lines.append("\n最后确认日期：%s\n" % date.today().isoformat())
+    return "".join(lines)
+
+
+def save_workspace(resume, style_profile, base_html_path):
+    """保存可复用工作空间文件。
+
+    输出：
+    - 基础简历.md
+    - 简历版式档案.md
+    - 基础简历.html（可编辑母版）
+    """
+    root = Path(base_html_path).parent
+    base_md = root / "基础简历.md"
+    style_md = root / "简历版式档案.md"
+
+    base_md.write_text(_resume_to_markdown(resume), encoding="utf-8")
+    style_md.write_text(_style_to_markdown(style_profile), encoding="utf-8")
+
+    # 渲染可编辑母版
+    html_text = render(resume, editable=True)
+    with open(base_html_path, "w", encoding="utf-8") as f:
+        f.write(html_text)
+    return base_md, style_md, Path(base_html_path)
+
+
 def main():
     ap = argparse.ArgumentParser(description="渲染 HTML 简历")
     ap.add_argument("--resume", required=True)
     ap.add_argument("--kb", default=None)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--editable", action="store_true", help="生成可编辑 HTML")
     args = ap.parse_args()
     with open(args.resume, encoding="utf-8") as f:
         resume = json.load(f)
-    html_text = render(resume)
+    html_text = render(resume, editable=args.editable)
     if args.out:
         out = args.out
     else:
         root = common.kb_root(args.kb)
-        out = common.out_path(root, "resumes", "%s-%s.html" % (resume.get("title", "简历"), common.stamp()))
+        filename = "%s-%s.html" % (resume.get("title", "简历"), common.stamp())
+        out = common.out_path(root, "生成物", filename)
     with open(out, "w", encoding="utf-8") as f:
         f.write(html_text)
     print("[完成] HTML 简历已生成: %s" % out)
