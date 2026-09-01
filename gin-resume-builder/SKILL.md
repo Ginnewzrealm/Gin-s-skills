@@ -87,6 +87,7 @@ Progress:
 - **优势录入**：个人优势/岗位胜任条目用 `append-advantage --text '...'` 写入 `原始事实/advantages.md`，展示层自动置顶为「岗位胜任」
 - **技能深挖**：为核心技能写详细描述前信息不足时，按 `references/skill-mining-playbook.md` 支架式提问（把创作题变成选择题/填空题/改错题，不抛开放式大问题），核心技能挖全 STAR-Plus 五维、其余从简；产物经用户确认后写入 `原始事实/skill_details.md` 并运行 `facts_parser.py` 重建
 - **STAR 行为证据挖掘**：在 KB 访谈/增量更新对话中，当用户说出具体工作经历、项目经历、技能使用场景或优势时，Agent 应语义触发 → 暂停主线 → 按 `references/tacit-mining-methodology.md` 用 CDM/对比/Laddering/反事实/隐喻轮换追问 5-8 轮 → Teachback 确认 → 写入 `原始事实/behavioral_evidence/` → 返回主线
+- **经历价值雷达（可选）**：在需要深挖或用户感觉素材不足时，调用 `kb_interview.py mine ... --radar`，先输出 `references/career-value-radar.md` 中的横向扫描提示，帮助用户发现被忽略的商业价值、用户洞察、协作与决策信号
 
 #### skill_details 与 behavioral_evidence 的协作规则
 

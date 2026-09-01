@@ -200,8 +200,13 @@ def cmd_summary(root):
              len(data["advantages"]), be, data["total_years"]))
 
 
-def cmd_mine(root, domain, source, description):
+def cmd_mine(root, domain, source, description, radar=False):
     """启动一次 STAR 深挖会话（tacit-mining 模式）。"""
+    if radar:
+        print("\n## 经历价值雷达（可选深挖方向）\n")
+        for p in career_value_radar_prompts()[:8]:
+            print("- %s" % p)
+        print()
     miner = TacitMiner(root, domain, source)
     print(miner.next_question(""))
     # 实际对话由 Claude 调用本命令的多次交互完成；这里输出第一个问题。
@@ -236,6 +241,7 @@ def main():
                     help="mine 专用：挖掘域 work_experience/project_experience/skill_mastery/advantage_evidence")
     ap.add_argument("--source", default="", help="mine 专用：来源标识，如'公司-职位'")
     ap.add_argument("--description", default="", help="mine 专用：本轮挖掘主题描述")
+    ap.add_argument("--radar", action="store_true", help="mine 专用：在 STAR 深挖前先输出经历价值雷达提示")
     args = ap.parse_args()
     root = common.kb_root(args.kb)
 
@@ -256,7 +262,7 @@ def main():
     elif args.command == "summary":
         cmd_summary(root)
     elif args.command == "mine":
-        cmd_mine(root, args.domain, args.source, args.description)
+        cmd_mine(root, args.domain, args.source, args.description, radar=args.radar)
     elif args.command == "validate-skill":
         cmd_validate_skill(root, args.text)
 
