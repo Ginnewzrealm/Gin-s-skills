@@ -174,16 +174,6 @@ class OpenCLIChromeLauncher:
                 impact="无法使用 OpenCLI。",
             )
 
-        doctor_ok = self._run_doctor()
-        if not doctor_ok:
-            return self._error(
-                "OPENCLI_DOCTOR_FAILED",
-                "OpenCLI 浏览器桥接失败。",
-                reason="Chrome 扩展未安装或调试端口未开启。",
-                action="请安装 OpenCLI Chrome 扩展并启动 Chrome，或点击扩展图标激活连接。",
-                impact="无法建立浏览器会话。",
-            )
-
         if not self._is_chrome_available():
             return self._error(
                 "CHROME_NOT_FOUND",
@@ -195,26 +185,25 @@ class OpenCLIChromeLauncher:
 
         chrome_profiles = self._get_chrome_profiles()
         opencli_profiles = self._list_profiles()
-        if not opencli_profiles:
-            return self._error(
-                "OPENCLI_NO_PROFILE",
-                "OpenCLI 未连接任何 Chrome profile。",
-                reason="opencli profile list 返回空列表。",
-                action="请启动 Chrome 并确保 OpenCLI 扩展已连接。",
-                impact="无法建立浏览器会话。",
-            )
 
-        current_chrome_profile_dir = self._get_current_chrome_profile_dir()
-        matched_profiles = self._match_profiles(
-            opencli_profiles, chrome_profiles, current_chrome_profile_dir
-        )
-        selected = self._select_profile(matched_profiles, chrome_profiles)
+        selected: Optional[Dict[str, Any]] = None
+        if opencli_profiles:
+            current_chrome_profile_dir = self._get_current_chrome_profile_dir()
+            matched_profiles = self._match_profiles(
+                opencli_profiles, chrome_profiles, current_chrome_profile_dir
+            )
+            selected = self._select_profile(matched_profiles, chrome_profiles)
+        elif chrome_profiles:
+            # OpenCLI 尚未记录任何 profile（Chrome 未启动或扩展未连接过）
+            # 退化为只从 Chrome Local State 选择目标 profile
+            selected = self._select_chrome_profile_only(chrome_profiles)
+
         if not selected:
             return self._error(
                 "BROWSER_PROFILE_NEEDED",
-                "存在多个 Chrome profile，需要明确选择。",
-                reason="无法自动推断哪个 profile 安装了 OpenCLI 扩展。",
-                action="请在配置中指定 browser_profile.opencli_profile_id 和 chrome_profile_id。",
+                "无法自动确定目标 Chrome profile。",
+                reason="opencli profile list 为空且 Chrome Local State 中无可用 profile。",
+                action="请启动 Chrome 并确保 OpenCLI 扩展已安装，或手动配置 profile。",
                 impact="无法建立浏览器会话。",
             )
 
@@ -226,22 +215,37 @@ class OpenCLIChromeLauncher:
 
         profile_id = selected["opencli_id"]
         chrome_profile_id = selected.get("chrome_id")
+
+        # 尝试切换默认 profile；此时 Chrome 可能未启动，失败也不阻塞
         if profile_id:
             self._switch_profile(profile_id)
-
-        doctor_ok = self._run_doctor()
-        if not doctor_ok:
-            return self._error(
-                "OPENCLI_DOCTOR_FAILED",
-                "切换 profile 后 OpenCLI 桥接失败。",
-                reason="profile 切换后扩展连接断开。",
-                action="请检查 Chrome 中 OpenCLI 扩展图标状态，或尝试其他 profile。",
-                impact="无法继续。",
-            )
 
         self.config["initialized"] = True
         self.config["initialized_at"] = datetime.now(timezone.utc).isoformat()
         save_config(self.config)
+
+        # 如果 Chrome 未运行或扩展未连接，给出提示但不失败
+        doctor_ok = self._run_doctor()
+        if not doctor_ok:
+            return {
+                "status": "partial",
+                "module": "opencli-chrome-launcher",
+                "message": f"⚠️ 初始化完成，但 OpenCLI 扩展尚未连接。\n已保存绑定：Chrome profile '{selected.get('chrome_name', 'Unknown')}'（{profile_id}）。\n操作：请运行 'use' 模式，或在 Chrome 中点击 OpenCLI 扩展图标激活连接。",
+                "data": {
+                    "initialized": True,
+                    "opencli_version": version,
+                    "profile_id": profile_id,
+                    "chrome_profile_id": chrome_profile_id,
+                    "chrome_profile_name": selected.get("chrome_name", "Unknown"),
+                    "doctor_passed": False,
+                },
+                "errors": [
+                    {
+                        "code": "OPENCLI_DOCTOR_FAILED",
+                        "message": "OpenCLI 扩展未连接，请运行 use 模式或手动激活扩展。",
+                    }
+                ],
+            }
 
         chrome_name = self.config["browser_profile"].get("chrome_profile_name", "")
         return {
@@ -289,6 +293,65 @@ class OpenCLIChromeLauncher:
 
         return matched_profiles[0] if matched_profiles else None
 
+    def _select_chrome_profile_only(
+        self, chrome_profiles: List[Dict[str, str]]
+    ) -> Optional[Dict[str, Any]]:
+        """
+        当 OpenCLI 尚未记录任何 profile 时，仅从 Chrome profile 中选择。
+        优先级：
+        1. 名称/email 包含 openclaw/opencli 的
+        2. id 为 "Profile 1" 的
+        3. id 为 "Default" 的
+        4. 第一个
+        """
+        if not chrome_profiles:
+            return None
+
+        for cp in chrome_profiles:
+            name = (cp.get("name") or "").lower()
+            email = (cp.get("email") or "").lower()
+            if "openclaw" in name or "openclaw" in email or "opencli" in name or "opencli" in email:
+                return {
+                    "opencli_id": None,
+                    "opencli_name": "",
+                    "opencli_connected": False,
+                    "chrome_id": cp.get("id"),
+                    "chrome_name": cp.get("name", cp.get("id")),
+                    "chrome_email": cp.get("email", ""),
+                }
+
+        for cp in chrome_profiles:
+            if cp.get("id") == "Profile 1":
+                return {
+                    "opencli_id": None,
+                    "opencli_name": "",
+                    "opencli_connected": False,
+                    "chrome_id": cp.get("id"),
+                    "chrome_name": cp.get("name", cp.get("id")),
+                    "chrome_email": cp.get("email", ""),
+                }
+
+        for cp in chrome_profiles:
+            if cp.get("id") == "Default":
+                return {
+                    "opencli_id": None,
+                    "opencli_name": "",
+                    "opencli_connected": False,
+                    "chrome_id": cp.get("id"),
+                    "chrome_name": cp.get("name", cp.get("id")),
+                    "chrome_email": cp.get("email", ""),
+                }
+
+        cp = chrome_profiles[0]
+        return {
+            "opencli_id": None,
+            "opencli_name": "",
+            "opencli_connected": False,
+            "chrome_id": cp.get("id"),
+            "chrome_name": cp.get("name", cp.get("id")),
+            "chrome_email": cp.get("email", ""),
+        }
+
     # ---------- use 模式 ----------
 
     def _run_use(self, session_name: Optional[str]) -> Dict[str, Any]:
@@ -330,19 +393,46 @@ class OpenCLIChromeLauncher:
             chrome_profile_id = self.config["browser_profile"].get("chrome_profile_id")
 
             if not profile_id:
-                profiles = self._list_profiles()
-                if profiles:
-                    profile_id = profiles[0]["id"]
-                    self.config["browser_profile"]["opencli_profile_id"] = profile_id
+                # binding 中没有 OpenCLI profile ID：尝试启动 Chrome 后动态检测
+                print("[OpenCLIChromeLauncher] binding 中缺少 OpenCLI profile ID，将启动 Chrome 后动态检测...")
+                if not chrome_profile_id:
+                    chrome_profile_id = "Profile 1"
+                    self.config["browser_profile"]["chrome_profile_id"] = chrome_profile_id
                     save_config(self.config)
-                else:
+
+                if not self._is_chrome_running():
+                    print(f"[OpenCLIChromeLauncher] 用 profile {chrome_profile_id} 启动 Chrome")
+                    if not self.launch_chrome(profile_dir=chrome_profile_id):
+                        return self._error(
+                            "CHROME_LAUNCH_FAILED",
+                            "无法启动 Chrome。",
+                            reason="Chrome 启动命令执行失败。",
+                            action="请检查 Chrome 安装状态。",
+                            impact="无法使用 OpenCLI。",
+                        )
+                    if not self._wait_for_chrome(max_wait=15):
+                        return self._error(
+                            "CHROME_LAUNCH_TIMEOUT",
+                            "Chrome 启动后未检测到进程。",
+                            reason="浏览器可能仍在加载或启动命令无效。",
+                            action="请手动检查 Chrome 是否已启动。",
+                            impact="无法使用 OpenCLI。",
+                        )
+
+                # 等待扩展连接并识别 profile ID
+                detected = self._detect_opencli_profile_after_launch(max_retry=15, retry_interval=2.0)
+                if not detected:
                     return self._error(
-                        "BROWSER_PROFILE_MISSING",
-                        "未配置 OpenCLI profile。",
-                        reason="配置中缺少 browser_profile.opencli_profile_id。",
-                        action="请重新运行初始化，或手动配置 profile ID。",
-                        impact="无法建立浏览器会话。",
+                        "EXTENSION_NOT_INSTALLED",
+                        "OpenCLI 扩展未在目标 Chrome profile 中连接。",
+                        reason="Chrome 已启动到目标 profile，但扩展仍未连接。",
+                        action="请在 Chrome 中安装并激活 OpenCLI 扩展，或检查目标 profile 是否正确。",
+                        impact="无法使用 OpenCLI。",
                     )
+                profile_id = detected
+                self.config["browser_profile"]["opencli_profile_id"] = profile_id
+                save_config(self.config)
+                print(f"[OpenCLIChromeLauncher] 已检测到 OpenCLI profile ID: {profile_id}")
 
             if not chrome_profile_id:
                 chrome_profile_id = "Profile 1"
@@ -396,6 +486,21 @@ class OpenCLIChromeLauncher:
             }
         finally:
             self._release_lock()
+
+    def _detect_opencli_profile_after_launch(
+        self, max_retry: int = 15, retry_interval: float = 2.0
+    ) -> Optional[str]:
+        """
+        Chrome 启动后，轮询等待 OpenCLI 扩展连接并返回 connected profile ID。
+        """
+        print("[OpenCLIChromeLauncher] 等待 OpenCLI 扩展连接并识别 profile...")
+        for i in range(max_retry):
+            connected_id = self.get_connected_opencli_profile()
+            if connected_id and self._run_doctor():
+                return connected_id
+            print(f"[OpenCLIChromeLauncher] 等待扩展连接... ({i + 1}/{max_retry})")
+            time.sleep(retry_interval)
+        return None
 
     # ---------- cleanup 模式 ----------
 
@@ -505,6 +610,10 @@ class OpenCLIChromeLauncher:
                 "code": "CHROME_LAUNCH_TIMEOUT",
                 "reason": "Chrome 启动后未检测到进程",
             }
+
+        # 等待 session restore 完成；不在这里主动清理 OpenCLI 自动窗口——
+        # 自动窗口是扩展连接所必需的，用户的 session 窗口也不能误关
+        time.sleep(2)
 
         print(f"[OpenCLIChromeLauncher] 切换 OpenCLI profile: {opencli_profile_id}")
         if not self._switch_profile(opencli_profile_id):
@@ -661,9 +770,10 @@ class OpenCLIChromeLauncher:
     def cleanup_leaked_windows(self) -> str:
         """
         清理 OpenCLI 残留的 "OpenCLI Browser" 标签和空白窗口（macOS）。
-        两阶段：
+        三阶段：
         1. 关闭所有标题包含 "OpenCLI Browser" 的标签
         2. 关闭只剩 about:blank / chrome://newtab 的空窗口
+        3. 通过 System Events 关闭标题含 "OpenCLI Browser" 群组的窗口（自动创建的扩展窗口）
         """
         if platform.system() != "Darwin":
             return "非 macOS 平台，跳过"
@@ -690,44 +800,84 @@ class OpenCLIChromeLauncher:
                 end repeat
             end repeat
 
-            -- 第二阶段：关闭只剩 about:blank / chrome://newtab 的空窗口
-            repeat with w from (count windows) to 1 by -1
-                set win to window w
-                set allTabs to tabs of win
-                if (count allTabs) = 0 then
-                    close win
-                    set closedWindows to closedWindows + 1
-                else
-                    set isLeakedWindow to true
-                    repeat with t in allTabs
-                        try
-                            set tabURL to URL of t
-                            set tabTitle to title of t
-                            if not (tabURL starts with "about:blank" or tabURL starts with "chrome://newtab") then
-                                set isLeakedWindow to false
-                                exit repeat
-                            end if
-                        on error
-                            -- 忽略无法读取的标签
-                        end try
-                    end repeat
-                    if isLeakedWindow then
-                        repeat with t from (count allTabs) to 1 by -1
+            -- 第二阶段：仅当存在多个窗口时，才关闭只剩 about:blank 的空窗口
+            -- 单窗口场景下不要动用户的窗口（用户可能就在看新标签页）
+            -- 注意：chrome://newtab/ 是用户的"新标签页"，不应视为空白泄露窗口
+            if (count windows) > 1 then
+                repeat with w from (count windows) to 1 by -1
+                    set win to window w
+                    set allTabs to tabs of win
+                    if (count allTabs) = 0 then
+                        close win
+                        set closedWindows to closedWindows + 1
+                    else
+                        set isLeakedWindow to true
+                        repeat with t in allTabs
                             try
-                                close tab t of win
-                                set closedTabs to closedTabs + 1
+                                set tabURL to URL of t
+                                -- 只把 about:blank 视为泄露；chrome://newtab 是用户的合法页面
+                                if not (tabURL starts with "about:blank") then
+                                    set isLeakedWindow to false
+                                    exit repeat
+                                end if
+                            on error
+                                -- 忽略无法读取的标签
                             end try
                         end repeat
-                        if (count tabs of win) = 0 then
-                            close win
-                            set closedWindows to closedWindows + 1
+                        if isLeakedWindow then
+                            repeat with t from (count allTabs) to 1 by -1
+                                try
+                                    close tab t of win
+                                    set closedTabs to closedTabs + 1
+                                end try
+                            end repeat
+                            if (count tabs of win) = 0 then
+                                close win
+                                set closedWindows to closedWindows + 1
+                            end if
                         end if
                     end if
-                end if
-            end repeat
-
-            return "closedTabs:" & closedTabs & ",closedWindows:" & closedWindows
+                end repeat
+            end if
         end tell
+
+        -- 第三阶段（macOS 专用）：通过 System Events 关闭标题含 "OpenCLI Browser" 群组的窗口
+        -- 这是 OpenCLI 扩展自动创建的窗口，不属于用户的 session
+        -- 注意：System Events 可能比 Chrome AppleScript 多看到一些空名称窗口，
+        -- 需要在映射 SE 索引到 Chrome 索引时跳过这些空窗口
+        try
+            set autoCreatedWindows to {}
+            set emptyCount to 0
+            tell application "System Events"
+                tell process "Google Chrome"
+                    set seWinIdx to 1
+                    repeat with w in windows
+                        set winName to name of w
+                        if winName is "" or winName is missing value then
+                            set emptyCount to emptyCount + 1
+                        else if winName contains "OpenCLI Browser" then
+                            set chromeIdx to (seWinIdx - emptyCount)
+                            set end of autoCreatedWindows to chromeIdx
+                        end if
+                        set seWinIdx to seWinIdx + 1
+                    end repeat
+                end tell
+            end tell
+            -- 倒序关闭，避免索引偏移
+            tell application "Google Chrome"
+                repeat with i from (count autoCreatedWindows) to 1 by -1
+                    set wIdx to item i of autoCreatedWindows
+                    try
+                        close window wIdx
+                        set closedWindows to closedWindows + 1
+                    end try
+                end repeat
+            end tell
+        on error
+            -- 忽略 System Events 不可用的情况
+        end try
+
+        return "closedTabs:" & closedTabs & ",closedWindows:" & closedWindows
         '''
         try:
             result = subprocess.run(
@@ -876,6 +1026,10 @@ class OpenCLIChromeLauncher:
             if line.startswith("Disconnected saved profiles"):
                 in_connected = False
                 in_disconnected = True
+                continue
+
+            # 跳过非 profile 行（如提示语、空行）
+            if "—" not in line and "--" not in line:
                 continue
 
             parts = line.split()

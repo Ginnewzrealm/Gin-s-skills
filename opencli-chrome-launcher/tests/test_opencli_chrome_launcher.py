@@ -37,6 +37,37 @@ Disconnected saved profiles
         self.assertEqual(profiles[1]["id"], "Profile")
         self.assertFalse(profiles[1]["connected"])
 
+    def test_parse_no_connected_returns_empty(self):
+        output = """No Browser Bridge profiles connected.
+Open a Chrome profile with the OpenCLI extension installed, then run opencli profile list again.
+"""
+        profiles = launcher.OpenCLIChromeLauncher()._parse_profile_list(output)
+        self.assertEqual(profiles, [])
+
+
+class TestChromeOnlySelection(unittest.TestCase):
+    def test_profile_1_priority(self):
+        chrome_profiles = [
+            {"id": "Default", "name": "Default"},
+            {"id": "Profile 1", "name": "Mira", "email": ""},
+        ]
+        selected = launcher.OpenCLIChromeLauncher()._select_chrome_profile_only(chrome_profiles)
+        self.assertEqual(selected["chrome_id"], "Profile 1")
+        self.assertIsNone(selected["opencli_id"])
+
+    def test_opencli_name_priority(self):
+        chrome_profiles = [
+            {"id": "Default", "name": "Default"},
+            {"id": "Profile 2", "name": "opencli-agent", "email": ""},
+        ]
+        selected = launcher.OpenCLIChromeLauncher()._select_chrome_profile_only(chrome_profiles)
+        self.assertEqual(selected["chrome_id"], "Profile 2")
+
+    def test_fallback_to_first(self):
+        chrome_profiles = [{"id": "Profile 5", "name": "Random"}]
+        selected = launcher.OpenCLIChromeLauncher()._select_chrome_profile_only(chrome_profiles)
+        self.assertEqual(selected["chrome_id"], "Profile 5")
+
 
 class TestDoctorParsing(unittest.TestCase):
     def test_doctor_green(self):

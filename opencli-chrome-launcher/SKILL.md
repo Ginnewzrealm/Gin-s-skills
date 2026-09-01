@@ -4,10 +4,10 @@ description: |
   当用户需要确保 Chrome 浏览器已准备好供 OpenCLI 使用，或提到 "打开 Chrome 给 OpenCLI"、"清理 OpenCLI Browser 标签"、"检查 OpenCLI 浏览器状态" 时触发。
   本技能负责 OpenCLI 浏览器环境的全生命周期：check（只读诊断）、init（初始化绑定）、use（使用前确保浏览器就绪）、cleanup（清理残留标签）。
   不执行任何 OpenCLI 业务采集，只提供"浏览器已就绪"的运行时环境。
-version: "v1.0.0"
+version: "v1.2.0"
 ---
 
-# opencli-chrome-launcher v1.0.0
+# opencli-chrome-launcher v1.2.0
 
 本技能让 Agent 在使用 OpenCLI 之前，自动完成 Chrome 启动、账号切换、扩展连接检查以及残留标签清理。
 
