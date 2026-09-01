@@ -32,6 +32,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
 import facts_parser
 from mining import TacitMiner, SkillValidator
+from mining.evidence_store import EvidenceStore
 
 
 def _radar_reference_path():
@@ -212,6 +213,32 @@ def cmd_mine(root, domain, source, description, radar=False):
     # 实际对话由 Claude 调用本命令的多次交互完成；这里输出第一个问题。
 
 
+def cmd_save_evidence(root, domain, source, description, background, task,
+                      actions, result, insight, boundary, confidence="confirmed", verbatim=""):
+    """把用户确认后的 STAR 结构化文本写入 behavioral_evidence/。"""
+    store = EvidenceStore(root)
+    star = {
+        "Background": background,
+        "Task": task,
+        "Action": list(actions),
+        "Result": result,
+        "Key Insight": insight,
+        "Boundary": boundary,
+    }
+    name = store.save(
+        domain=domain,
+        description=description,
+        source=source,
+        star=star,
+        confidence=confidence,
+        verbatim=verbatim,
+    )
+    # 证据写入后统一触发 facts 重建与版本号+1
+    facts_parser.post_write(root, "保存行为证据：%s" % description)
+    print("[完成] 已写入知识库：原始事实/behavioral_evidence/%s.md" % name)
+    return name
+
+
 def cmd_validate_skill(root, skill_name):
     """校验某技能的熟练度证据是否足够。"""
     v = SkillValidator(root)
@@ -238,10 +265,19 @@ def main():
     ap.add_argument("--type", choices=["general", "domain"], default="domain",
                     help="append-skill 专用：general=通用能力段，domain=专属能力段（默认）")
     ap.add_argument("--domain", default="work_experience",
-                    help="mine 专用：挖掘域 work_experience/project_experience/skill_mastery/advantage_evidence")
-    ap.add_argument("--source", default="", help="mine 专用：来源标识，如'公司-职位'")
-    ap.add_argument("--description", default="", help="mine 专用：本轮挖掘主题描述")
+                    help="mine/save-evidence 专用：挖掘域 work_experience/project_experience/skill_mastery/advantage_evidence")
+    ap.add_argument("--source", default="", help="mine/save-evidence 专用：来源标识，如'公司-职位'")
+    ap.add_argument("--description", default="", help="mine/save-evidence 专用：本轮挖掘主题描述")
     ap.add_argument("--radar", action="store_true", help="mine 专用：在 STAR 深挖前先输出经历价值雷达提示")
+    # save-evidence 专用参数
+    ap.add_argument("--background", default="", help="save-evidence 专用：背景")
+    ap.add_argument("--task", default="", help="save-evidence 专用：任务")
+    ap.add_argument("--action", action="append", default=[], help="save-evidence 专用：行动（可重复）")
+    ap.add_argument("--result", default="", help="save-evidence 专用：结果")
+    ap.add_argument("--insight", default="", help="save-evidence 专用：关键判断")
+    ap.add_argument("--boundary", default="", help="save-evidence 专用：边界条件")
+    ap.add_argument("--confidence", default="confirmed", help="save-evidence 专用：confirmed/fuzzy")
+    ap.add_argument("--verbatim", default="", help="save-evidence 专用：用户原话")
     args = ap.parse_args()
     root = common.kb_root(args.kb)
 
@@ -263,6 +299,21 @@ def main():
         cmd_summary(root)
     elif args.command == "mine":
         cmd_mine(root, args.domain, args.source, args.description, radar=args.radar)
+    elif args.command == "save-evidence":
+        cmd_save_evidence(
+            root=root,
+            domain=args.domain,
+            source=args.source,
+            description=args.description,
+            background=args.background,
+            task=args.task,
+            actions=args.action,
+            result=args.result,
+            insight=args.insight,
+            boundary=args.boundary,
+            confidence=args.confidence,
+            verbatim=args.verbatim,
+        )
     elif args.command == "validate-skill":
         cmd_validate_skill(root, args.text)
 

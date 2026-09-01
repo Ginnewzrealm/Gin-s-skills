@@ -56,6 +56,7 @@ KB_COMMANDS = {
     "list-skills": "查看技能清单",
     "summary": "知识库摘要",
     "mine": "启动 STAR 隐性知识挖掘会话",
+    "save-evidence": "把用户确认后的 STAR 行为证据写入知识库",
     "validate-skill": "校验技能 STAR 证据是否足够",
 }
 
