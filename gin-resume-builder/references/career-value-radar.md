@@ -1,43 +1,43 @@
-# Career Value Radar
+# Career Value Radar / 职业价值雷达
 
-Use this radar after hearing the user's initial account. It is a thinking tool, not a questionnaire. Select only plausible dimensions and phrase questions in the language of the experience.
+在完成用户初步叙述后使用本雷达。它是一个思考工具，不是问卷。只选择当前经历中合理的维度，并用经历本身的语言来提问。
 
-## Business and user value
+## 商业与用户价值
 
-- **Problem and objective:** What problem existed, for whom, and why did it matter then?
-- **Users and insight:** Did the user observe, interview, support, segment, persuade, or learn from users?
-- **Growth and distribution:** Did the work acquire attention, participation, traffic, leads, or adoption?
-- **Retention and relationship:** Did it improve repeat participation, trust, continuity, or community health?
-- **Monetization:** Was there advertising, sponsorship, sales, pricing, paid service, commission, licensing, or revenue-sharing?
-- **Partnerships:** Did the user work with clients, creators, institutions, vendors, platforms, or other external parties?
+- **问题与目标：** 当时存在什么问题，为谁而存在，为什么重要？
+- **用户与洞察：** 你是否观察、访谈、支持、分层、说服或从用户身上学到过什么？
+- **增长与分发：** 这项工作是否带来了关注、参与、流量、线索或采用？
+- **留存与关系：** 它是否提升了重复参与、信任、连续性或社群健康？
+- **商业化：** 是否涉及广告、赞助、销售、定价、付费服务、佣金、授权或收入分成？
+- **合作与伙伴关系：** 你是否与客户、创作者、机构、供应商、平台或其他外部方合作？
 
-## Product, content, and operating value
+## 产品、内容与运营价值
 
-- **Content:** Did the user select, create, edit, package, distribute, or repurpose content?
-- **Product discovery:** Did they identify a need, test an assumption, compare alternatives, or give feature feedback?
-- **Data and decisions:** Did they monitor signals, build a dataset, compare patterns, or change a decision using evidence?
-- **Process and systems:** Did they create an SOP, rule, template, database, taxonomy, workflow, or quality standard?
-- **Delivery and coordination:** Did they scope, sequence, schedule, negotiate resources, or coordinate dependencies?
-- **Governance and risk:** Did they handle complaints, moderation, privacy, compliance, safety, reputation, or edge cases?
+- **内容：** 你是否选择、创作、编辑、包装、分发或再利用过内容？
+- **产品发现：** 你是否识别过需求、验证过假设、比较过方案或给出过功能反馈？
+- **数据与决策：** 你是否监测信号、建立数据集、对比模式或用证据改变过决策？
+- **流程与系统：** 你是否创建过 SOP、规则、模板、数据库、分类体系、工作流或质量标准？
+- **交付与协调：** 你是否做过范围界定、排序、排期、资源谈判或协调依赖？
+- **治理与风险：** 你是否处理过投诉、审核、隐私、合规、安全、声誉或边缘案例？
 
-## Individual signal
+## 个人信号
 
-- **Ownership:** What did the user notice, initiate, decide, or carry through rather than merely receive?
-- **Judgment and trade-offs:** What options existed, what did they choose, and what constraint shaped the choice?
-- **Influence:** Did they change another person's decision without formal authority?
-- **Learning and adaptation:** What failed, surprised them, or caused them to change their method?
-- **Expertise:** What domain knowledge or pattern recognition made their contribution different?
-- **Leverage:** Was the output reused, scaled, automated, taught, handed off, or turned into a durable asset?
+- ** ownership：** 你主动注意到、发起、决定或推进了什么，而不是仅仅接收任务？
+- **判断与权衡：** 当时有哪些选项，你选择了什么，什么约束塑造了这个选择？
+- **影响力：** 你是否在没有正式权力的情况下改变过他人的决定？
+- **学习与适应：** 什么失败了、让你意外，或促使你改变方法？
+- **专业度：** 什么领域知识或模式识别让你的贡献与众不同？
+- **杠杆效应：** 输出是否被复用、规模化、自动化、教授、交接或转化为持久资产？
 
-## High-yield prompts
+## 高产出提问
 
-Use prompts like these only when the context supports them:
+只在上下文支持时使用以下提示：
 
-- “Besides growing or delivering it, did this ever involve money—advertising, sponsorship, fees, a client, or a commercial negotiation?”
-- “Did people only consume the work, or did you also have to set rules and handle what went wrong?”
-- “Was anything you made reused by the team after the original task ended?”
-- “Did this change what the team decided to do, even if you did not own the final decision?”
-- “Was there a request you pushed back on, narrowed, or reframed because it would not work?”
-- “What part seemed ordinary to you but other people repeatedly came to you for?”
+- "除了增长或交付，这件事是否涉及钱——广告、赞助、费用、客户或商业谈判？"
+- "人们只是消费这个成果，还是你也需要制定规则并处理出错的情况？"
+- "你做的什么东西在原始任务结束后被团队继续复用？"
+- "这件事是否改变了团队的决定，即使你不拥有最终决定权？"
+- "是否有某个请求被你拒绝、缩小范围或重新框定，因为它行不通？"
+- "哪部分你觉得很普通，但别人却反复找你帮忙？"
 
-The goal is discovery. Once a new branch appears, switch to selective deepening rather than continuing to scan indiscriminately.
+目标是发现。一旦出现新分支，就切换到选择性深挖，而不是继续无差别扫描。

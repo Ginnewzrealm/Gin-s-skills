@@ -34,6 +34,23 @@ import facts_parser
 from mining import TacitMiner, SkillValidator
 
 
+def _radar_reference_path():
+    return os.path.join(common.SKILL_DIR, "references", "career-value-radar.md")
+
+
+def career_value_radar_prompts():
+    """从 references/career-value-radar.md 加载高价值提示。"""
+    path = _radar_reference_path()
+    prompts = []
+    with open(path, encoding="utf-8") as f:
+        text = f.read()
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("-"):
+            prompts.append(line.lstrip("- ").strip())
+    return prompts
+
+
 def _append(path, text):
     with open(path, "a", encoding="utf-8") as f:
         f.write(text)
