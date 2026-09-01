@@ -239,12 +239,40 @@ def validate_library(library_path, rules_path, strict=False):
     return total_errors
 
 
+def validate_single_file(file_path, rules_path, strict=True):
+    """校验单个动作文档。"""
+    rules_text = Path(rules_path).read_text(encoding="utf-8")
+    wordlist = load_wordlist(rules_text)
+
+    if not wordlist:
+        print("警告: 未能从 rules.md 解析出目标部位词表", file=sys.stderr)
+
+    doc_path = Path(file_path)
+    content = doc_path.read_text(encoding="utf-8")
+    errors = validate_doc(content, doc_path.name, wordlist, strict=strict)
+
+    if errors:
+        print(f"\n❌ {doc_path}")
+        for err in errors:
+            print(f"   - {err}")
+        print(f"\n校验完成: 1 个文档, {len(errors)} 个错误")
+        return len(errors)
+
+    print(f"\n✅ {doc_path}: 通过")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="校验动作文档 frontmatter")
     parser.add_argument(
         "--library",
-        default="01-训练动作库",
-        help="动作库根目录 (默认: 01-训练动作库)",
+        default=None,
+        help="动作库根目录 (默认: 01-训练动作库，与 --file 二选一)",
+    )
+    parser.add_argument(
+        "--file",
+        default=None,
+        help="单个动作文档路径 (与 --library 二选一)",
     )
     parser.add_argument(
         "--rules",
@@ -258,7 +286,16 @@ def main():
     )
     args = parser.parse_args()
 
-    total_errors = validate_library(args.library, args.rules, strict=args.strict)
+    if args.library and args.file:
+        print("错误: --library 和 --file 不能同时使用", file=sys.stderr)
+        sys.exit(2)
+
+    if args.file:
+        total_errors = validate_single_file(args.file, args.rules, strict=args.strict)
+    else:
+        library = args.library or "01-训练动作库"
+        total_errors = validate_library(library, args.rules, strict=args.strict)
+
     sys.exit(1 if total_errors > 0 else 0)
 
 

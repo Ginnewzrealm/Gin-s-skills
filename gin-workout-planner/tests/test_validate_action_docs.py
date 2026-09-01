@@ -170,6 +170,35 @@ def test_h1_mismatch_fails():
     assert any("H1" in e or "标题" in e for e in errors)
 
 
+def test_validate_single_file(tmp_path):
+    doc = tmp_path / "上斜杠铃卧推.md"
+    doc.write_text("""---
+动作类型: 复合动作
+器械状态: 激活
+计重方式: 总重
+训练阶段: 学习期
+目标部位:
+  - 胸大肌上缘
+最后练习: 待记录
+累计训练次数: 0
+估算1RM: 待记录
+---
+
+# 上斜杠铃卧推
+""", encoding="utf-8")
+
+    rules = tmp_path / "rules.md"
+    rules.write_text("""### 目标部位标签词表
+
+| 部位 | 目标部位标签 |
+|---|---|
+| 胸部 | 胸大肌上缘、胸大肌下缘 |
+""", encoding="utf-8")
+
+    errors = validator.validate_single_file(str(doc), str(rules), strict=True)
+    assert errors == 0
+
+
 def test_load_wordlist_extracts_categories():
     rules_md = """### 目标部位标签词表（唯一真源）
 
