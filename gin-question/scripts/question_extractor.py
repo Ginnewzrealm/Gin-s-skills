@@ -461,6 +461,102 @@ AUX_TERMS = [
 ]
 
 
+# 反问/引导/非真实用户提问模式
+RHETORICAL_PATTERNS = [
+    r"^你(见过|知道|是否|有没有|觉得|认为|想不想)",
+    r"你.*(?:看着|心动|中招|遭遇)",
+    r"你的(?:心动|学校|公司|城市)",
+    r"^揭示.*你是否",
+    r"^看看你是否",
+    r"^你是否曾经",
+    r"^你是否遭遇过这种困惑",
+    r"^还在.*(?:节食|减重|减肥|减脂).*？$",
+    r"^.*是不是一直.*犯迷糊",
+    r"^很多人在.*一定会出现.*现象",
+    r"^减重容易维持难？$",
+    r"^想一想你真正想要的是什么",
+]
+
+
+def clean_question_text(text):
+    """清洗问题文本中的 markdown、UI、元数据等残留碎片。
+
+    返回清洗后的文本；如果清洗后明显不是真实用户问题，返回空字符串。
+    """
+    if not text:
+        return ""
+
+    # 1. 去掉转义换行和真实换行，统一为空格
+    text = text.replace("\\n", "\n")
+    text = re.sub(r"\s+", " ", text)
+
+    # 2. 去掉 markdown 格式符号
+    text = re.sub(r"\*+", "", text)
+    text = re.sub(r"#+", "", text)
+
+    # 3. 去掉表情符号（常用 Unicode 表情范围）
+    text = re.sub(r"[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF]+", "", text)
+
+    # 3b. 去掉列表/强调符号及其前面的残缺前缀（如“俯卧撑练的是胸 ‼️节食减肥更快？”）
+    text = re.sub(r"^[^·•‼️]*[·•‼️]\s*", "", text)
+
+    # 3c. 去掉剩余营销号常用特殊符号（双叹号 ‼️、加重号 · • 等）
+    text = re.sub(r"[‼️‼·•⚠️✅❌]+", "", text)
+
+    # 4. 去掉日期、作者、来源、编辑等元数据
+    text = re.sub(r"\d{4}-\d{2}-\d{2}\s*", "", text)
+    text = re.sub(r"(作者|来源|编辑|整理|记者)[：:][^、,，；;:.。！?？\s]+\s*[、,]?", "", text)
+
+    # 5. 去掉社交媒体/评论区用户名残留（用户名 + 数字/赞）
+    text = re.sub(r"^\s*\S+?\s+(?:\d+|赞)\s+", "", text)
+    text = re.sub(r"^\s*帐号已注销\s*", "", text)
+
+    # 6. 去掉开头残缺的分隔符和括号
+    text = re.sub(r"^\s*[：:、,，；;\.\s\[\（\(]+", "", text)
+    text = re.sub(r"\s*[\]\）\)]\s*$", "", text)
+
+    # 7. 去掉末尾数字编号
+    text = re.sub(r"\s*\d+\s*$", "", text)
+
+    text = text.strip()
+    return text
+
+
+def is_real_user_question(text):
+    """判断清洗后的问题是否是真实用户提出的求知性问题。
+
+    返回 False 的常见情况：
+    - 反问/引导句
+    - 文章章节标题
+    - 营销号开头引导语
+    - 过短或明显残缺
+    """
+    if not text or len(text) < 6:
+        return False
+
+    # 反问/引导模式
+    for pat in RHETORICAL_PATTERNS:
+        if re.search(pat, text):
+            return False
+
+    # 文章/营销号引导语
+    guide_prefixes = [
+        "你是否曾经",
+        "你是否遭遇过",
+        "看看你是否",
+        "揭示",
+        "你有没有想过",
+        "你还在",
+        "关注健康生活新范式",
+        "最热内容",
+    ]
+    for prefix in guide_prefixes:
+        if text.startswith(prefix):
+            return False
+
+    return True
+
+
 def clean_tail(text):
     """清理问题末尾的站点名 / 展开 / 分隔符尾巴。"""
     text = re.sub(r"\s*[\-–—|]\s*(民福康|百度|百度健康|薄荷|家庭医生在线|知乎|简书|新浪|网易|腾讯|凤凰|搜狐|健康之路|三九养生堂|99健康|39健康|寻医问药|杏林普康|好大夫|丁香医生|百度百科|百度文库|湖南省林业局|安徽省林业局|国家林业和草原局|北京市园林绿化局|科普中国|生命教育|问诊|林业局)\s*$", "", text)
@@ -468,8 +564,6 @@ def clean_tail(text):
     text = re.sub(r"\s*收起\s*$", "", text)
     text = re.sub(r"\s*[\.]{3,}\s*$", "", text)
     text = re.sub(r"\s*[\-–—\|]+\s*$", "", text)
-    # 末尾的"！"或"!": 视为感叹/修辞 → 改为问号（如有疑问词则保留）
-    # 但感叹号结尾的内容大多是修辞句，让 judge_questions 处理
     text = text.strip()
     return text
 
@@ -511,7 +605,7 @@ def clean_head(text):
         # 多种常见 FAQ/导航/章节前缀
         text = re.sub(
             r"^(常见问题FAQ|常见问题|FAQ|问题|问|Q&A|Q|A|目录|章节|章|节|第\d+[章节]|Chapter|Topic)"
-            r"[：:、\.\s]*",
+            r"[：:、\.\s]+",
             "", text)
         # 数字编号前缀
         text = re.sub(r"^\d{1,3}[、\.\)\s]+", "", text)
@@ -553,6 +647,8 @@ def extract_from_title(title, topic=None):
     if is_question_like(title):
         normalized = normalize_text(title)
         if is_relevant(normalized, topic=topic):
+            if not is_real_user_question(normalized):
+                return None
             return normalized
     return None
 
@@ -588,6 +684,11 @@ def extract_from_content(html, source_url, topic=None, max_candidates=50):
             continue
         if is_question_like(s):
             q = normalize_text(s)
+            q = clean_question_text(q)
+            if not q:
+                continue
+            if not is_real_user_question(q):
+                continue
             q = clean_tail(q)
             q = clean_head(q)
             if not is_relevant(q, topic=topic):
