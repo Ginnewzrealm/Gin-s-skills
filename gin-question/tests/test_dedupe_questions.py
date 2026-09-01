@@ -34,9 +34,25 @@ def test_keeps_distinct():
     assert len(out["unique"]) == 2
 
 
+def test_dedupe_merges_sources_of_semantic_duplicates():
+    """语义重复项（含传递性合并）的 sources 应合并到保留项。"""
+    qs = [
+        {"text": "减脂是什么？", "sources": {"https://a.com": 1}},
+        {"text": "到底减脂是什么？", "sources": {"https://b.com": 1}},
+        {"text": "究竟减脂是什么？", "sources": {"https://c.com": 1}},
+    ]
+    out = dq.dedupe(qs)
+    assert len(out["unique"]) == 1
+    kept = out["unique"][0]
+    assert kept["sources"]["https://a.com"] == 1
+    assert kept["sources"]["https://b.com"] == 1
+    assert kept["sources"]["https://c.com"] == 1
+
+
 if __name__ == "__main__":
     test_exact_dedupe()
     test_semantic_dedupe()
     test_subset_dedupe()
     test_keeps_distinct()
+    test_dedupe_merges_sources_of_semantic_duplicates()
     print("test_dedupe_questions OK")

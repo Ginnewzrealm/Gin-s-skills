@@ -42,6 +42,65 @@ def is_subset(short, long_):
     return ss <= ls and len(short) < len(long_)
 
 
+class _UnionFind:
+    """并查集，用于传递性语义合并。"""
+
+    def __init__(self, n):
+        self.parent = list(range(n))
+
+    def find(self, x):
+        while self.parent[x] != x:
+            self.parent[x] = self.parent[self.parent[x]]
+            x = self.parent[x]
+        return x
+
+    def union(self, x, y):
+        px, py = self.find(x), self.find(y)
+        if px != py:
+            self.parent[px] = py
+
+
+def _similar(a, b, threshold):
+    """判断两个问题是否语义相似或为子集关系。"""
+    if jaccard(a, b) >= threshold:
+        return True
+    if is_subset(a, b) or is_subset(b, a):
+        return True
+    return False
+
+
+def _merge_sources(kept_sources, candidate_sources):
+    """将 candidate_sources 合并到 kept_sources 中，支持 dict 或 list 格式。"""
+    if isinstance(kept_sources, dict):
+        if isinstance(candidate_sources, dict):
+            for url, freq in candidate_sources.items():
+                kept_sources[url] = kept_sources.get(url, 0) + freq
+        elif isinstance(candidate_sources, list):
+            for s in candidate_sources:
+                url = s.get("url")
+                freq = s.get("frequency", 1)
+                if url:
+                    kept_sources[url] = kept_sources.get(url, 0) + freq
+    elif isinstance(kept_sources, list):
+        if isinstance(candidate_sources, dict):
+            for url, freq in candidate_sources.items():
+                existing = next((x for x in kept_sources if x.get("url") == url), None)
+                if existing:
+                    existing["frequency"] = existing.get("frequency", 0) + freq
+                else:
+                    kept_sources.append({"url": url, "frequency": freq})
+        elif isinstance(candidate_sources, list):
+            for s in candidate_sources:
+                url = s.get("url")
+                if not url:
+                    continue
+                existing = next((x for x in kept_sources if x.get("url") == url), None)
+                if existing:
+                    existing["frequency"] = existing.get("frequency", 0) + s.get("frequency", 1)
+                else:
+                    kept_sources.append(dict(s))
+
+
 def dedupe(questions, semantic_threshold=0.85):
     """去重主函数。
 
@@ -63,42 +122,55 @@ def dedupe(questions, semantic_threshold=0.85):
             seen_texts[key].append(q)
         else:
             seen_texts[key] = [q]
-            unique.append({**q, "_norm": key, "duplicates": []})
+            unique.append({**q, "_norm": key, "duplicates": [], "sources": q.get("sources", {})})
 
-    # 2. 语义去重 + 子集去重
-    merged_indices = set()
+    n = len(unique)
+    if n == 0:
+        return {"unique": [], "duplicates_merged": 0, "detail": []}
+
+    # 2. 语义去重 + 子集去重（并查集实现传递性合并）
+    uf = _UnionFind(n)
+    for i in range(n):
+        for j in range(i + 1, n):
+            if _similar(unique[i]["_norm"], unique[j]["_norm"], semantic_threshold):
+                uf.union(i, j)
+
+    # 3. 按组聚合：保留最长文本，合并来源和 duplicates
+    groups = defaultdict(list)
+    for i in range(n):
+        groups[uf.find(i)].append(i)
+
+    result = []
     detail = []
+    duplicates_merged = 0
+    for indices in groups.values():
+        # 按长度降序，优先保留更长/更具体的问题
+        indices_sorted = sorted(indices, key=lambda i: len(unique[i]["_norm"]), reverse=True)
+        kept = unique[indices_sorted[0]]
+        merged_indices = indices_sorted[1:]
+        duplicates_merged += len(merged_indices)
 
-    # 按长度降序，优先保留更长/更具体的问题
-    order = sorted(range(len(unique)), key=lambda i: len(unique[i]["_norm"]), reverse=True)
-
-    for i in order:
-        if i in merged_indices:
-            continue
-        kept = unique[i]
         merged_texts = []
-        for j in order:
-            if i == j or j in merged_indices:
-                continue
-            candidate = unique[j]
-            sim = jaccard(kept["_norm"], candidate["_norm"])
-            if sim >= semantic_threshold or is_subset(candidate["_norm"], kept["_norm"]):
-                merged_texts.append(candidate.get("text", candidate["_norm"]))
-                kept["duplicates"].append(candidate.get("text", candidate["_norm"]))
-                merged_indices.add(j)
+        for idx in merged_indices:
+            candidate = unique[idx]
+            merged_texts.append(candidate.get("text", candidate["_norm"]))
+            kept["duplicates"].append(candidate.get("text", candidate["_norm"]))
+            # 合并来源频次
+            _merge_sources(kept.get("sources", {}), candidate.get("sources", {}))
+
         detail.append({
             "kept": kept.get("text", kept["_norm"]),
             "merged": merged_texts,
         })
+        result.append(kept)
 
-    result = [unique[i] for i in range(len(unique)) if i not in merged_indices]
     # 移除内部使用的 _norm
     for r in result:
         r.pop("_norm", None)
 
     return {
         "unique": result,
-        "duplicates_merged": len(merged_indices),
+        "duplicates_merged": duplicates_merged,
         "detail": detail,
     }
 

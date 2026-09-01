@@ -33,6 +33,7 @@ from dedupe_questions import dedupe
 from judge_questions import filter_questions
 from output_renderer import render_outputs
 from question_extractor import extract_from_content, extract_from_search_result
+from query_generator import generate as generate_queries
 from saturation_checker import SaturationTracker
 from source_grader import grade_url
 
@@ -185,6 +186,16 @@ def run(manifest, output_dir, is_abstract=False):
     dedup_result = dedupe(aggregated)
     unique = dedup_result["unique"]
 
+    # 4b. 去重后重新计算来源数和总频次
+    for item in unique:
+        sources = item.get("sources", [])
+        if isinstance(sources, list):
+            item["source_count"] = len(sources)
+            item["total_frequency"] = sum(s.get("frequency", 1) for s in sources)
+        elif isinstance(sources, dict):
+            item["source_count"] = len(sources)
+            item["total_frequency"] = sum(sources.values())
+
     # 5. 频次门槛
     confirmed, pending = apply_frequency_gate(unique)
 
@@ -195,6 +206,14 @@ def run(manifest, output_dir, is_abstract=False):
     # 7. 覆盖度检查（基于所有通过 QM 的问题，不只是 confirmed）
     all_valid = confirmed + pending
     coverage = coverage_check(all_valid, is_abstract=is_abstract)
+
+    # 7b. 为缺失格子生成下一轮推荐查询
+    recommended_queries = generate_queries(
+        topic,
+        manifest.get("expanded_terms", []),
+        coverage["missing"],
+        max_per_cell=2,
+    )
 
     # 8. 审计报告
     qm3_counts = {"A": 0, "B": 0, "C": 0, "D": 0, "E": 0}
@@ -221,6 +240,7 @@ def run(manifest, output_dir, is_abstract=False):
         "perspective_coverage": coverage["matrix"],
         "agent_failures": [],
         "empty_perspectives": [f"{p}/{s}" for p, s in coverage["missing"]],
+        "recommended_queries": recommended_queries,
         "is_abstract": is_abstract,
         "exempt": coverage.get("exempt", []),
         "notes": [
