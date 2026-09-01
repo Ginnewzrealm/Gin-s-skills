@@ -17,6 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
+import jd_evidence_matrix
 
 TRANSFERABLE = ["沟通", "管理", "项目", "协作", "分析", "谈判", "培训", "协调", "策划", "客户"]
 
@@ -52,6 +53,7 @@ def main():
     ap.add_argument("--career-switch", action="store_true")
     ap.add_argument("--kb", default=None)
     ap.add_argument("--json-out", default=None, help="选中事实 JSON 输出路径")
+    ap.add_argument("--matrix-out", default=None, help="JD-证据匹配矩阵 JSON 输出路径")
     args = ap.parse_args()
     root = common.kb_root(args.kb)
     facts = common.load_facts(root)
@@ -67,6 +69,15 @@ def main():
         with open(args.json_out, "w", encoding="utf-8") as f:
             json.dump(picked, f, ensure_ascii=False, indent=2)
         print("[完成] JSON 已写入: %s" % args.json_out)
+
+    if args.matrix_out:
+        requirements = [{"text": line.strip(), "type": "required"}
+                        for line in re.split(r"[\n。；;]", jd_text)
+                        if len(line.strip()) >= 6]
+        matrix = jd_evidence_matrix.build_matrix({"requirements": requirements}, facts)
+        with open(args.matrix_out, "w", encoding="utf-8") as f:
+            json.dump(matrix, f, ensure_ascii=False, indent=2)
+        print("[完成] 匹配矩阵已写入: %s" % args.matrix_out)
 
 
 if __name__ == "__main__":
