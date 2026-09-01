@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 9 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.19.0（2026-09-01）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.20.0（2026-09-01）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -222,9 +222,12 @@ Progress:
 - [ ] Step 1 读取目标简历与 JD `[自动]`
 - [ ] Step 2 运行 `ats_checker.py --jd <jd> --resume <简历>` `[自动]`
 - [ ] Step 3 扫描关键词覆盖率与格式可解析性 `[自动]`
-- [ ] Step 4 输出 ATS 诊断报告与优化建议 `[自动]`
+- [ ] Step 4 若目标为 PDF，运行 `pdf_ats_checker.py <pdf> --keyword <k1> --keyword <k2> --dump-text out.txt` 验证文本层可抽取性、联系方式、乱码与关键词命中 `[自动]`
+- [ ] Step 5 输出 ATS 诊断报告与优化建议 `[自动]`
 
-命令：`ats_checker.py --jd <jd> --resume <简历>`。参考 `references/ats-checklist.md`。
+命令：
+- 文字/JSON 简历：`ats_checker.py --jd <jd> --resume <简历>`。参考 `references/ats-checklist.md`。
+- 已渲染 PDF：`pdf_ats_checker.py <pdf> [--keyword ...] [--dump-text out.txt]`。文本层损坏（乱码、字符数过少、联系方式丢失）时提示改用可编辑 HTML 重新生成或检查 HTML 结构。
 
 ## 边界（必须遵守）
 
