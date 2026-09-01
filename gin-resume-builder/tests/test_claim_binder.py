@@ -64,8 +64,10 @@ def test_bind_claims_uses_user_inputs():
         "source_fact": "丽水560万合同商务谈判，签约落地",
         "rewritten": "主导丽水560万合同商务谈判并签约落地",
     }]
+    claim_id = "claim-20260828-001"
+    bullets[0]["claim_id"] = claim_id
     inputs = {
-        "claim-20260828-001": {
+        claim_id: {
             "boundary": "个人负责谈判与条款，交付由团队完成",
             "interview_details": {
                 "decision": "直接谈判",
