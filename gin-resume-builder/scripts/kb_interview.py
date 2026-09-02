@@ -33,6 +33,7 @@ import common
 import facts_parser
 from mining import TacitMiner, SkillValidator
 from mining.evidence_store import EvidenceStore
+from staged_evidence import StagedEvidenceStore
 
 
 def _radar_reference_path():
@@ -239,6 +240,57 @@ def cmd_save_evidence(root, domain, source, description, background, task,
     return name
 
 
+def cmd_stage_evidence(root, domain, source, description, background, task,
+                       actions, result, insight, boundary, verbatim=""):
+    """把整理好的 STAR 证据先写入待确认区，等待用户确认。"""
+    store = StagedEvidenceStore(root)
+    sid = store.stage(
+        domain=domain,
+        source=source,
+        description=description,
+        background=background,
+        task=task,
+        actions=actions,
+        result=result,
+        insight=insight,
+        boundary=boundary,
+        verbatim=verbatim,
+    )
+    print("[预览] 已写入待确认区：原始事实/待确认/%s.md" % sid)
+    print("请查看内容后回复 OK 以保存，或告诉我修改意见。")
+    return sid
+
+
+def cmd_confirm_evidence(root, staged_id):
+    """把用户确认后的待证据从待确认区迁移到 behavioral_evidence/。"""
+    store = StagedEvidenceStore(root)
+    name = store.confirm(staged_id)
+    _, ver = facts_parser.post_write(root, "确认并保存行为证据：%s" % name)
+    print("[完成] 已写入知识库：原始事实/behavioral_evidence/%s.md" % name)
+    print("知识库版本：v%d" % ver)
+    return name
+
+
+def cmd_reject_evidence(root, staged_id):
+    """用户拒绝，删除待确认区预览文件。"""
+    store = StagedEvidenceStore(root)
+    store.reject(staged_id)
+    print("[已忽略] 待确认证据 %s 已删除" % staged_id)
+
+
+def cmd_list_staged(root):
+    """列出所有待确认证据。"""
+    store = StagedEvidenceStore(root)
+    items = store.list_staged()
+    if not items:
+        print("待确认区为空")
+        return items
+    print("待确认证据：")
+    for sid, desc, created in items:
+        print("  - %s：%s（%s）" % (sid, desc, created))
+    return items
+
+
 def cmd_validate_skill(root, skill_name):
     """校验某技能的熟练度证据是否足够。"""
     v = SkillValidator(root)
@@ -265,19 +317,20 @@ def main():
     ap.add_argument("--type", choices=["general", "domain"], default="domain",
                     help="append-skill 专用：general=通用能力段，domain=专属能力段（默认）")
     ap.add_argument("--domain", default="work_experience",
-                    help="mine/save-evidence 专用：挖掘域 work_experience/project_experience/skill_mastery/advantage_evidence")
-    ap.add_argument("--source", default="", help="mine/save-evidence 专用：来源标识，如'公司-职位'")
-    ap.add_argument("--description", default="", help="mine/save-evidence 专用：本轮挖掘主题描述")
+                    help="mine/save-evidence/stage-evidence 专用：挖掘域 work_experience/project_experience/skill_mastery/advantage_evidence")
+    ap.add_argument("--source", default="", help="mine/save-evidence/stage-evidence 专用：来源标识，如'公司-职位'")
+    ap.add_argument("--description", default="", help="mine/save-evidence/stage-evidence 专用：本轮挖掘主题描述")
     ap.add_argument("--radar", action="store_true", help="mine 专用：在 STAR 深挖前先输出经历价值雷达提示")
-    # save-evidence 专用参数
-    ap.add_argument("--background", default="", help="save-evidence 专用：背景")
-    ap.add_argument("--task", default="", help="save-evidence 专用：任务")
-    ap.add_argument("--action", action="append", default=[], help="save-evidence 专用：行动（可重复）")
-    ap.add_argument("--result", default="", help="save-evidence 专用：结果")
-    ap.add_argument("--insight", default="", help="save-evidence 专用：关键判断")
-    ap.add_argument("--boundary", default="", help="save-evidence 专用：边界条件")
+    # save-evidence / stage-evidence 专用参数
+    ap.add_argument("--background", default="", help="save-evidence/stage-evidence 专用：背景")
+    ap.add_argument("--task", default="", help="save-evidence/stage-evidence 专用：任务")
+    ap.add_argument("--action", action="append", default=[], help="save-evidence/stage-evidence 专用：行动（可重复）")
+    ap.add_argument("--result", default="", help="save-evidence/stage-evidence 专用：结果")
+    ap.add_argument("--insight", default="", help="save-evidence/stage-evidence 专用：关键判断")
+    ap.add_argument("--boundary", default="", help="save-evidence/stage-evidence 专用：边界条件")
     ap.add_argument("--confidence", default="confirmed", help="save-evidence 专用：confirmed/fuzzy")
-    ap.add_argument("--verbatim", default="", help="save-evidence 专用：用户原话")
+    ap.add_argument("--verbatim", default="", help="save-evidence/stage-evidence 专用：用户原话")
+    ap.add_argument("--staged-id", default="", help="confirm-evidence / reject-evidence 专用：staged_id")
     args = ap.parse_args()
     root = common.kb_root(args.kb)
 
@@ -314,6 +367,26 @@ def main():
             confidence=args.confidence,
             verbatim=args.verbatim,
         )
+    elif args.command == "stage-evidence":
+        cmd_stage_evidence(
+            root=root,
+            domain=args.domain,
+            source=args.source,
+            description=args.description,
+            background=args.background,
+            task=args.task,
+            actions=args.action,
+            result=args.result,
+            insight=args.insight,
+            boundary=args.boundary,
+            verbatim=args.verbatim,
+        )
+    elif args.command == "confirm-evidence":
+        cmd_confirm_evidence(root, args.staged_id)
+    elif args.command == "reject-evidence":
+        cmd_reject_evidence(root, args.staged_id)
+    elif args.command == "list-staged":
+        cmd_list_staged(root)
     elif args.command == "validate-skill":
         cmd_validate_skill(root, args.text)
 

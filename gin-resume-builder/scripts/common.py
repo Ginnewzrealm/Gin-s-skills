@@ -57,7 +57,11 @@ KB_COMMANDS = {
     "list-skills": "查看技能清单",
     "summary": "知识库摘要",
     "mine": "启动 STAR 隐性知识挖掘会话",
-    "save-evidence": "把用户确认后的 STAR 行为证据写入知识库",
+    "save-evidence": "把用户确认后的 STAR 行为证据直接写入知识库",
+    "stage-evidence": "把整理好的 STAR 证据先写入待确认区",
+    "confirm-evidence": "把待确认证据迁移到 behavioral_evidence/",
+    "reject-evidence": "删除待确认证据",
+    "list-staged": "列出待确认证据",
     "validate-skill": "校验技能 STAR 证据是否足够",
 }
 
