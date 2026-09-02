@@ -86,7 +86,11 @@ Progress:
 - **技能清单确认门禁**：技能的定义（通用能力/专属能力两段）、命名格式、条目写法（专属=熟练度+佐证；通用=证据强度+场景）与确认流程，必读 `references/skills-inventory-standard.md`。所有技能（用户自报 + AI 从经历推断）必须先整批展示给用户确认，确认的条目才用 `append-skill`（通用能力加 `--type general`）逐条写入；未确认不落盘。简历与求职材料只准使用 skills.md 中已确认的技能。查看清单用 `list-skills`
 - **优势录入**：个人优势/岗位胜任条目用 `append-advantage --text '...'` 写入 `原始事实/advantages.md`，展示层自动置顶为「岗位胜任」
 - **技能深挖**：为核心技能写详细描述前信息不足时，按 `references/skill-mining-playbook.md` 支架式提问（把创作题变成选择题/填空题/改错题，不抛开放式大问题），核心技能挖全 STAR-Plus 五维、其余从简；产物经用户确认后写入 `原始事实/skill_details.md` 并运行 `facts_parser.py` 重建
-- **STAR 行为证据挖掘**：在 KB 访谈/增量更新对话中，当用户说出具体工作经历、项目经历、技能使用场景或优势时，Agent 应语义触发 → 暂停主线 → 按 `references/tacit-mining-methodology.md` 用 CDM/对比/Laddering/反事实/隐喻轮换追问 5-8 轮 → 整理成可读 STAR → **用户确认写入 `[硬闸门]`** → 调用 `kb_interview.py save-evidence` 写入 `原始事实/behavioral_evidence/` → 反馈文件路径 → 返回主线
+- **STAR 行为证据挖掘**：在 KB 访谈/增量更新对话中，当用户说出具体工作经历、项目经历、技能使用场景或优势时，Agent 应语义触发 → 暂停主线 → 按 `references/tacit-mining-methodology.md` 用 CDM/对比/Laddering/反事实/隐喻轮换追问 5-8 轮 → 整理成可读 STAR → 调用 `kb_interview.py stage-evidence` 写入 `原始事实/待确认/` → **展示给用户确认 `[硬闸门]`** → 用户回复 OK 后调用 `kb_interview.py confirm-evidence` 迁移到 `原始事实/behavioral_evidence/` → 调用 `kb_audit.py` 验证 → 反馈文件路径与统计 → 返回主线
+  - 未获得用户明确 OK 前，禁止调用 `confirm-evidence`
+  - 用户要求修改时，先改整理稿并重新 `stage-evidence`，再确认
+  - 用户拒绝时调用 `reject-evidence` 删除预览文件
+  - 全部写入经 `scripts/kb_interview.py`，自动重生成 facts.yaml、版本+1、记 changelog
 - **经历价值雷达（可选）**：在需要深挖或用户感觉素材不足时，调用 `kb_interview.py mine ... --radar`，先输出 `references/career-value-radar.md` 中的横向扫描提示，帮助用户发现被忽略的商业价值、用户洞察、协作与决策信号
 
 #### skill_details 与 behavioral_evidence 的协作规则

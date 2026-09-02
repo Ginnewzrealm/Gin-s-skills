@@ -103,7 +103,7 @@ type: reference
 ## 5. 每轮结构与写入硬闸门
 
 ```
-[提问] → 用户回答 → [可选追问 1-2 次] → [整理成可读 STAR] → 用户确认写入 `[硬闸门]` → [调用 save-evidence 存碎片] → 反馈路径 → 下一轮
+[提问] → 用户回答 → [可选追问 1-2 次] → [整理成可读 STAR] → 写入待确认区 `[自动]` → 用户确认 `[硬闸门]` → [调用 confirm-evidence 存碎片] → 审计反馈 → 下一轮
 ```
 
 **整理格式（必须展示给用户看）**：
@@ -123,9 +123,10 @@ type: reference
 > "以上是我整理出来的经历要点。确认写入知识库吗？回复 OK 即保存，或告诉我哪里需要改。"
 
 **纪律**：
-- 未获得用户明确回复 OK / 写入 / 保存前，**禁止**调用 `save-evidence`。
-- 用户要求修改时，先修改整理稿，再重新展示确认。
-- 用户说「记不清/跳过/不想聊」时，记录为 `fuzzy`，不写入。
+- 未获得用户明确回复 OK / 写入 / 保存前，**禁止**调用 `confirm-evidence`。
+- 用户确认前，整理稿必须先写入 `原始事实/待确认/`，生成可预览文件，禁止只存在于聊天上下文。
+- 用户要求修改时，先修改整理稿并重新 `stage-evidence`（覆盖或生成新预览），再展示确认。
+- 用户说「记不清/跳过/不想聊」时，记录为 `fuzzy`，不写入；已生成的预览文件应调用 `reject-evidence` 删除。
 
 ## 6. 节奏与纪律
 
@@ -195,12 +196,14 @@ created: 2026-08-21
 （暂无）
 ```
 
-## 8. 写入命令
+## 8. 确认式写入命令
 
-用户确认后，由 Agent 调用：
+### 步骤 1：写入待确认区
+
+深挖结束后，Agent 先把整理稿写入 `原始事实/待确认/`，不要直接写入正式证据库：
 
 ```bash
-python3 scripts/kb_interview.py save-evidence \
+python3 scripts/kb_interview.py stage-evidence \
   --kb <知识库路径> \
   --domain work_experience \
   --source "美团-高级产品经理" \
@@ -213,14 +216,71 @@ python3 scripts/kb_interview.py save-evidence \
   --result "3 个月内月活商户从 80 万提升到 110 万，流失率下降 18%" \
   --insight "商户分层不能只看 GMV，活跃度才是预警指标" \
   --boundary "头部商户必须人工介入，自动化只适合腰部及以下" \
-  --confidence confirmed \
   --verbatim "当时发现只看 GMV 会漏掉一批高活跃但小体量的商户。"
 ```
 
-调用成功后会输出：
+输出示例：
+
+```
+[预览] 已写入待确认区：原始事实/待确认/st_work_experience_001.md
+请查看内容后回复 OK 以保存，或告诉我修改意见。
+```
+
+Agent 必须读取生成的 `.md` 文件，把内容展示给用户。
+
+### 步骤 2：用户确认后迁移
+
+用户回复 OK 后：
+
+```bash
+python3 scripts/kb_interview.py confirm-evidence \
+  --kb <知识库路径> \
+  --staged-id st_work_experience_001
+```
+
+输出示例：
 
 ```
 [完成] 已写入知识库：原始事实/behavioral_evidence/be_work_experience_001.md
+知识库版本：v42
+```
+
+### 步骤 3：审计
+
+```bash
+python3 scripts/kb_audit.py --kb <知识库路径>
+```
+
+输出示例：
+
+```
+知识库路径：/Users/.../kb
+结构完整：是
+  raw_files：5
+  behavioral_evidence：3
+  staged：0
+  claims：2
+
+审计通过
+```
+
+### 用户拒绝或修改
+
+- 拒绝：`python3 scripts/kb_interview.py reject-evidence --kb <路径> --staged-id st_work_experience_001`
+- 修改：Agent 修改后重新 `stage-evidence`（建议覆盖同一 `staged_id` 或生成新预览），再次展示确认。
+
+### 直接写入（旧命令保留）
+
+如果 Agent 已经在对话中获得了用户明确 OK，也可以一步写入：
+
+```bash
+python3 scripts/kb_interview.py save-evidence \
+  --kb <知识库路径> \
+  --domain work_experience \
+  --source "美团-高级产品经理" \
+  --description "..." \
+  --background "..." --task "..." --action "..." --result "..." \
+  --insight "..." --boundary "..." --confidence confirmed --verbatim "..."
 ```
 
 ## 9. 技能熟练度认定
