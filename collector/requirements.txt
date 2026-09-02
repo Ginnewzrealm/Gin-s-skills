@@ -1,0 +1,14 @@
+# Core MCP dependencies
+fastmcp>=0.1.0
+playwright>=1.40.0
+beautifulsoup4>=4.12.0
+lxml>=4.9.0
+
+# File format conversion
+markitdown[all]>=0.0.1
+
+# EPUB ebook extraction
+ebooklib>=0.18.0
+
+# YAML parsing (used by wexin-read-mcp/scraper.py)
+pyyaml>=6.0.0
