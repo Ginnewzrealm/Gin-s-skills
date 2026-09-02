@@ -2,6 +2,17 @@
 
 > 规则：本技能的每一次优化和更新，都必须在本文件追加一条记录，包含**日期、版本号、更新内容**三项。新记录追加在最上方。版本号采用语义化版本：主版本.次版本.修订号（破坏性改流程进主版本，新增功能进次版本，修复进修订号）。
 
+## v1.4.0 — 2026-09-02
+
+- 新增：Progress Checklist 进度条体系，初始化与主流程均升级为"4 阶段 + 步骤标签"可视化
+- 新增：`scripts/progress_reporter.py` 统一渲染宏观/微观 checklist
+- 新增：`scripts/stage_validator.py` 阶段合法性校验、非法跳跃拦截、回环目标解析
+- 新增：`scripts/progress_store.py` 与 `progress.md` 持久化，支持会话中断恢复
+- 新增：硬闸门阻塞提示、回环规则（重新映射字段 / 修改目标 / 修改定时 / 重新校验 / 重新扫描 / 重新生成报告）
+- 更新：`SKILL.md` 新增"进度条使用规则"章节，更新触发反馈、资源索引与版本号
+- 更新：`references/pdca-init.md` 与 `references/main-flow.md` 补充 Progress checklist、标签、阻塞提示、会话恢复、回环规则
+- 新增测试：`tests/test_progress_reporter.py`、`tests/test_stage_validator.py`、`tests/test_progress_store.py`
+
 ## v1.3.1 — 2026-08-26
 
 - 新增：`references/sheets-calling-patterns.md` 模式 9 `read_column_formats`，写入前读取真实列约束
