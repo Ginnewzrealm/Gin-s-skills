@@ -16,6 +16,7 @@ DIR_RAW = "原始事实"
 DIR_AUTO = "自动生成"
 DIR_INTERVIEW = "面试素材"
 DIR_OUTPUT = "生成物"
+DIR_STAGED = "待确认"
 CLAIMS_DIR = os.path.join(DIR_RAW, "claims")
 CLAIMS_AGGREGATE = "claims.json"
 
