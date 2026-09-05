@@ -1,0 +1,146 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""gin-tutorial-harvest 通道调度、后处理、验收的 TDD 测试。
+
+规则来源：9/2-9/3 减脂/力量训练实测记录——
+- 站内锚点链接是纯噪音（Docusaurus 标题后挂 [](url "直接链接")，占文件 3/4 体积）
+- 外部引用链接是溯源线索，必须保留
+- 正文 <500 字判采集失败（抓到导航页/空页）
+- 通道优先级：firecrawl scrape → opencli → collector；书不是采集对象
+"""
+import importlib.util
+import sys
+from pathlib import Path
+
+spec = importlib.util.spec_from_file_location(
+    "harvest", Path(__file__).parent.parent / "scripts" / "harvest.py"
+)
+mod = importlib.util.module_from_spec(spec)
+sys.modules["harvest"] = mod
+spec.loader.exec_module(mod)
+
+
+# ---------- pick_channel：通道调度 ----------
+
+def test_default_webpage_goes_firecrawl_scrape():
+    assert mod.pick_channel("https://example.com/a", "单页采集", True) == "firecrawl-scrape"
+
+
+def test_zhihu_goes_opencli():
+    assert mod.pick_channel("https://www.zhihu.com/question/1", "单页采集", True) == "opencli"
+
+
+def test_bilibili_column_goes_opencli():
+    assert mod.pick_channel("https://www.bilibili.com/read/cv1", "opencli 真实浏览器通道", True) == "opencli"
+
+
+def test_pdf_goes_collector():
+    assert mod.pick_channel("https://example.org/a.pdf", "collector 采集", True) == "collector"
+
+
+def test_book_action_is_skip():
+    assert mod.pick_channel("https://book.douban.com/subject/1", "找电子版/购书", True) == "skip-book"
+
+
+def test_whole_site_goes_download():
+    assert mod.pick_channel("https://docs.example.com/", "整站扒取", True) == "firecrawl-download"
+
+
+def test_zhihu_prefers_opencli_even_without_action_hint():
+    """知乎 URL 即使 action 标错也应走 opencli——域名黑名单优先于 action 标注。"""
+    assert mod.pick_channel("https://zhuanlan.zhihu.com/p/1", "单页采集", True) == "opencli"
+
+
+# ---------- postprocess_markdown：后处理 ----------
+
+DOCUSAURUS_NOISE = (
+    "## 核心原则 [](https://docs.x.com/handbook/#核心原则 \"核心原则的直接链接\")\n"
+    "能量守恒定律见 [WHO 指南](https://who.int/fact)。\n"
+    "站内跳转 [下一节](https://docs.x.com/handbook/next)。\n"
+)
+
+def test_strip_empty_anchor_links_keep_text():
+    """Docusaurus 标题锚点 [](url "title") → 剥掉链接只留显示文本（此处显示文本为空则整段移除）。"""
+    out = mod.postprocess_markdown(DOCUSAURUS_NOISE, site_host="docs.x.com")
+    assert "[](https://docs.x.com" not in out
+    assert "## 核心原则" in out
+
+
+def test_keep_external_reference_links():
+    out = mod.postprocess_markdown(DOCUSAURUS_NOISE, site_host="docs.x.com")
+    assert "[WHO 指南](https://who.int/fact)" in out
+
+
+def test_strip_in_site_body_links_but_keep_display_text():
+    """站内正文链接：剥掉 URL 但保留显示文本（阅读流不断）。"""
+    out = mod.postprocess_markdown(DOCUSAURUS_NOISE, site_host="docs.x.com")
+    assert "下一节" in out
+    assert "https://docs.x.com/handbook/next" not in out
+
+
+def test_postprocess_without_site_host_keeps_everything():
+    """没有 site_host 信息时不乱删——只剥空锚点结构。"""
+    out = mod.postprocess_markdown(DOCUSAURUS_NOISE, site_host=None)
+    assert "https://who.int/fact" in out
+
+
+# ---------- 内容验收 ----------
+
+def test_short_content_is_invalid():
+    assert mod.is_valid_content("太短了", min_chars=500) is False
+    assert mod.is_valid_content("字" * 600, min_chars=500) is True
+
+
+def test_count_chinese_chars():
+    assert mod.count_chinese_chars("abc 力量训练 123") == 4
+
+
+def test_english_source_counts_as_content():
+    """语言政策：教材级源不限语言——英文 WHO 源不得按中文字数误杀（9/5 实测坑）。"""
+    english = "physical activity " * 60  # 120 词，0 中文字
+    assert mod.count_chinese_chars(english) == 0
+    assert mod.is_valid_content(english, min_chars=100) is True
+
+
+def test_content_units_mix_cjk_and_latin():
+    assert mod.count_content_units("力量 training 计划 plan") == 6  # 4 中文字 + 2 英文词
+
+
+# ---------- 验收门槛 ----------
+
+def test_acceptance_material_volume():
+    ok = mod.check_acceptance(total_chars=30000, target_words=8000, coverage={"a": 2, "b": 2})
+    assert ok["material_ok"] is True
+    bad = mod.check_acceptance(total_chars=10000, target_words=8000, coverage={"a": 2})
+    assert bad["material_ok"] is False
+    assert bad["needed_chars"] == 14000
+
+
+def test_acceptance_coverage_min_two_sources():
+    ok = mod.check_acceptance(total_chars=30000, target_words=8000, coverage={"a": 2, "b": 1})
+    assert ok["coverage_gaps"] == ["b"]
+
+
+# ---------- 落盘路径 ----------
+
+def test_organize_path_layered_and_safe(tmp_path):
+    p = mod.organize_path(str(tmp_path), "L1", "WHO 身体活动指南？")
+    assert p.startswith(str(tmp_path))
+    assert "L1" in p
+    assert "？" not in Path(p).name
+    assert Path(p).suffix == ".md"
+
+
+# ---------- coverage manifest ----------
+
+def test_manifest_entry_roundtrip(tmp_path):
+    entries = [mod.manifest_entry(url="https://a.com", layer="L1", title="A",
+                                  path="L1/A.md", words=5000, channel="firecrawl-scrape",
+                                  status="ok", retries=1, covers=["减脂原理"])]
+    p = mod.write_manifest(str(tmp_path), entries, topic="力量训练入门",
+                           target_words=8000, total_chars=5000)
+    import json
+    data = json.loads(Path(p).read_text(encoding="utf-8"))
+    assert data["topic"] == "力量训练入门"
+    assert data["entries"][0]["channel"] == "firecrawl-scrape"
+    assert data["验收"]["material_ok"] is False  # 5000 < 24000
