@@ -342,6 +342,9 @@ def harvest_one(output_dir, src):
     """
     url = src["url"]
     title, layer = src["title"], src.get("layer", "L3")
+    if src.get("redundant_with"):
+        raise HarvestError(url, "skip", "redundant",
+                           f"冗余源（与已采 {src['redundant_with']} 同内容），不烧配额直接跳过")
     ch = pick_channel(url, src.get("action", "单页采集"),
                       firecrawl_available=bool(load_config().get("firecrawl_api_key")))
     if ch == "opencli":
@@ -354,14 +357,27 @@ def harvest_one(output_dir, src):
 
     env = dict(os.environ)
     env.update(firecrawl_env())
-    cmd = ["npx", "-y", "firecrawl-cli", "scrape", url, "--only-main-content", "-o", raw]
+    scrape_url, via_note = url, ""
+    cmd = ["npx", "-y", "firecrawl-cli", "scrape", scrape_url, "--only-main-content", "-o", raw]
     subprocess.run(cmd, capture_output=True, timeout=300, env=env)
     info = explain(raw)
+    if info["category"] == "blocked":
+        mirror = academic_mirror(url)
+        if mirror["mirror"]:
+            scrape_url = mirror["mirror"]
+            via_note = mirror["note"]
+            cmd = ["npx", "-y", "firecrawl-cli", "scrape", scrape_url,
+                   "--only-main-content", "-o", raw]
+            subprocess.run(cmd, capture_output=True, timeout=300, env=env)
+            info = explain(raw)
     if info["category"] != "ok":
-        raise HarvestError(url, ch, info["category"], info["advice"])
+        advice = info["advice"]
+        if via_note == "" and info["category"] == "blocked":
+            advice += "；" + academic_mirror(url)["note"]
+        raise HarvestError(url, ch, info["category"], advice)
     postprocess_markdown_inplace = postprocess_markdown(open(raw, encoding="utf-8").read(), site_host=host)
     header = (f"> 来源：{title}\n> URL：{url}\n> 层级：{layer} | 定级：{src.get('value', '?')}"
-              f" | 通道：{ch}\n\n---\n\n")
+              f" | 通道：{ch}{('（' + via_note + '）') if via_note else ''}\n\n---\n\n")
     open(dest, "w", encoding="utf-8").write(header + postprocess_markdown_inplace)
     os.remove(raw)
     return dest
@@ -375,3 +391,30 @@ class HarvestError(Exception):
 
 if __name__ == "__main__":
     main()
+
+
+# ---------- #3 学术镜像降级（L6 结构性盲区，9/5 实测教训） ----------
+
+_ACADEMIC_HOSTS = ("pubmed.ncbi.nlm.nih.gov", "pmc.ncbi.nlm.nih.gov",
+                   "thelancet.com", "www.thelancet.com")
+
+
+def academic_mirror(url):
+    """L6 学术源被封时的镜像路由。返回 {"mirror": url|None, "note": str}。
+
+    pubmed/pmc → Europe PMC 同 ID 镜像（firecrawl 友好，同全文）；
+    thelancet 付费墙无可靠镜像 → 给 opencli/人工补采建议，不返回假 URL。
+    """
+    netloc = urlparse(url).netloc.lower()
+    if netloc not in _ACADEMIC_HOSTS:
+        return {"mirror": None, "note": ""}
+    m = re.search(r"/(\d{6,9})/?", urlparse(url).path)
+    if "pubmed" in netloc and m:
+        return {"mirror": f"https://europepmc.org/article/MED/{m.group(1)}",
+                "note": f"PubMed 经 Europe PMC 镜像补采（同 PMID {m.group(1)}）"}
+    m = re.search(r"/(PMC\d+)/?", urlparse(url).path, re.I)
+    if "pmc" in netloc and m:
+        return {"mirror": f"https://europepmc.org/articles/{m.group(1)}",
+                "note": f"PMC 经 Europe PMC 镜像补采（同 {m.group(1)}）"}
+    return {"mirror": None,
+            "note": "学术源封禁且无可靠镜像（Lancet 付费墙类）：opencli 浏览器补采或人工下载 PDF"}

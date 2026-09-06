@@ -55,6 +55,8 @@ python3 scripts/source_scan.py channel
 python3 scripts/source_scan.py grade --title "..." --url "..." [--snippet "..."]
 python3 scripts/source_scan.py add --file sources.json --title "..." --url "..." \
     --layer L3 --lang zh --value high --note "一句话价值说明" --action "单页采集"
+# 冗余源（与已收录源同内容的镜像/短讯）：加 --redundant-with <已收录源 URL>
+# harvest 层见标记直接跳过，不进采集队列、不烧配额
 python3 scripts/source_scan.py reject --file sources.json --title "..." --reason "拒绝原因"
 ```
 

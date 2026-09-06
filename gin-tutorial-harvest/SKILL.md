@@ -98,6 +98,8 @@ python3 scripts/harvest.py channel --url "..." --action "单页采集" [--no-fir
 ```
 
 - **404 ≠ 重试能救**：先 `curl -sI <url>` 直连确认 + WebSearch 查证源是否下线；确认源失效 → 直接判 failed 走替补，不浪费重试
+- **学术源（L6）被封走镜像**：harvest-one 对 pubmed/pmc 自动经 Europe PMC 同 ID 镜像重采一次（同全文，firecrawl 友好）；Lancet 付费墙类无镜像 → opencli 浏览器补采或人工下载
+- **冗余源不烧配额**：sources.json 带 `redundant_with` 字段的源 harvest-one 直接跳过（status: redundant），不进重试队列
 - 替补必须在 manifest 里记录：`"替补自": "<原 url>"`——审计链：拒绝/失败/替补都是判断，要可追溯
 
 ## 后处理规则

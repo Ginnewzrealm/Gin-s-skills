@@ -232,3 +232,44 @@ def test_harvest_one_full_pipeline(tmp_path, monkeypatch):
     assert "> 来源：测试文章" in text and "> URL：https://example.com/a" in text
     assert "真实正文内容" in text
     assert any("firecrawl-cli" in " ".join(c) and "--only-main-content" in c for c in calls)
+
+
+# ---------- #3 学术镜像降级（L6 结构性盲区，9/5 实测：PubMed/PMC 挂在最脆弱通道上） ----------
+
+def test_mirror_pubmed_to_europepmc():
+    """PubMed 摘要页被封 → Europe PMC 同 PMID 镜像（同内容，firecrawl 友好）。"""
+    r = mod.academic_mirror("https://pubmed.ncbi.nlm.nih.gov/37248144/")
+    assert r["mirror"] == "https://europepmc.org/article/MED/37248144"
+
+def test_mirror_pmc_article_to_europepmc():
+    r = mod.academic_mirror("https://pmc.ncbi.nlm.nih.gov/articles/PMC11930668/")
+    assert r["mirror"] == "https://europepmc.org/articles/PMC11930668"
+
+def test_lancet_paywall_no_mirror_but_advice():
+    """Lancet 付费墙没有可靠镜像：不返回假 URL，给 opencli/人工补采建议。"""
+    r = mod.academic_mirror("https://www.thelancet.com/journals/eclinm/article/PIIS2589-5370(24)00098-1/fulltext")
+    assert r["mirror"] is None
+    assert "opencli" in r["note"] or "人工" in r["note"]
+
+def test_non_academic_url_no_mirror():
+    assert mod.academic_mirror("https://post.smzdm.com/p/az8qvv5n")["mirror"] is None
+
+def test_mirror_id_extraction_edge_cases():
+    """尾斜杠/多余路径都不应破坏 ID 提取。"""
+    r = mod.academic_mirror("https://pubmed.ncbi.nlm.nih.gov/37248144/?format=pubmed")
+    assert r["mirror"].endswith("/37248144")
+
+
+# ---------- #4 冗余源：observe-only，不进重试队列 ----------
+
+def test_harvest_one_skips_redundant_source(tmp_path):
+    """sources.json 标了 redundant_with 的源：直接跳过，不烧采集配额。"""
+    src = {"title": "人民日报健康短讯", "url": "https://m.peopledailyhealth.com/x",
+           "layer": "L1", "value": "medium", "action": "单页采集",
+           "redundant_with": "https://www.nhc.gov.cn/ylyjs/zcwj/202412/75cb79c171c94def9e768193e65484f7.shtml"}
+    try:
+        mod.harvest_one(str(tmp_path), src)
+        raised = None
+    except mod.HarvestError as e:
+        raised = e
+    assert raised is not None and raised.category == "redundant"

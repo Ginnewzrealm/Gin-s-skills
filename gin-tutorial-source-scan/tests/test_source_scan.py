@@ -192,3 +192,14 @@ def test_config_roundtrip_and_fallback(tmp_path, monkeypatch):
     # 清空 key → 回退到 agent-websearch
     mod.save_config({})
     assert mod.search_channel() == "agent-websearch"
+
+
+def test_add_source_records_redundant_with(tmp_path):
+    """冗余源标记（#4）：observe-only 源指回已收录的权威源，harvest 层见标记直接跳过。
+    9/5 实测：chinacdc 镜像/短新闻源被反复重试，白烧采集配额。"""
+    path = _tmp_json(tmp_path)
+    mod.add_source(path, {"title": "人民日报健康短讯", "url": "https://m.peopledailyhealth.com/x",
+                          "layer": "L1", "lang": "zh", "value": "medium", "note": "",
+                          "redundant_with": "https://www.nhc.gov.cn/ylyjs/zcwj/official.pdf"})
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
+    assert data["sources"][0]["redundant_with"] == "https://www.nhc.gov.cn/ylyjs/zcwj/official.pdf"

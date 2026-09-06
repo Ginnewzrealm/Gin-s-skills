@@ -214,6 +214,8 @@ def main():
     a.add_argument("--value", required=True)
     a.add_argument("--note", default="")
     a.add_argument("--action", default="单页采集")
+    a.add_argument("--redundant-with", default=None,
+                   help="冗余源标记：本源与某已收录源同内容时填其 URL，harvest 层跳过不采")
 
     r = sub.add_parser("reject", help="记录拒绝")
     r.add_argument("--file", required=True)
@@ -236,9 +238,12 @@ def main():
         v, reason = grade_source(args.title, args.url, args.snippet)
         print(json.dumps({"value": v, "reason": reason}, ensure_ascii=False))
     elif args.cmd == "add":
-        added = add_source(args.file, {"title": args.title, "url": args.url, "layer": args.layer,
-                                       "lang": args.lang, "value": args.value, "note": args.note,
-                                       "action": args.action})
+        entry = {"title": args.title, "url": args.url, "layer": args.layer,
+                 "lang": args.lang, "value": args.value, "note": args.note,
+                 "action": args.action}
+        if args.redundant_with:
+            entry["redundant_with"] = args.redundant_with
+        added = add_source(args.file, entry)
         print(json.dumps({"added": added}, ensure_ascii=False))
     elif args.cmd == "reject":
         add_rejected(args.file, {"title": args.title, "url": args.url, "reason": args.reason})
