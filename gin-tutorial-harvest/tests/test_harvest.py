@@ -9,6 +9,7 @@
 - 通道优先级：firecrawl scrape → opencli → collector；书不是采集对象
 """
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -144,3 +145,90 @@ def test_manifest_entry_roundtrip(tmp_path):
     assert data["topic"] == "力量训练入门"
     assert data["entries"][0]["channel"] == "firecrawl-scrape"
     assert data["验收"]["material_ok"] is False  # 5000 < 24000
+
+
+# ---------- #1 排障纪律：validate 必须能解释失败原因 ----------
+
+def test_explain_classifies_rate_limit(tmp_path):
+    f = tmp_path / "x.md"
+    f.write_text('{"success":false,"error":"You\'ve hit Firecrawl\'s keyless free tier rate limit. To continue"}', encoding="utf-8")
+    r = mod.explain(str(f))
+    assert r["category"] == "quota"
+    assert "配额" in r["advice"]
+
+def test_explain_classifies_unsupported_site(tmp_path):
+    f = tmp_path / "x.md"
+    f.write_text("We apologize but we do not support this site.", encoding="utf-8")
+    assert mod.explain(str(f))["category"] == "blocked"
+
+def test_explain_classifies_thin_render_wall(tmp_path):
+    """真实页面但主内容稀薄（<100 单位）= JS 渲染墙，不是采集失败。"""
+    f = tmp_path / "x.md"
+    f.write_text("# 标题\n" + "导航栏菜单 " * 30, encoding="utf-8")
+    r = mod.explain(str(f))
+    assert r["category"] == "thin"
+
+def test_explain_classifies_real_content(tmp_path):
+    f = tmp_path / "x.md"
+    f.write_text("正文 " * 600, encoding="utf-8")
+    assert mod.explain(str(f))["category"] == "ok"
+
+def test_explain_missing_file(tmp_path):
+    r = mod.explain(str(tmp_path / "nope.md"))
+    assert r["category"] == "empty"
+
+
+# ---------- #2 firecrawl key 管理（训记模式，与 source-scan 同约定） ----------
+
+def test_load_config_missing_returns_empty(tmp_path, monkeypatch):
+    monkeypatch.setattr(mod, "CONFIG_PATH", str(tmp_path / "nope.yaml"))
+    assert mod.load_config() == {}
+
+def test_load_config_reads_firecrawl_key(tmp_path, monkeypatch):
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text(json.dumps({"firecrawl_api_key": "fc-test-123"}), encoding="utf-8")
+    monkeypatch.setattr(mod, "CONFIG_PATH", str(cfg))
+    env = mod.firecrawl_env()
+    assert env["FIRECRAWL_API_KEY"] == "fc-test-123"
+
+def test_load_config_no_key_returns_empty_env(tmp_path, monkeypatch):
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("{}", encoding="utf-8")
+    monkeypatch.setattr(mod, "CONFIG_PATH", str(cfg))
+    assert mod.firecrawl_env() == {}
+
+def test_load_config_tolerates_plaintext_key(tmp_path, monkeypatch):
+    """用户直接把 key 原文粘进文件（9/5 实测发生）也要能用。"""
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("fc-plaintext-abc\n", encoding="utf-8")
+    monkeypatch.setattr(mod, "CONFIG_PATH", str(cfg))
+    assert mod.load_config()["firecrawl_api_key"] == "fc-plaintext-abc"
+
+
+# ---------- #7/#8 harvest-one：单条源全自动落盘 ----------
+
+def test_harvest_one_full_pipeline(tmp_path, monkeypatch):
+    """mock firecrawl 调用，验证 决策→落盘→验收 全链路 + 来源头。"""
+    calls = []
+    def fake_run(cmd, **kw):
+        calls.append(cmd)
+        class R:
+            stdout = '{"channel": "firecrawl-scrape"}' if "channel" in cmd else ""
+            stderr = ""
+        if "channel" in cmd:
+            return R()
+        if "firecrawl-cli" in " ".join(cmd):
+            out = cmd[cmd.index("-o") + 1]
+            open(out, "w", encoding="utf-8").write("真实正文内容 " * 200)
+        return R()
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    monkeypatch.setattr(mod, "CONFIG_PATH", str(tmp_path / "no-cfg.yaml"))
+    src = {"title": "测试文章", "url": "https://example.com/a", "layer": "L3",
+           "value": "medium", "action": "单页采集"}
+    dest = mod.harvest_one(str(tmp_path), src)
+    assert dest.endswith(".md")
+    assert "L3" in dest
+    text = open(dest, encoding="utf-8").read()
+    assert "> 来源：测试文章" in text and "> URL：https://example.com/a" in text
+    assert "真实正文内容" in text
+    assert any("firecrawl-cli" in " ".join(c) and "--only-main-content" in c for c in calls)

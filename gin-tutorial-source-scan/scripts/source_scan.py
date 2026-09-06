@@ -40,6 +40,7 @@ HIGH_HOST_PATTERNS = [
     ".gov", ".gov.cn", ".edu", "who.int", "cdc.gov", "un.org", "unesco.org",
     "nhc.gov.cn", "mayoclinic.org",        # mayoclinic 归 medium？不——宿主强背书归 high，措辞见下
     "arxiv.org", "sciencedirect.com", "ncbi.nlm.nih.gov", "pubmed", "nature.com",
+    "chinacdc.cn", "cdc.cn",   # 中国疾控中心（9/5 减脂实测：chinacdc.cn 曾误判 unknown）
     "cell.com", "nejm.org", "doi.org", "semanticsscholar.org",
 ]
 MEDIUM_HOSTS = ["mayoclinic.org", "issaonline.com", "healthline.com", "webmd.com",

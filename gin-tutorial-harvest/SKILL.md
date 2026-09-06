@@ -4,7 +4,7 @@ description: |
   输入主题 + source-scan 的 sources.json（或直接给 URL 清单），按通道优先级把教程文章/教材采集为本地 Markdown 资料库，
   输出 coverage-manifest.json 验收报告，可直接流转给下游原子技能（选题裁决/找答案）。
   当用户说"把这些资料采下来"、"采集这些教程"、"扒这些页面"、"建 XX 主题资料库"时触发。
-  也适用于上游编排器（写教程技能组）的 Stage 0 采集层。
+  也适用于上游编排器（写教程技能组）的 Stage 0 采集层：输入 sources.json + output_dir，输出 Markdown 资料库 + coverage-manifest.json，供 Stage 2 选题裁决机器读取。
   不适用于：发现资料源（走 gin-tutorial-source-scan）、单条网页收藏（走 collector）、找用户真问题（走 gin-question）。
 ---
 
@@ -37,14 +37,25 @@ description: |
 
 ```
 1. 前置准备   读 sources.json；确定 output_dir / target_draft_words(默认8000)；逐条跑 channel 定通道
-2. 逐条采集   按通道执行采集命令（见下）
-3. 逐条验收   validate 字数；不合格 → 同通道重试 1 次 → 仍败走降级阶梯 → 仍败记 failed
+2. 逐条采集   确定性通道跑 `harvest-one`（脚本全自动）；opencli/collector 通道由 Agent 执行（责任表见下）
+3. 失败定性   validate 不过 → **先跑 `explain` 定性再决定动作**（禁止不读输出就重试）
 4. 失败替补   failed 源用 sources.json 同 action 类型的其他源替补，替补关系记入 manifest
-5. 后处理     postprocess 剥站内锚点链接噪音（--site-host 用 URL 的域名）
-6. 落盘       按 layer 存 <output_dir>/<L?>/<安全文件名>.md（文件名禁 \ / : * ? " < > | 和标点空格）
-7. 收口报告   manifest 汇总；验收不达标 → 回 source-scan 补搜（可继续采集，无人工闸门）
-8. 输出      向用户报告：成功 N / 失败 N（含原因与替补）/ 观察哨（unknown 级源清单）/ 验收结论
+5. 收口报告   manifest 汇总；验收不达标 → 回 source-scan 补搜（可继续采集，无人工闸门）
+6. 输出      向用户报告：成功 N / 失败 N（含 explain 定性与替补）/ 观察哨 / 验收结论
 ```
+
+## 排障纪律：先定性再动手（9/5 实测教训）
+
+采集失败时**第一步永远是 `python3 scripts/harvest.py explain --file <输出文件>`**，按定性分类处置：
+
+| explain 定性 | 含义 | 处置 |
+|---|---|---|
+| `quota` | firecrawl 免 key 配额耗尽 | **不重试**：等配额重置或配 firecrawl_api_key（脚本自动注入） |
+| `blocked` | 目标站/通道封禁（403/do not support） | 按降级阶梯换通道，同通道禁止二次重试 |
+| `thin` | 真实页面但内容稀薄（<100 单位） | JS 渲染墙/导航页 → opencli 真实浏览器 |
+| `empty` | 零输出/文件不存在 | 检查命令本身是否执行成功 |
+
+**反面教材（9/5 真实发生）**：配额报错被误判为"目标站 445 封禁"，白烧 3 轮 75 秒重试。不读输出就重试 = 浪费配额。
 
 ## 通道调度（每条 URL 必跑脚本，禁止凭 URL 肉眼猜通道）
 
@@ -61,6 +72,17 @@ python3 scripts/harvest.py channel --url "..." --action "单页采集" [--no-fir
 | skip-book | 不采集（豆瓣/当当是找书线索，书目记入 note 即可） |
 
 调度优先级：**域名黑名单 > action 标注 > 扩展名 > 默认**。知乎即使 action 标错也走 opencli。
+
+## 通道执行责任表（谁执行，写清楚了，不许临场发挥）
+
+| 通道 | 执行者 | 执行方式 |
+|---|---|---|
+| firecrawl-scrape / firecrawl-download | **脚本** | `python3 scripts/harvest.py harvest-one --dir <output_dir> --url <url> --title <title> [--layer L3 --value medium --action 单页采集]`——决策/采集/验收/后处理/落盘全自动，失败返回 explain 定性 |
+| collector（PDF/公众号/视频） | **Agent** | 读 collector 技能（`python3 main.py <url>`，存 $COLLECTOR_DIR），采完移到本资料库对应层目录并补来源头 |
+| opencli（知乎/B站专栏/登录墙） | **Agent** | 读 opencli-browser 技能驱动真实浏览器，正文存为 .md 落盘 |
+| skip-book | 无人 | 书记入 note 即可 |
+
+批量采集（≥3 条）时 Agent 的角色是**逐条调 harvest-one + 处理 opencli/collector 通道 + 记录进度**，手工拼 firecrawl 命令属于偏离流程。
 
 ## 降级阶梯（失败处理，红阶段实测教训）
 
@@ -108,10 +130,13 @@ source-scan 定级为 `unknown` 的源**照常采集**（高价值 UGC 常在 un
 | 通道凭 URL 肉眼判断 | 每条必跑 `channel` 脚本，黑名单/标注/扩展名有明确优先级 |
 | 失败源静默替换 | 替补关系记入 manifest（`替补自`），失败原因逐条写明 |
 | 采完就完事，无汇总无验收 | 必须出 coverage-manifest.json 并报告验收结论；不达标回 source-scan 补搜 |
+| validate 不过就重试 | 先 `explain` 定性：quota→等重置/配 key；blocked→换通道；thin→opencli（9/5 误判烧配额教训） |
+| 手动 export key 或拼 firecrawl 命令 | key 放 config.yaml 由脚本注入；批量采集调 `harvest-one`，不手工拼命令 |
 
 ## 依赖
 
-- `npx -y firecrawl-cli`（免 key 可 scrape；download 需 key，配于 ~/.config/gin-tutorial/config.yaml）
+- `npx -y firecrawl-cli`（免 key 可 scrape，但每日约 20 次配额；**配 key 后无此限制且 download 通道解锁**）
+- **firecrawl key 管理（训记模式）**：写入 `~/.config/gin-tutorial/config.yaml`（`{"firecrawl_api_key": "fc-..."}`，直接粘 key 纯文本也行），harvest-one 调用时自动注入 FIRECRAWL_API_KEY——**不需要手动 export**
 - opencli-browser 技能（知乎/B站专栏/登录墙降级通道）
 - collector 技能（PDF/公众号/视频页）
 - 上游：gin-tutorial-source-scan 的 sources.json

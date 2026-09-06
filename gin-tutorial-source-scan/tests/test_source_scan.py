@@ -55,6 +55,13 @@ def test_high_international_org():
     assert v == "high"
 
 
+def test_high_china_cdc():
+    """中国疾控中心官网 = 官方权威源（9/5 减脂实测曾误判 unknown，规则漏洞补测）。"""
+    v, _ = mod.grade_source("体重管理指导原则（2024年版）",
+                            "https://www.chinacdc.cn/jkyj/yyyjk2/jswj13949/202504/t20250407_305772.html", "")
+    assert v == "high"
+
+
 def test_high_docs_site():
     v, _ = mod.grade_source("健身减肥完全指南（17章）",
                             "https://docs.fitness.ninthfeast.com/docs/handbook", "")
@@ -158,6 +165,19 @@ def test_coverage_check_counts(tmp_path):
     assert report["已覆盖来源数"]["饮食方案"] == 2
     assert report["已覆盖来源数"]["训练计划"] == 0
     assert "训练计划" in report["gap"]
+
+
+def test_coverage_questions_must_be_keyword_phrases(tmp_path):
+    """覆盖匹配是子串语义：问题清单必须是关键词短语（gin-question 输出格式）。
+    自然长句（如「如何计算每日热量消耗与摄入量」）在 note 里不存在逐字子串，
+    恒匹配 0 造成假 gap——9/5 减脂实测踩过。此测试锁定该行为以防误用。"""
+    path = _tmp_json(tmp_path, {
+        "topic": "减脂", "sources": [{"title": "a", "url": "https://a.com", "note": "热量缺口原理"}],
+        "rejected": []})
+    long_q = mod.coverage_report(path, ["如何计算每日热量消耗与摄入量"])
+    assert long_q["已覆盖来源数"]["如何计算每日热量消耗与摄入量"] == 0  # 长句恒 0
+    kw_q = mod.coverage_report(path, ["热量缺口"])
+    assert kw_q["已覆盖来源数"]["热量缺口"] == 1  # 关键词短语正常命中
 
 
 # ---------- 配置：训记模式的 key 管理 ----------

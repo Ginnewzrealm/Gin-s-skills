@@ -21,6 +21,8 @@ import argparse
 import json
 import os
 import re
+import subprocess
+import sys
 from urllib.parse import urlparse
 
 # ---------- 通道调度 ----------
@@ -205,6 +207,17 @@ def main():
     m.add_argument("--topic", required=True)
     m.add_argument("--target-words", type=int, default=8000)
 
+    x = sub.add_parser("explain", help="给失败/存疑文件定性（quota/blocked/thin/ok）")
+    x.add_argument("--file", required=True)
+
+    h = sub.add_parser("harvest-one", help="单条源全自动采集落盘（确定性通道）")
+    h.add_argument("--dir", required=True)
+    h.add_argument("--url", required=True)
+    h.add_argument("--title", required=True)
+    h.add_argument("--layer", default="L3")
+    h.add_argument("--value", default="unknown")
+    h.add_argument("--action", default="单页采集")
+
     args = ap.parse_args()
 
     if args.cmd == "channel":
@@ -239,6 +252,125 @@ def main():
         write_manifest(args.dir, entries, args.topic, args.target_words, total)
         print(json.dumps({"total_chars": total, "files": len(entries)},
                          ensure_ascii=False))
+    elif args.cmd == "explain":
+        print(json.dumps(explain(args.file), ensure_ascii=False))
+    elif args.cmd == "harvest-one":
+        src = {"title": args.title, "url": args.url, "layer": args.layer,
+               "value": args.value, "action": args.action}
+        try:
+            dest = harvest_one(args.dir, src)
+            print(json.dumps({"dest": dest, "channel": pick_channel(args.url, args.action)}, ensure_ascii=False))
+        except HarvestError as e:
+            print(json.dumps({"error": e.category, "channel": e.channel, "advice": e.advice},
+                             ensure_ascii=False))
+            sys.exit(1)
+
+
+
+
+# ---------- #1 排障纪律：validate 必须能解释失败原因（9/5 教训：误判烧配额） ----------
+
+_EXPLAIN_RULES = [
+    ("quota", re.compile(r"rate limit|free tier|配额", re.I),
+     "firecrawl 配额耗尽：等重置（每小时整点）或配 ~/.config/gin-tutorial/config.yaml 的 firecrawl_api_key"),
+    ("blocked", re.compile(r"do not support this site|403|not supported", re.I),
+     "目标站/通道封禁：按降级阶梯换 opencli 或 collector，勿重试同一通道"),
+    ("empty", None, "采集无输出：检查命令是否执行成功"),
+]
+
+
+def explain(path, min_chars=500):
+    """给失败文件定性。返回 {"category", "units", "advice"}。
+
+    category ∈ ok / quota / blocked / thin / empty——先定性再决定重试或降级，
+    禁止不读输出就重试（9/5 配额误判成目标站封禁，白烧 3 轮重试的教训）。
+    """
+    if not os.path.exists(path):
+        return {"category": "empty", "units": 0, "advice": "输出文件不存在，命令可能根本没跑成"}
+    text = open(path, encoding="utf-8", errors="replace").read()
+    head = text[:400]
+    for cat, pat, advice in _EXPLAIN_RULES:
+        if pat and pat.search(head):
+            return {"category": cat, "units": count_content_units(text), "advice": advice}
+    units = count_content_units(text)
+    if units == 0:
+        return {"category": "empty", "units": 0, "advice": "零内容：检查 URL 是否可达"}
+    if units < 100:
+        return {"category": "thin", "units": units,
+                "advice": "真实页面但主内容稀薄（JS 渲染墙/导航页）：换 opencli 真实浏览器，勿同通道重试"}
+    if units < min_chars:
+        return {"category": "thin", "units": units,
+                "advice": f"内容不足 {min_chars}：可能是节选页，可降门槛或换通道"}
+    return {"category": "ok", "units": units, "advice": "内容有效"}
+
+
+# ---------- #2 firecrawl key 管理（训记模式，与 source-scan 同约定） ----------
+
+CONFIG_PATH = os.path.expanduser("~/.config/gin-tutorial/config.yaml")
+
+
+def load_config():
+    """读 key 配置。兼容两种形态：JSON 对象 或 用户直接粘贴的 key 纯文本。"""
+    try:
+        raw = open(CONFIG_PATH, encoding="utf-8").read().strip()
+    except OSError:
+        return {}
+    if not raw:
+        return {}
+    try:
+        cfg = json.loads(raw)
+        return cfg if isinstance(cfg, dict) else {}
+    except ValueError:
+        m = re.search(r"(fc-[A-Za-z0-9-]+)", raw)
+        return {"firecrawl_api_key": m.group(1)} if m else {}
+
+
+def firecrawl_env():
+    """调 firecrawl-cli 前要注入的环境变量（有 key 才注入，keyless 什么都不加）。"""
+    key = load_config().get("firecrawl_api_key")
+    return {"FIRECRAWL_API_KEY": key} if key else {}
+
+
+# ---------- #7/#8 harvest-one：单条源全自动（决策→采集→验收→后处理→落盘） ----------
+
+def harvest_one(output_dir, src):
+    """采集单条源并按层落盘。src: sources.json 条目（title/url/layer/value/action）。
+
+    只负责确定性通道（firecrawl-scrape/download、collector、skip-book 的判定）；
+    opencli 通道由 Agent 用 opencli-browser 技能执行（见 SKILL.md 责任表）。
+    返回落盘路径；失败抛 HarvestError（带 explain 定性）。
+    """
+    url = src["url"]
+    title, layer = src["title"], src.get("layer", "L3")
+    ch = pick_channel(url, src.get("action", "单页采集"),
+                      firecrawl_available=bool(load_config().get("firecrawl_api_key")))
+    if ch == "opencli":
+        raise HarvestError(url, ch, "opencli", "opencli 通道由 Agent 执行（opencli-browser 技能），脚本不自动跑")
+    if ch == "skip-book":
+        raise HarvestError(url, ch, "skip-book", "书非采集对象，只记录书目")
+    dest = organize_path(output_dir, layer, title)
+    host = urlparse(url).netloc.lower().removeprefix("www.")
+    raw = dest[:-3] + ".raw.md"
+
+    env = dict(os.environ)
+    env.update(firecrawl_env())
+    cmd = ["npx", "-y", "firecrawl-cli", "scrape", url, "--only-main-content", "-o", raw]
+    subprocess.run(cmd, capture_output=True, timeout=300, env=env)
+    info = explain(raw)
+    if info["category"] != "ok":
+        raise HarvestError(url, ch, info["category"], info["advice"])
+    postprocess_markdown_inplace = postprocess_markdown(open(raw, encoding="utf-8").read(), site_host=host)
+    header = (f"> 来源：{title}\n> URL：{url}\n> 层级：{layer} | 定级：{src.get('value', '?')}"
+              f" | 通道：{ch}\n\n---\n\n")
+    open(dest, "w", encoding="utf-8").write(header + postprocess_markdown_inplace)
+    os.remove(raw)
+    return dest
+
+
+class HarvestError(Exception):
+    def __init__(self, url, channel, category, advice):
+        self.url, self.channel, self.category, self.advice = url, channel, category, advice
+        super().__init__(f"[{category}] {url}: {advice}")
 
 
 if __name__ == "__main__":
