@@ -18,20 +18,7 @@
 
 ## 一、两个用户变量（决定所有参数的入口）
 
-### 场景进度
-
-当前场景：gin-workout-planner — 目标/水平更改
-
-Progress:
-- [ ] Step 1 读取当前 `_skill-config.json` 的 training_goal / training_level [自动]
-- [ ] Step 2 确认用户新目标/水平 [硬闸门] [可回环]  ← 当前
-- [ ] Step 3 更新 `_skill-config.json` [硬闸门]
-
-进入 Step 3 前必须输出：`当前阻塞：等待你确认更新训练目标/水平。你可以回复"确认/OK/继续"，或回复"修改/重来"回退。`
-
-禁止：
-- 不要未确认就修改训练目标/水平
-- 目标/水平变更后未生效前不继续生成计划
+> 「目标/水平更改」场景的执行流程（Progress checklist、阻塞话术、禁止项）统一收在 SKILL.md「轻场景 micro-checklist」，本文件只管参数规则。
 
 生成任何训练计划前，先读 `_skill-config.json` 的两个字段：
 
