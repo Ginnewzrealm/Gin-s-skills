@@ -284,10 +284,10 @@ Progress:
 ### 4. 写回训记（仅在用户同意时执行）
 
 - 读取 `references/trains-train-writeback.md`，严格按其中流程执行。
-- 读取本地写回记录 `{knowledge_base_root}/.xunji-writeback/plan-writeback-log.json`，按 `datestr + body_part` 去重；读取/写回时必须使用完整结构 `{ "schema_version": "1.0", "records": [...] }`，不能只操作数组。若文件是旧版空数组 `[]` 或结构异常，先按规范重建（也可运行 `scripts/repair_writeback_log.py <路径>`）。
-- **单写保证**：创建临时锁文件 `.xunji-writeback/.writing-lock-{datestr}-{body_part_pinyin}`，调用 `Skill` 前加锁，调用后（无论成败）解锁；同一计划禁止调用多次。
+- **写回去重：读当天计划存档** `03-训练计划/{datestr}-{body_part}*.md`（glob，`-2` 后缀一并匹配），查 frontmatter 有无 `训记写回:` 行——有 = 已写入过，停下来问用户「覆盖 / 新建 / 取消」（覆盖取最新一份存档的 localid）；无 = 直接新建。写没写过训记只记在这一个位置，没有独立账本文件，规则全文见 `references/trains-train-writeback.md`。
+- **单写保证**：临时锁文件放 `03-训练计划/.locks/.writing-lock-{datestr}-{body_part_pinyin}`，调用 `Skill` 前加锁，调用后（无论成败）解锁；同一计划禁止调用多次。
 - 构造 `write_plan` 参数，`title` 不超过 4 个汉字。
 - 从 `_skill-config.json` 读取 `xunji_training_skill_name`。
 - 调用 `Skill(skill="{xunji_training_skill_name}", args={...})`。
-- 接收返回 `localid`，**必须先验证 `success === true` 再更新本地写回记录**；`success === false` 时禁止更新记录、禁止自动重试，原样展示 `error` 并告诉用户：「写入训记失败了：{error}。**我不会自动重试。**如果你确认要我重新试，请说"重新试"或"再试一次"。」
+- 接收返回 `localid`，**必须先验证 `success === true` 再把 `训记写回:` 行写入当天存档 frontmatter**（格式见 trains-train-writeback.md）；`success === false` 时禁止写回、禁止自动重试，原样展示 `error` 并告诉用户：「写入训记失败了：{error}。**我不会自动重试。**如果你确认要我重新试，请说"重新试"或"再试一次"。」
 - 向用户反馈结果。

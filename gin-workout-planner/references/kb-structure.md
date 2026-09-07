@@ -64,15 +64,6 @@
    - 用户不答/全部 D → 创建空骨架文件并告知："以后随时说'记一下我的侧重点'就能补"
    - 格式规范、三档标签与计划联动规则一律以 `references/training-focus.md` 为准
 5. **创建配置文件**：在知识库根目录创建 `_skill-config.json`（结构见第 4 节）。
-5b. **创建训记写回记录文件**：在知识库根目录创建 `.xunji-writeback/plan-writeback-log.json`，初始内容：
-
-```json
-{
-  "schema_version": "1.0",
-  "records": []
-}
-```
-
 6. 告知用户：后续会话如换了环境，直接提供知识库路径即可。
 7. **环境加固提示（Claude Code 用户，一次性）**：技能已约定"主对话串行执行、禁止子 Agent"，但指令层不是技术锁。建议用户在 Claude Code 的 `settings.json` 权限配置中把 Task 工具加入 deny 列表，从技术上禁用子 Agent：
 
@@ -104,14 +95,11 @@
 │   ├── 拉伸筋膜/
 │   └── 热身/
 ├── 02-训练日记/
-├── 03-训练计划/
-└── .xunji-writeback/
-    └── plan-writeback-log.json
+└── 03-训练计划/            # 存档（YYYY-MM-DD-部位.md）；写回训记与否记在存档 frontmatter 训记写回: 行；.locks/ 存写锁
 ```
 
 - `训练侧重点.md`：用户侧重点数据本体（整体原则/部位策略/次数偏好/动作侧重点，四分区），格式与联动规则真源见 `references/training-focus.md`
-- `03-训练计划/`：每次训练计划输出后按 `YYYY-MM-DD-部位.md` 存档（见 plan-output.md「输出后」）
-- `.xunji-writeback/plan-writeback-log.json`：训记训练计划写回记录，用于去重与覆盖更新，真源见 `references/trains-train-writeback.md`
+- `03-训练计划/`：每次训练计划输出后按 `YYYY-MM-DD-部位.md` 存档（见 plan-output.md「输出后」）；写入训记成功后在该存档 frontmatter 补 `训记写回:` 行（localid/client_request_id/时间），去重与覆盖规则真源见 `references/trains-train-writeback.md`；`.locks/` 存写回锁文件
 
 - **一级分类 = 肌肉部位，共 9 个**，与文件夹一一对应。索引标题与文件夹名的对照（标题可带斜杠，文件夹名不带）：
 
