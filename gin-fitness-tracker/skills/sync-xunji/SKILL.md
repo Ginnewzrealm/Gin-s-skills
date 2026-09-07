@@ -26,7 +26,7 @@
 
 ### 场景进度
 
-当前场景：gin-fitness-tracker — sync-xunji
+当前场景：gin-fitness-tracker — sync-xunji（子模块 4/5）
 
 Progress:
 - [ ] Step 1 发送模块状态反馈 [自动]

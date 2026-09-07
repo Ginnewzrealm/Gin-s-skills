@@ -18,6 +18,30 @@
 
 ---
 
+### v3.6.0 — 2026-09-07
+
+**更新类型**：优化
+
+**涉及文件**：
+- `SKILL.md`
+- `skills/init/SKILL.md`
+- `skills/collect-data/SKILL.md`
+- `skills/query-data/SKILL.md`
+- `skills/write-verify/SKILL.md`
+- `skills/sync-xunji/SKILL.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **注册第 5 个 checklist 标签 `[等待用户回复]`**：collect-data Step 6 早已使用该标签但主 SKILL.md 标签表只有 4 个——主表补第 5 行，明确其语义（阻塞等待用户回复，语义同硬闸门；与 `[自动]` 并列表示双态——daily_poll 模式等回复，reply_entry 模式自动解析）
+2. **补 checklist 状态推进规则**：展示时机新增第 3 条——过硬闸门/长自动段推进后重打 checklist 标 `[✓]`、当前步高亮 `← 当前`，禁止连续 `[自动]` 步执行期间 checklist 停在初始状态不动（此前只有完成时才标）
+3. **新增回退映射表**：「用户说 X → 回退目标」五类（重来/改数据/问题不对/换日期/中止同步），明确回退时 checklist 重置与产物重新校验要求
+4. **场景定位句补子模块宏观定位**：定位句格式加 `（子模块 X/5）`，5 个子技能的场景进度同步对齐
+5. **版本号单点维护**：标题 `# 健身追踪 v3.5.2` 中的版本号删除，frontmatter `version` 为唯一维护点（与 gin-workout-planner v1.28.0 同款惯例）
+6. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.5.2` 升级到 `v3.6.0`
+
+---
+
 ### v3.4.1 — 2026-08-29
 
 **更新类型**：修复

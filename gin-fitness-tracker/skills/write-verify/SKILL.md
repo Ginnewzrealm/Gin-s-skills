@@ -21,7 +21,7 @@
 
 ### 场景进度
 
-当前场景：gin-fitness-tracker — write-verify
+当前场景：gin-fitness-tracker — write-verify（子模块 5/5）
 
 Progress:
 - [ ] Stage 1 LOAD_DEFS：读取表头、列约束、字段元数据 [自动]

@@ -19,7 +19,7 @@
 
 ### 场景进度
 
-当前场景：gin-fitness-tracker — collect-data
+当前场景：gin-fitness-tracker — collect-data（子模块 2/5）
 
 Progress:
 - [ ] Step 1 发送模块状态反馈 [自动]

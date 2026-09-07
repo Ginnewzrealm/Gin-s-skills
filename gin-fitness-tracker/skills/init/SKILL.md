@@ -18,7 +18,7 @@
 
 ### 场景进度
 
-当前场景：gin-fitness-tracker — init
+当前场景：gin-fitness-tracker — init（子模块 1/5）
 
 Progress:
 - [ ] Step 1 发送模块状态反馈 [自动]
