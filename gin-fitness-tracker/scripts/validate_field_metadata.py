@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""validate_field_metadata.py — 基于字段元数据子表的类型与选项校验用户输入。
+"""validate_field_metadata.py — 基于字段元数据子表的类型、选项与填写说明校验用户输入。
 
 本脚本不替代 Agent 的语义理解，只负责在 Agent 从自然语言中提取字段和值之后，
 按字段元数据子表的「类型」、「选项」、「填写说明」做硬校验与规范化。
+
+「填写说明」机检规则（仅数字类型）：
+- 含「整数」→ 值必须为整数，否则 INTEGER_REQUIRED
+- 含「a-b 分」类范围 → 值必须在 [a, b] 内，否则 OUT_OF_RANGE
+- 含「保留 N 位小数」→ 值四舍五入到 N 位小数
+- 解析不了的说明由 Agent 语义层兜底，本脚本不做猜测
 
 输入 JSON：
 {
   "field_metadata": {
     "入睡时间": {"type": "时间", "options": null, "description": "格式 HH:mm，24小时制"},
     "大解状态": {"type": "单选", "options": ["🟢正常1次", "⚠️异常无/少"], "description": "..."},
-    "晨起体重": {"type": "数字", "options": null, "description": "单位 kg，保留2位小数"}
+    "晨起体重": {"type": "数字", "options": null, "description": "单位 kg，保留 2 位小数"}
   },
   "raw_values": {
     "入睡时间": "01:00",
@@ -30,6 +36,8 @@
     "某个字段": "TYPE_MISMATCH: 字段类型为「时间」，输入「晚上11点」无法解析为 HH:mm"
   }
 }
+
+错误信息统一附带「填写说明」原文，返回给用户纠正时有据可依。
 
 支持的元数据类型：数字 / 文本 / 单选 / 多选 / 日期 / 时间 / 公式
 """
@@ -82,6 +90,41 @@ def _parse_number(value: Any) -> Tuple[Optional[float], Optional[str]]:
     return None, f"NUMBER_FORMAT_ERROR: 无法将 '{value}' 解析为数字"
 
 
+def _apply_number_rules(value: float, description: str, field_name: str) -> Tuple[Any, Optional[str]]:
+    """按「填写说明」对数字施加硬规则：整数 / 范围 / 小数位。
+
+    返回 (处理后的值, 错误信息)。错误信息附带填写说明原文。
+    解析不了的说明一律放行，由 Agent 语义层兜底。
+    """
+    desc = (description or "").strip()
+
+    # 1. 整数规则：说明含「整数」→ 值必须为整数
+    if "整数" in desc:
+        if value != int(value):
+            return None, (
+                f"INTEGER_REQUIRED: 字段「{field_name}」要求整数，输入 {value} 不是整数"
+                f"（填写说明：{desc}）"
+            )
+        value = int(value)
+
+    # 2. 范围规则：说明含「a-b」（如「0-10 分」）→ 值必须在 [a, b] 内
+    m = re.search(r"(\d+)\s*-\s*(\d+)", desc)
+    if m:
+        lo, hi = int(m.group(1)), int(m.group(2))
+        if not (lo <= value <= hi):
+            return None, (
+                f"OUT_OF_RANGE: 字段「{field_name}」允许范围 {lo}-{hi}，输入 {value} 超出范围"
+                f"（填写说明：{desc}）"
+            )
+
+    # 3. 小数位规则：说明含「保留 N 位小数」→ 四舍五入到 N 位
+    m = re.search(r"保留\s*(\d+)\s*位小数", desc)
+    if m:
+        value = round(value, int(m.group(1)))
+
+    return value, None
+
+
 def _validate_single_select(value: Any, options: List[str]) -> Tuple[Optional[str], Optional[str]]:
     """单选校验：值必须在选项列表中。"""
     if not options:
@@ -129,7 +172,10 @@ def validate_field(field_name: str, value: Any, meta: Dict[str, Any]) -> Tuple[O
     options = meta.get("options") or []
 
     if field_type == "数字":
-        return _parse_number(value)
+        parsed, err = _parse_number(value)
+        if err:
+            return None, err
+        return _apply_number_rules(parsed, meta.get("description") or "", field_name)
 
     if field_type == "时间":
         normalized = _normalize_time(value)

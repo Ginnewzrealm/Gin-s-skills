@@ -57,17 +57,17 @@ Stage 产物清单：
    ③b build_header_map.py → header_map.json（字段名→列字母，识别空列/重复字段）
    ③c 调用 read_column_formats 读取真实列约束 → raw_column_formats.json
    ③d build_column_constraints.py → column_constraints.json
-   ③e stage_validator.py 校验 LOAD_DEFS 产物
+   ③e 读取字段元数据子表 → field_metadata.json
+   ③f stage_validator.py 校验 LOAD_DEFS 产物
     ↓ 任一产物缺失 / header_map 无效 → 停止，输出阻塞原因
     ↓
 ④ VALIDATE [硬闸门]
-   ④a 读取字段元数据子表 → field_metadata.json
-   ④b validate_field_metadata.py → validated_values.json
-   ④c coerce_value.py → coerced_values.json
-   ④d 读取目标行当前值 → current_row_values.json
-   ④e check_existing_values.py → existing_values.json
+   ④a validate_field_metadata.py → validated_values.json（按元数据「类型/选项/填写说明」校验，见 config/field-metadata-schema.md）
+   ④b coerce_value.py → coerced_values.json
+   ④c 读取目标行当前值 → current_row_values.json
+   ④d check_existing_values.py → existing_values.json
        ↓ existing 非空 → REPORT (needs_user_input)
-   ④f stage_validator.py 校验 VALIDATE 产物
+   ④e stage_validator.py 校验 VALIDATE 产物
     ↓
 ⑤ WRITE [自动]
    ⑤a prepare_write_request.py → write_plan.json（构造 +cells-set payload）

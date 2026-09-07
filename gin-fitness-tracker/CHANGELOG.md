@@ -18,6 +18,30 @@
 
 ---
 
+### v3.7.0 — 2026-09-07
+
+**更新类型**：优化
+
+**涉及文件**：
+- `scripts/validate_field_metadata.py`
+- `skills/write-verify/SKILL.md`
+- `config/field-metadata-schema.md`
+- `knowledge/field-guide.md`
+- `evals/evals.json`
+- `SKILL.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **「填写说明」机检化（核心修复）**：此前 `validate_field_metadata.py` 文档承诺"按类型、选项、填写说明校验"，但代码从不读 `description`——小数位/整数/分值范围全靠 LLM 自觉，是"没按字段格式填写"的主因。现数字类型按说明施加硬规则：含「整数」→ 拒绝非整数（INTEGER_REQUIRED）；含「a-b 分」→ 范围校验（OUT_OF_RANGE）；含「保留 N 位小数」→ 四舍五入。解析不了的说明由语义层兜底，脚本不猜测
+2. **校验错误信息附带填写说明原文**：用户收到「允许范围 0-10，输入 15 超出范围（填写说明：0-10 分，整数，如 5）」式报错，纠正时有据可依
+3. **修 write-verify 步骤矛盾**：Stage 1 标注与产物清单含 `field_metadata`，但步骤细节 ③a-③e 无读取元数据操作（实际在 Stage 2 ④a），与 `stage_validator.py` 把 field_metadata 列为 LOAD_DEFS 必备产物矛盾——现 ③e 上移读取字段元数据子表，Stage 2 重编号，三处对齐
+4. **文档同步**：`config/field-metadata-schema.md` 使用规则新增第 7 条（填写说明机检规则清单）；`knowledge/field-guide.md` 四层校验第 2 层描述对齐
+5. **eval-2 版本用例更新** v3.7.0
+6. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.6.0` 升级到 `v3.7.0`
+
+---
+
 ### v3.6.0 — 2026-09-07
 
 **更新类型**：优化

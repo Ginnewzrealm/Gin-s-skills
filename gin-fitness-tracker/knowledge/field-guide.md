@@ -155,7 +155,7 @@ storage:
 **写入流程（四层校验）：**
 
 1. **语义提取层**：`collect-data` 用 LLM 从自然语言中提取字段和候选值
-2. **元数据类型校验层**：`write-verify` 调用 `validate_field_metadata.py`，按字段元数据子表的「类型」和「选项」做硬校验
+2. **元数据类型校验层**：`write-verify` 调用 `validate_field_metadata.py`，按字段元数据子表的「类型」「选项」「填写说明」做硬校验——类型/选项全字段生效；填写说明中的硬性格式（整数 / a-b 分范围 / 保留 N 位小数）仅数字类型机检执行，校验错误附带填写说明原文
 3. **真实格式转换层**：`coerce_value.py` 根据 `read_column_formats` 读取的真实 `number_format` / `data_validation` 做最终转换
 4. **字段定位硬闸门**：`build_header_map.py` 建立字段名→列字母映射，`prepare_write_request.py` 构造 `+cells-set` payload，Agent 不得自己推断列位置
 

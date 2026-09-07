@@ -14,13 +14,13 @@
     },
     {
       "id": "eval-2",
-      "name": "版本号已更新到 v3.5.2",
+      "name": "版本号已更新到 v3.7.0",
       "input": "读取 SKILL.md",
       "checks": [
         {
           "type": "file_contains",
           "path": "SKILL.md",
-          "value": "version: \"v3.5.2\""
+          "value": "version: \"v3.7.0\""
         }
       ]
     },
