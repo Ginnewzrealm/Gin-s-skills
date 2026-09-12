@@ -6,8 +6,6 @@
 和检查清单，供上层（Claude 或 pipeline）调度。
 """
 
-from common import read_reference
-
 
 PERSPECTIVES = {
     "基础": {

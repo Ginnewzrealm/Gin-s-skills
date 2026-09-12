@@ -69,3 +69,7 @@ Progress:
 - 不开始写作。
 - 不判断选题好坏（交给 gin-wechat-article-angle）。
 - **默认必须执行需求确认**。只有用户明确说"跳过确认""直接生成""--quick"等时，才允许直接输出需求记录。AI 不得自行判断"输入已经足够"。
+
+## 辅助脚本
+
+- `scripts/requirements_check.py`：可选辅助，把「素材完整性确认」与「需求记录结构校验」两条规则固化为纯函数（`assess_materials()` / `validate_requirements()`），供写入 `context.md` 前做一致性检查。不改变本 skill 的输出契约。

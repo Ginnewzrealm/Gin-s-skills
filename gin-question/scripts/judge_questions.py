@@ -99,7 +99,7 @@ def judge(text, source_url=None):
     # QM3-B: 修辞/情绪/命令
     if _has_pattern(text, RHETORICAL_PATTERNS):
         return {"passed": False, "qm3_category": "B", "reason": "含修辞反问或情绪宣泄，QM3-B"}
-    if text.startswith("你为什么不") or text.startswith("你为什么不"):
+    if text.startswith("你为什么不"):
         return {"passed": False, "qm3_category": "B", "reason": "命令/建议句式，QM3-B"}
 
     # QM3-C: 无真实意图

@@ -59,6 +59,14 @@ def test_record_fragment_tracks_id_and_direction():
         assert sorted(s["sections_covered"]) == ["困境", "转折"]
 
 
+def test_record_fragment_ignores_empty_direction():
+    with tempfile.TemporaryDirectory() as tmp:
+        session.record_fragment(tmp, "f2", "id-1", "", 0.8)
+        s = session.load_or_create(tmp, "f2")
+        assert s["fragments"] == ["id-1"]
+        assert s["sections_covered"] == []
+
+
 def test_set_domain():
     with tempfile.TemporaryDirectory() as tmp:
         session.set_domain(tmp, "d", "演讲稿")

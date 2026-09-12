@@ -17,7 +17,6 @@ SKILL_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DEFAULT_CONFIG_PATH = os.path.join(SKILL_DIR, "config.yaml")
 
 DEFAULT_ANCHOR_DIR = "成品"
-XIE_ZUO_SU_CAI_DIR = ".gin-writing-materials"
 
 TOPIC_DEF_FILE = "00-主题定义.md"
 CONVERSATION_LOG_FILE = "00-需求澄清.md"
@@ -81,14 +80,6 @@ def resolve_material_root(cli_root=None, cfg_path=None, tools_dir=None):
     if root:
         return os.path.abspath(os.path.expanduser(root))
     raise SystemExit("[错误] 未配置 material_root。请先运行 init。")
-
-
-def ensure_dirs(material_root):
-    """确保素材库隐藏目录存在（旧版兼容，不再主动使用）。"""
-    base = os.path.join(material_root, XIE_ZUO_SU_CAI_DIR)
-    for sub in ("fragments", "sessions", "topic-definitions"):
-        os.makedirs(os.path.join(base, sub), exist_ok=True)
-    return base
 
 
 def slugify(text):

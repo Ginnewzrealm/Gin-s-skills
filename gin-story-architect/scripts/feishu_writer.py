@@ -192,6 +192,8 @@ def validate_and_normalize(data):
                     else:
                         rec[fname] = fval
                 else:
+                    if fval is None:
+                        continue
                     rec[fname] = str(fval)
             # 必填：关键字段
             for kf in schema["key_fields"]:
@@ -365,6 +367,14 @@ def cmd_write(args):
     with open(args.data, encoding="utf-8") as f:
         data = json.load(f)
     normalized = validate_and_normalize(data)
+
+    # write 模式契约（见 references/data_format.md）：三表齐全；局部更新请用 update 模式
+    missing_tables = [name for name in TABLE_SCHEMAS if name not in normalized]
+    if missing_tables:
+        raise FeishuError(
+            f"write 模式要求三表齐全，缺失：{missing_tables}。"
+            "请补齐后重试；只更新部分表请使用 update 模式。"
+        )
 
     token = get_tenant_token(args.app_id, args.app_secret)
     app_token = parse_base_url(args.base_url)

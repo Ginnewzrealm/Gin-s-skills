@@ -4,10 +4,10 @@ description: |
   当用户需要确保 Chrome 浏览器已准备好供 OpenCLI 使用，或提到 "打开 Chrome 给 OpenCLI"、"清理 OpenCLI Browser 标签"、"检查 OpenCLI 浏览器状态" 时触发。
   本技能负责 OpenCLI 浏览器环境的全生命周期：check（只读诊断）、init（初始化绑定）、use（使用前确保浏览器就绪）、cleanup（清理残留标签）。
   不执行任何 OpenCLI 业务采集，只提供"浏览器已就绪"的运行时环境。
-version: "v1.2.0"
+version: "v1.2.1"
 ---
 
-# opencli-chrome-launcher v1.2.0
+# opencli-chrome-launcher v1.2.1
 
 本技能让 Agent 在使用 OpenCLI 之前，自动完成 Chrome 启动、账号切换、扩展连接检查以及残留标签清理。
 
@@ -43,13 +43,12 @@ python scripts/opencli_chrome_launcher.py init
 
 首次初始化：
 1. 检查 opencli 是否安装
-2. 检查 `opencli doctor` 是否通过
-3. 检查 Chrome 是否安装
-4. 读取 Chrome `Local State` 获取本地 profile 列表
-5. 获取 `opencli profile list` 的 OpenCLI profile 列表
-6. 按规则自动匹配并选择目标 profile
-7. 写入 `config/binding.json`
-8. 再次 `opencli doctor` 确认
+2. 检查 Chrome 是否安装
+3. 读取 Chrome `Local State` 获取本地 profile 列表
+4. 获取 `opencli profile list` 的 OpenCLI profile 列表；为空时退化为只从 Chrome profile 中选择（OpenCLI profile ID 留空，由 use 模式启动 Chrome 后动态检测写回）
+5. 按规则自动匹配并选择目标 profile
+6. 写入 `config/binding.json`
+7. 再次 `opencli doctor` 确认；扩展未连接时返回 `partial` 并提示运行 use 模式，不算失败
 
 ### use 模式
 
@@ -72,9 +71,10 @@ python scripts/opencli_chrome_launcher.py cleanup [session_name]
 
 业务完成后清理：
 1. `opencli browser <session> close` 释放 session lease
-2. 两阶段 aggressive cleanup：
+2. 三阶段 cleanup：
    - 关闭所有标题含 "OpenCLI Browser" 的标签
-   - 关闭只剩 `about:blank` / `chrome://newtab` 的空窗口
+   - 多窗口场景下关闭只剩 `about:blank` 的空窗口（单窗口不动用户的新标签页，`chrome://newtab` 视为合法页面）
+   - 通过 System Events 关闭标题含 "OpenCLI Browser" 群组的扩展自动创建窗口（跳过空名称窗口的索引偏移）
 
 ## 输出格式
 

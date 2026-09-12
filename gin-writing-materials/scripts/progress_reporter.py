@@ -66,7 +66,7 @@ def render_mine(
     lines = [title, ""]
     found_current = False
 
-    for step in MINE_STEPS:
+    for idx, step in enumerate(MINE_STEPS, start=1):
         is_current = step["key"] == current_key
         if is_current:
             found_current = True
@@ -76,7 +76,7 @@ def render_mine(
         checkbox = _checkbox(status) if status != "current" else "[ ]"
         current_marker = "  ← 当前" if is_current else ""
         tags = _tag_str(step["tags"])
-        lines.append(f"- {checkbox} Step {step['key']} {step['name']} {tags}{current_marker}")
+        lines.append(f"- {checkbox} Step {idx} {step['name']} {tags}{current_marker}")
 
     return "\n".join(lines)
 

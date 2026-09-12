@@ -47,8 +47,7 @@ def save_turn(
     """
     interpretation = interpretation or []
 
-    # 确保会话状态存在
-    session.load_or_create(material_root, topic)
+    # increment_round / record_method 内部会自动创建会话状态
     session.increment_round(material_root, topic)
     if method:
         session.record_method(material_root, topic, method)

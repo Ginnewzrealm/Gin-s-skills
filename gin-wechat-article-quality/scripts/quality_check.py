@@ -1,6 +1,7 @@
 """质量检查脚本。
 
-执行 references/quality-checklist.md 中的客观检查项。
+执行质量检查清单（客观检查项内嵌于本脚本，清单来源为
+gin-wechat-article-core/references/quality-checklist.md）中的客观检查项。
 目前覆盖 L1（硬性规则）、L2（风格一致性）、L3（内容质量）中可自动化检查的部分，
 以及 L4（活人感）的主观检查框架。
 """
@@ -35,7 +36,7 @@ DISABLED_WORDS = [
     "的发展",
 ]
 
-DISABLED_SYMBOLS = ["：", "——", '"', '"', "‘", "’", "“", "”"]
+DISABLED_SYMBOLS = ["：", "——", '"', "‘", "’", "“", "”"]
 
 CHEAP_WORDS = ["震惊", "必看", "惊呆了", "99%", "重磅", "重磅消息", "绝密"]
 
@@ -161,7 +162,7 @@ def score_title(title: str, supports: list, trigger: str) -> dict:
 
 
 def _count_occurrences(text: str, patterns: list) -> int:
-    """统计文本中命中任一模式的次数（不重复计数同一位置，取首个匹配）。"""
+    """统计文本中命中每个模式的次数之和（同一模式多处命中分别计数）。"""
     total = 0
     for pat in patterns:
         total += len(re.findall(re.escape(pat), text))
@@ -187,7 +188,13 @@ def _split_sentences(text: str) -> list:
 # ---------------------------------------------------------------------------
 
 
-def check_l1(title: str, text: str, frontmatter: dict[str, Any] | None = None) -> dict:
+def check_l1(
+    title: str,
+    text: str,
+    frontmatter: dict[str, Any] | None = None,
+    forbidden_zone: list | None = None,
+    trigger: str = "",
+) -> dict:
     """L1 硬性规则检查。返回通过项、不通过项、命中明细。"""
     issues = []
     details = {}
@@ -251,7 +258,7 @@ def check_l1(title: str, text: str, frontmatter: dict[str, Any] | None = None) -
     details["vague_tool_names"] = list(set(vague))
 
     # L1-9 标题情绪触发点
-    emotion_tone = fm.get("emotion_tone") or ""
+    emotion_tone = fm.get("emotion_tone") or trigger
     keywords = TRIGGER_KEYWORDS.get(emotion_tone, [])
     if keywords and not any(kw in title for kw in keywords):
         issues.append(f"L1-9 标题未体现情绪触发点 '{emotion_tone}'")
@@ -259,6 +266,13 @@ def check_l1(title: str, text: str, frontmatter: dict[str, Any] | None = None) -
     # L1-10 章节编号禁令
     if re.search(r"第[一二三四五12345]+[章节]|[第一二三四五12345][，、.]", text):
         issues.append("L1-10 发现章节编号（第一章/第一 等）")
+
+    # L1-11 模板专属禁区
+    if forbidden_zone:
+        hits = [rule for rule in forbidden_zone if rule and rule in (title + text)]
+        if hits:
+            issues.append(f"L1-11 命中模板专属禁区：{hits}")
+        details["forbidden_zone_hits"] = hits
 
     hard_fail = bool(issues)
     return {
@@ -402,11 +416,6 @@ def check_l3(text: str, template: str = "", target_word_count: int = 0) -> dict:
     if "你" not in text[:500]:
         issues.append("L3-10 前 500 字未明确称呼或代入目标读者")
 
-    # L3-12 核心情绪触发点
-    if not any(k in text for k in TRIGGER_KEYWORDS.keys()):
-        # 放宽：检查是否有情绪关键词本身出现
-        pass
-
     # L3-14 结尾开放性
     ending = text[-80:]
     if not _has_any(ending, OPEN_ENDING_WORDS) and not re.search(r"[?？]", ending):
@@ -504,19 +513,22 @@ def score_article(
     template: str = "",
     supports: list | None = None,
     trigger: str = "",
+    forbidden_zone: list | None = None,
 ) -> dict:
     """对文章执行 L1-L4 四层自检，返回完整报告。"""
     fm = frontmatter or {}
     emotion_tone = trigger or fm.get("emotion_tone", "")
     title_score = score_title(title, supports or [], emotion_tone)
-    l1 = check_l1(title, text, fm)
+    l1 = check_l1(title, text, fm, forbidden_zone=forbidden_zone, trigger=emotion_tone)
     l2 = check_l2(text)
     l3 = check_l3(text, template, fm.get("word_count", 0))
     l4 = check_l4(text)
 
-    # 客观总分（不含 L4）
+    # 客观总分（不含 L4）。标题评分满分为 12，先归一化到百分制再参与加权，
+    # 保证 objective_score 为 0-100 的百分制总分。
+    title_score_100 = round(title_score["score"] / 12 * 100)
     objective_score = round(
-        title_score["score"] * 0.15
+        title_score_100 * 0.15
         + l1["score"] * 0.30
         + l2["score"] * 0.25
         + l3["score"] * 0.30

@@ -138,8 +138,8 @@ STAGE_REQUIRED_FIELDS: Dict[str, List[str]] = {
     "title_confirmed": ["selected_template", "requirements", "narrative_protocol", "title_candidates"],
     "quality_checked": ["selected_template", "requirements", "narrative_protocol", "selected_title"],
     "finalized": ["selected_template", "requirements", "narrative_protocol", "quality_report"],
-    "markdown_output": ["selected_template", "requirements", "narrative_protocol", "final_draft"],
-    "publish_decision": ["selected_template", "requirements", "narrative_protocol", "markdown_output"],
+    "markdown_output": ["selected_template", "requirements", "narrative_protocol", "final_markdown_path"],
+    "publish_decision": ["selected_template", "requirements", "narrative_protocol", "final_markdown_path"],
 }
 
 
@@ -235,7 +235,7 @@ def validate_sub_skill_execution(
 
     检查维度：
     1. context.md 中必须存在对应的输出 key
-    2. 如果有 article_dir，检查输出文件是否真实存在且晚于 context.md
+    2. 如果有 article_dir，检查输出文件是否真实存在且非空
     """
     errors = []
     req = STAGE_SUB_SKILL_REQUIREMENTS.get(stage)

@@ -1,6 +1,6 @@
 ---
 name: gin-wechat-article-title
-description: 根据正文提炼文章标题，或优化章节小标题。支持 mode=article 和 mode=subheading。
+description: 根据正文提炼文章标题，或优化章节小标题。支持 mode=article 和 mode=subheading。适用于 gin-wechat-article-core 主编排流程中的 titled（标题）阶段及 polish 阶段的小标题优化，也支持用户直接调用优化标题。
 ---
 
 # 标题优化
@@ -9,7 +9,7 @@ description: 根据正文提炼文章标题，或优化章节小标题。支持 
 
 - 正文
 - 模板规则
-- `context.md.narrative_protocol.global_rules.opening`（新增）
+- `context.md.narrative_protocol.global_rules.opening`
 - 情绪触发点
 - mode 参数（article/subheading）
 - `context.md.reference_briefs.bigpeng_title_formulas`

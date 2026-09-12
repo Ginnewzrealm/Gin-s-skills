@@ -533,11 +533,15 @@ class BrowserManager:
         system = platform.system()
         try:
             if system == "Darwin":
+                # 直接调 Chrome 二进制；open -a 会忽略 --profile-directory（与
+                # opencli-chrome-launcher 的 launch_chrome 保持一致）
+                chrome_path = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
                 if profile_dir:
-                    subprocess.run(
-                        ["open", "-a", "Google Chrome", "--args", f"--profile-directory={profile_dir}"],
-                        check=True,
-                        timeout=15,
+                    subprocess.Popen(
+                        [chrome_path, f"--profile-directory={profile_dir}"],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        start_new_session=True,
                     )
                 else:
                     script = '''

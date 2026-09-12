@@ -154,7 +154,8 @@ def main():
 
     # Step 4: Save as TXT
     safe_title = re.sub(r'[：:/\\?|<>*"\']', '_', orig_title or title).strip('_')[:80]
-    txt_path = tempfile.mktemp(suffix='.txt', prefix=f'podcast_{safe_title}_')
+    fd, txt_path = tempfile.mkstemp(suffix='.txt', prefix=f'podcast_{safe_title}_')
+    os.close(fd)
 
     with open(txt_path, 'w', encoding='utf-8') as f:
         f.write(f"# {orig_title or title}\n\n")

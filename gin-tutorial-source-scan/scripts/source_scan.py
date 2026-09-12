@@ -38,7 +38,8 @@ SLIM_PRODUCT = re.compile(r"(咖啡|普洱茶|减肥茶|酵素|代餐奶昔).{0,
 # 高价值信号
 HIGH_HOST_PATTERNS = [
     ".gov", ".gov.cn", ".edu", "who.int", "cdc.gov", "un.org", "unesco.org",
-    "nhc.gov.cn", "mayoclinic.org",        # mayoclinic 归 medium？不——宿主强背书归 high，措辞见下
+    "nhc.gov.cn",
+    # mayoclinic 单独列在 MEDIUM_HOSTS，最终定级 medium（健康科普媒体，非官方/学术）
     "arxiv.org", "sciencedirect.com", "ncbi.nlm.nih.gov", "pubmed", "nature.com",
     "chinacdc.cn", "cdc.cn",   # 中国疾控中心（9/5 减脂实测：chinacdc.cn 曾误判 unknown）
     "cell.com", "nejm.org", "doi.org", "semanticsscholar.org",
@@ -99,7 +100,7 @@ LAYER_RULES = [
     ("L2", lambda h: h == "github.com" or h.endswith(".github.io") or h == "gitee.com"),
     ("L3", lambda h: any(p in h for p in ["zhihu.com", "juejin.cn", "sspai.com", "csdn.net",
                                           "jianshu.com", "weixin.qq.com", "mp.weixin.qq.com",
-                                          "oschina.net", "segmentfault.com", "163.com", "zhihu.column"])),
+                                          "oschina.net", "segmentfault.com", "163.com"])),
     ("L4", lambda h: any(p in h for p in ["medium.com", "dev.to", "substack.com", "hashnode.dev",
                                           "freecodecamp.org"])),
     ("L5", lambda h: any(p in h for p in ["reddit.com", "news.ycombinator.com", "v2ex.com",
@@ -149,7 +150,6 @@ def add_source(path, entry):
     for s in data["sources"]:
         if _normalize_url(s["url"]) == norm:
             return False
-    entry["url"] = entry["url"]
     entry.setdefault("action", "单页采集")
     data["sources"].append(entry)
     _save(path, data)
@@ -165,7 +165,6 @@ def add_rejected(path, entry):
 def coverage_report(path, questions):
     """每个 TOP 高频问题有几份独立来源覆盖（按 note 关键词粗配）。"""
     data = _load(path)
-    notes = " ".join(s.get("note", "") + " " + s.get("title", "") for s in data["sources"])
     counts = {q: len([1 for s in data["sources"]
                       if q in (s.get("note", "") + s.get("title", ""))]) for q in questions}
     gap = "、".join(q for q, c in counts.items() if c == 0) or "无"

@@ -60,7 +60,8 @@ Progress:
 ⑤ 只填充空白字段，不覆盖用户数据
    （写入必须经 write-verify 统一入口，不直接写表）
     ↓
-⑥ 标记数据来源为"讯记同步"
+⑥ 标记数据来源为"讯记同步"（标记方式以 knowledge/xunji-api-guide.md「讯记数据质量标记」为准：
+   表头有对应列才写列，否则只在返回结果与摘要中体现）
     ↓
 ⑦ 返回结构化结果
 ```
@@ -74,7 +75,7 @@ Progress:
   "message": "给用户看的自然语言摘要",
   "data": {
     "date": "2026-07-26",
-    "filled_by_xunji": ["训练内容", "总热量"],
+    "filled_by_xunji": ["力量", "总热量"],
     "skipped_because_user_entered": ["晨起体重"]
   },
   "errors": []

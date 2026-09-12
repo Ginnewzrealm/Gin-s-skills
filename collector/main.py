@@ -196,7 +196,6 @@ def resolve_opencli_path():
         return result.stdout.strip()
     # 尝试常见的本地安装路径
     common_paths = [
-        '/Users/fubo/.openclaw/workspace-angie/node_modules/.bin/opencli',
         str(Path.home() / '.openclaw' / 'workspace-angie' / 'node_modules' / '.bin' / 'opencli'),
         '/usr/local/bin/opencli',
         '/opt/homebrew/bin/opencli',
@@ -278,13 +277,13 @@ def fetch_url_fallback(url, proxy=None):
         return None
 
     html = result.stdout
-    title_match = __import__('re').search(r'<title[^>]*>([^<]+)</title>', html, __import__('re').IGNORECASE)
+    title_match = re.search(r'<title[^>]*>([^<]+)</title>', html, re.IGNORECASE)
     title = title_match.group(1).strip() if title_match else ''
 
-    text = __import__('re').sub(r'<script[^>]*>.*?</script>', '', html, flags=__import__('re').DOTALL | __import__('re').IGNORECASE)
-    text = __import__('re').sub(r'<style[^>]*>.*?</style>', '', text, flags=__import__('re').DOTALL | __import__('re').IGNORECASE)
-    text = __import__('re').sub(r'<[^>]+>', ' ', text)
-    text = __import__('re').sub(r'\s+', ' ', text).strip()
+    text = re.sub(r'<script[^>]*>.*?</script>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<style[^>]*>.*?</style>', '', text, flags=re.DOTALL | re.IGNORECASE)
+    text = re.sub(r'<[^>]+>', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
 
     if title:
         return f"# {title}\n\nSource: {url}\n\n{text}"

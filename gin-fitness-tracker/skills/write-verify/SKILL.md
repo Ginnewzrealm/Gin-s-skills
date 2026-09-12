@@ -105,7 +105,7 @@ Stage 产物清单：
       { "field": "晨起体重", "reason": "写入后复查不一致，重试后仍失败" }
     ],
     "fields_skipped": [
-      { "field": "排便情况", "reason": "用户选择跳过" }
+      { "field": "大解状态", "reason": "用户选择跳过" }
     ]
   },
   "errors": []

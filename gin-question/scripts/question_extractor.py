@@ -680,7 +680,7 @@ def extract_from_content(html, source_url, topic=None, max_candidates=50):
         if is_obviously_not_question(s):
             continue
         # 严格过滤：必须以问号、问号词结尾
-        if not (s.endswith("？") or s.endswith("?") or s.endswith("吗") or s.endswith("呢") or s.endswith("啊？") or s.endswith("？")):
+        if not (s.endswith("？") or s.endswith("?") or s.endswith("吗") or s.endswith("呢") or s.endswith("啊？")):
             continue
         if is_question_like(s):
             q = normalize_text(s)

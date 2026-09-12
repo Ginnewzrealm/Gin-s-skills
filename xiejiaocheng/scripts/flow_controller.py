@@ -13,8 +13,9 @@
   <dir>/library/coverage-manifest.json   Stage 0 产物
   <dir>/problem_list.json                Stage 1 产物
   <dir>/answers/answers-manifest.json    Stage 3 产物
-  <dir>/outline.json                     Stage 4 产物
-  <dir>/chapters/*.md                    Stage 5 章文件
+  <dir>/outlines/大纲_<slug>.json        Stage 4 产物（一题一文，非空 .json 才算）
+  <dir>/outlines/大纲_<slug>.md          Stage 4 审核件（闸门 2 给用户看的）
+  <dir>/chapters/*.md                    Stage 5 章文件（非空才算）
   <dir>/checks/<章名>.draft.json         Stage 5 机检报告（errors 必须 = 0）
   <dir>/qc/report.json                   Stage 6 质检报告
   <dir>/confirmations.json               4 硬闸门的确认记录

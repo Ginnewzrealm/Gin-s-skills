@@ -1,5 +1,5 @@
 {
-  "version": "v3.3.0",
+  "version": "v3.7.1",
   "evals": [
     {
       "id": "eval-1",
@@ -14,13 +14,13 @@
     },
     {
       "id": "eval-2",
-      "name": "版本号已更新到 v3.7.0",
+      "name": "版本号已更新到 v3.7.1",
       "input": "读取 SKILL.md",
       "checks": [
         {
           "type": "file_contains",
           "path": "SKILL.md",
-          "value": "version: \"v3.7.0\""
+          "value": "version: \"v3.7.1\""
         }
       ]
     },
@@ -498,23 +498,23 @@
     },
     {
       "id": "eval-26",
-      "name": "write-verify 有写入前强制检查清单",
+      "name": "write-verify 有写入前最终检查",
       "input": "读取 write-verify/SKILL.md",
       "checks": [
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "写入前强制检查清单"
+          "value": "写入前最终检查"
         },
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "字段名是否在表头行白名单中"
+          "value": "字段名必须存在于当前表头行"
         },
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "单选值是否在真实下拉选项中"
+          "value": "值必须出现在真实下拉选项列表中"
         }
       ]
     },
@@ -553,12 +553,12 @@
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "字段名白名单"
+          "value": "字段名存在性校验"
         },
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "不在白名单中的字段名 → 返回 `FIELD_NOT_FOUND`"
+          "value": "任一不存在 → 返回 `FIELD_NOT_FOUND`，不写入"
         }
       ]
     },
@@ -614,7 +614,7 @@
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "写入值 vs 复查值不一致"
+          "value": "回读值与写入值不一致"
         },
         {
           "type": "file_contains",
@@ -806,18 +806,6 @@
       ]
     },
     {
-      "id": "eval-41",
-      "name": "版本号已更新到 v3.5.1",
-      "input": "读取 SKILL.md",
-      "checks": [
-        {
-          "type": "file_contains",
-          "path": "SKILL.md",
-          "value": "version: \"v3.5.1\""
-        }
-      ]
-    },
-    {
       "id": "eval-42",
       "name": "字段定位脚本存在",
       "input": "读取 scripts/ 目录",
@@ -866,7 +854,7 @@
         {
           "type": "file_contains",
           "path": "skills/write-verify/SKILL.md",
-          "value": "Agent 不得自己构造 range"
+          "value": "Agent 不得自行拼接"
         },
         {
           "type": "file_contains",

@@ -3,8 +3,7 @@
 
 检查某个子 skill 是否真正执行过：
 1. context.md 中指定的输出 key 是否存在且非空
-2. 对应的输出文件是否真实存在
-3. 输出文件是否晚于 context.md（防止使用旧文件）
+2. 对应的输出文件是否真实存在且非空
 
 用法：
   python3 scripts/sub_skill_guard.py \

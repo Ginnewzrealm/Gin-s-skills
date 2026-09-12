@@ -376,7 +376,10 @@ gin-question/
 │   ├── test_pipeline.py
 │   ├── test_judge_questions.py
 │   ├── test_source_grader.py
-│   └── test_dedupe_questions.py
+│   ├── test_dedupe_questions.py
+│   ├── test_fetch_url.py
+│   ├── test_query_generator.py
+│   └── test_question_extractor.py
 ├── evals/
 │   └── evals.json
 ├── examples/                   # 示例输入
@@ -399,8 +402,13 @@ python3 scripts/pipeline.py --manifest examples/manifest-example.json --output-d
 **单元测试**：
 
 ```bash
+python3 -m pytest tests/ -q
+# 或逐个运行：
 python3 tests/test_judge_questions.py
 python3 tests/test_source_grader.py
 python3 tests/test_dedupe_questions.py
 python3 tests/test_pipeline.py
+python3 tests/test_fetch_url.py
+python3 tests/test_query_generator.py
+python3 tests/test_question_extractor.py
 ```

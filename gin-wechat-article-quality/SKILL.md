@@ -1,6 +1,6 @@
 ---
 name: gin-wechat-article-quality
-description: 对标题和正文进行四层质量自检，输出评分报告。
+description: 对标题和正文进行四层质量自检，输出评分报告。适用于 gin-wechat-article-core 主编排流程中的 title_confirmed（质量自检）阶段，也支持用户直接调用质检任意公众号文章标题与正文。
 ---
 
 # 质量自检
@@ -10,7 +10,7 @@ description: 对标题和正文进行四层质量自检，输出评分报告。
 - 最终标题
 - 润色后正文
 - 模板规则
-- `context.md.narrative_protocol.forbidden_zone`（新增）
+- `context.md.narrative_protocol.forbidden_zone`
 - `context.md.reference_briefs.ai_flavor_guide`
 - `context.md.reference_briefs.writing_checklist`
 - `context.md.reference_briefs.writing_style`
@@ -50,13 +50,9 @@ Progress:
 8. **工具名检查**：不用"AI 工具""某个模型"等空泛表述
 9. **标题情绪触发点**：标题体现冲突/悬念/利益点/共鸣点
 10. **章节编号禁令**：无"第一章/第二章/第三章"或"第一/第二/第三"
+11. **模板专属禁区**：读取 `narrative_protocol.forbidden_zone`，全文搜索其中每条规则（示例见下），命中任何一条即视为 hard-fail
 
-### L1-5 模板专属禁区检查
-
-读取 `narrative_protocol.forbidden_zone`，全文搜索其中每条规则。
-命中任何一条即视为 hard-fail。
-
-示例（social-slice）：
+模板专属禁区示例（social-slice）：
 - 第一人称"我""我们"
 - "随着AI时代的到来"
 - 二元对立结论
@@ -145,13 +141,17 @@ Progress:
 
 ## 评分算法
 
-1. 初始化 score = 100
-2. 任一 hard-fail 不通过 → 整体不通过，返回润色
-3. normal 项不通过 → 每项扣 5 分
-4. 最终：
-   - score ≥ 85：通过
-   - 70 ≤ score < 85：通过但提示 minor 问题
-   - score < 70：不通过，返回润色
+由 `scripts/quality_check.py` 执行，与 core 的 `quality_failed` 判定（评分低于 70 或出现 hard-fail）对齐：
+
+1. 分层执行 L1-L4，各层独立给出通过与否和得分：
+   - L1 任一检查项不通过 → hard-fail，整体不通过
+   - L2、L3 按未通过项数容忍（默认分别最多容忍 2 项 / 3 项），超出则该层不通过
+   - L4 为活人感主观终审，不进入客观计分
+2. 客观总分 `objective_score`（百分制，不含 L4）= 标题评分 × 15% + L1 × 30% + L2 × 25% + L3 × 30%（标题评分先归一化到百分制）。
+3. 整体判定：
+   - L1-L3 全部通过 → 通过
+   - 出现 hard-fail 或任一层不通过 → 不通过，返回润色
+4. 报告中的总分供「人终审定稿」参考，最终是否通过由人决定。
 
 ## 边界
 

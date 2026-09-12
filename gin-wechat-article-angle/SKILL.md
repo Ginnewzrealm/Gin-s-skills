@@ -27,7 +27,7 @@ Progress:
 - [ ] Step 2 提取素材信号（痛点/反常识/数字/故事/身份/教程） [自动]
 - [ ] Step 3 匹配切入角度与情绪触发点 [自动]
 - [ ] Step 4 输出素材诊断报告 [自动]
-- [ ] Step 5 用户确认诊断结果或补充素材 [需确认]
+- [ ] Step 5 写入 angle_candidates / diagnosis_report 并生成 reports/diagnosis_report.md [自动]
 ```
 
 ## 动作
@@ -82,6 +82,8 @@ Progress:
 - `selected_angle`：推荐角度
 - `emotion_trigger` / `secondary_trigger`：情绪触发点
 
-主 skill 进入 `role_boundary` 前，应检查上述字段和文件是否存在。
+主 skill 进入 `role_boundary` 前，应检查上述字段和文件是否存在。用户确认诊断结果的环节由主 skill 在 `role_boundary`（人-AI 协作契约书）统一进行，本 skill 不单独设置用户确认节点。
+
+## 辅助脚本
 
 - `scripts/angle_matcher.py`：根据需求记录和模板规则，按 `reference_briefs.angle_library` 中的规则匹配切入角度和情绪触发点，输出结构化的素材诊断报告。

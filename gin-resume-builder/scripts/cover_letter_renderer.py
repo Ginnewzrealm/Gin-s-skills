@@ -14,7 +14,6 @@
     python3 cover_letter_renderer.py --check letter.md --template boss   # 字数校验
 """
 import argparse
-import json
 import os
 import re
 import sys

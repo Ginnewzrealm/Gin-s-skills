@@ -23,13 +23,13 @@ description: |
 
 - `context.md` 中的当前状态：
   - `selected_template`：文章风格模板（已加载的 YAML 模板规则）
-  - `narrative_protocol`（新增）：当前风格模板的叙事协议
+  - `narrative_protocol`：当前风格模板的叙事协议
   - `selected_angle`：选定切入角度
   - `emotion_trigger`：主情绪触发点
   - `secondary_trigger`：次情绪触发点
   - `selected_outline`：用户确认的大纲
-  - `selected_outline.sections[].materials_ref`（新增）：本 section 的素材支撑
-  - `selected_outline.sections[].human_needed`（新增）：本 section 必须用户补充的真实经历
+  - `selected_outline.sections[].materials_ref`：本 section 的素材支撑
+  - `selected_outline.sections[].human_needed`：本 section 必须用户补充的真实经历
   - `requirements.word_count`：目标字数
   - `requirements`：需求记录中的关键信息
 - `context.md.reference_briefs.expansion_methodology`
@@ -60,7 +60,7 @@ Progress:
   - `emotion_tone`：情绪基调，从 `selected_template` 的 `情绪基调` 提取关键词
   - `word_count`：目标字数
   - `target_reader`：目标读者
-  - `narrative_protocol_derived_from`（新增）：如 `social-slice`
+  - `narrative_protocol_derived_from`：如 `social-slice`
 - 每段内容必须能从大纲找到支撑
 - 保持情绪曲线和扣主线节奏
 - 需标注建议用户重点修改的位置（如 AI 填充的假设细节、缺乏真实经历的段落）
@@ -95,7 +95,7 @@ S 级选题三项兼备，及格选题至少占两项。如果素材的选题方
 
 ---
 
-## 第三步：写作
+## 第二步：写作
 
 ### 3.0 扩写纪律（执行时必须遵守）
 
@@ -315,12 +315,12 @@ S 级选题三项兼备，及格选题至少占两项。如果素材的选题方
 
 ---
 
-## 第四步：输出前轻量禁区扫描
+## 第三步：输出前轻量禁区扫描
 
 在输出 `article_draft.md` 前，快速扫描：
 
 1. 无 `narrative_protocol.forbidden_zone` 中的条目
-2. 无 `writing-checklist.md` 中的通用禁用项
+2. 无 `reference_briefs.writing_checklist` 中的通用禁用项
 3. 无致命 AI 味模式（教科书开头、模糊归因、口号式结尾）
 
 不输出质检报告，只保证不犯明显错误。完整质检由 `gin-wechat-article-quality` 负责。

@@ -10,7 +10,7 @@
    单来源且仅 1 次 → rejected；其他 → degraded
 
 输入：{"text", "frequency", "source_count"}
-输出：{"gate1", "gate2", "gate3", "gate4", "status", "reasons"}
+输出：{"gate1", "gate2", "gate3", "gate4", "status"}
 status: passed | degraded | rejected
 """
 import re
@@ -29,11 +29,11 @@ def _gate1(text):
     # 判定：去掉"是什么/为什么/怎么"等引导词后剩余 < 2 个有效实词
     guides = re.sub(r"是什么|为什么|怎么|如何|怎样|哪些|哪个|多少|几个|吗|呢", "", stripped).strip()
     content_words = re.findall(r"[一-鿿]+", guides)
-    if len(content_words) <= 1 and len(content_words[0]) <= 4:
-        # 实质内容只剩一个 ≤4 字词，视为宽泛
+    if len(content_words) <= 1 and (not content_words or len(content_words[0]) <= 4):
+        # 实质内容为空或只剩一个 ≤4 字词，视为宽泛
         return "rejected"
     # 含疑问助词或求答动词
-    ask_markers = {"吗", "呢", "怎么", "为什么", "什么", "哪", "是否", "要不要", "该不该", "能", "可不可以", "是否"}
+    ask_markers = {"吗", "呢", "怎么", "为什么", "什么", "哪", "是否", "要不要", "该不该", "能", "可不可以"}
     if any(m in stripped for m in ask_markers):
         return "passed"
     if re.search(r"是|什么|多少|如何|怎样|哪些|几个|哪个", stripped):

@@ -52,7 +52,7 @@ def record_fragment(material_root, topic, fragment_id, direction, confidence):
     s = load_or_create(material_root, topic)
     if fragment_id not in s["fragments"]:
         s["fragments"].append(fragment_id)
-    if direction not in s["sections_covered"]:
+    if direction and direction not in s["sections_covered"]:
         s["sections_covered"].append(direction)
     save(material_root, topic, s)
 

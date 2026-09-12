@@ -15,6 +15,8 @@
     python3 harvest.py channel --url "..." --action "单页采集"
     python3 harvest.py postprocess --file a.md [--site-host docs.x.com]
     python3 harvest.py validate --file a.md [--min-chars 500]
+    python3 harvest.py explain --file a.md
+    python3 harvest.py harvest-one --dir <输出目录> --url "..." --title "..."
     python3 harvest.py manifest --dir <输出目录> --topic "..." [--target-words 8000]
 """
 import argparse
@@ -359,7 +361,11 @@ def harvest_one(output_dir, src):
     env.update(firecrawl_env())
     scrape_url, via_note = url, ""
     cmd = ["npx", "-y", "firecrawl-cli", "scrape", scrape_url, "--only-main-content", "-o", raw]
-    subprocess.run(cmd, capture_output=True, timeout=300, env=env)
+    try:
+        subprocess.run(cmd, capture_output=True, timeout=300, env=env)
+    except (subprocess.TimeoutExpired, OSError) as e:
+        # 不裸抛 traceback：交由 explain(raw) 按输出定性（超时/缺 npx 都是采集失败的一种）
+        print(f"[harvest] firecrawl 执行异常：{e}", file=sys.stderr)
     info = explain(raw)
     if info["category"] == "blocked":
         mirror = academic_mirror(url)
@@ -368,17 +374,20 @@ def harvest_one(output_dir, src):
             via_note = mirror["note"]
             cmd = ["npx", "-y", "firecrawl-cli", "scrape", scrape_url,
                    "--only-main-content", "-o", raw]
-            subprocess.run(cmd, capture_output=True, timeout=300, env=env)
+            try:
+                subprocess.run(cmd, capture_output=True, timeout=300, env=env)
+            except (subprocess.TimeoutExpired, OSError) as e:
+                print(f"[harvest] firecrawl 镜像补采异常：{e}", file=sys.stderr)
             info = explain(raw)
     if info["category"] != "ok":
         advice = info["advice"]
         if via_note == "" and info["category"] == "blocked":
             advice += "；" + academic_mirror(url)["note"]
         raise HarvestError(url, ch, info["category"], advice)
-    postprocess_markdown_inplace = postprocess_markdown(open(raw, encoding="utf-8").read(), site_host=host)
+    postprocessed = postprocess_markdown(open(raw, encoding="utf-8").read(), site_host=host)
     header = (f"> 来源：{title}\n> URL：{url}\n> 层级：{layer} | 定级：{src.get('value', '?')}"
               f" | 通道：{ch}{('（' + via_note + '）') if via_note else ''}\n\n---\n\n")
-    open(dest, "w", encoding="utf-8").write(header + postprocess_markdown_inplace)
+    open(dest, "w", encoding="utf-8").write(header + postprocessed)
     os.remove(raw)
     return dest
 

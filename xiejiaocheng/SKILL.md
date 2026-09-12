@@ -49,7 +49,7 @@ description: 教程写作流水线编排器。给一个主题，把 source-scan/
 
 ## 执行协议
 
-### 进度条使用规则（Progress Checklist，见 docs/AI技能进度条设计指南）
+### 进度条使用规则（Progress Checklist，设计依据见 scripts/progress_reporter.py 头注引用的《AI技能进度条设计指南》）
 
 每次触发本 skill、每次 stage 跳转、每次会话恢复时，必须向用户展示进度仪表盘：
 `python3 scripts/flow_controller.py resume --dir <dir>` 输出宏观 5 阶段仪表盘 + 当前阻塞。

@@ -4,7 +4,7 @@
     {
       "id": 1,
       "eval_name": "glute-leg-day-plan-and-xunji-writeback-intent",
-      "prompt": "今天练臀腿，帮我做一个训练计划。输出计划后，假设我已经回复'OK，就按这个练'，并且你问我'要不要写入训记 App'时我回答'要'。请继续执行完整流程：输出计划、询问确认、询问写入训记、说明去重检查与单写保证、输出你会构造的 write_plan 参数（不要真正调用 Skill 或训记接口）。","expected_output": "生成臀腿部训练计划（含检查表+四板块），询问用户确认，询问是否写入训记，并展示 write_plan 参数：title≤4字、client_request_id 格式正确、包含 movements/sets、提及去重日志与锁文件。",
+      "prompt": "今天练臀腿，帮我做一个训练计划。输出计划后，假设我已经回复'OK，就按这个练'，并且你问我'要不要写入训记 App'时我回答'要'。请继续执行完整流程：输出计划、询问确认、询问写入训记、说明去重检查与单写保证、输出你会构造的 write_plan 参数（不要真正调用 Skill 或训记接口）。","expected_output": "生成臀腿部训练计划（含检查表+四板块），询问用户确认，询问是否写入训记，并展示 write_plan 参数：title≤4字、client_request_id 格式正确、包含 movements/sets、提及存档 frontmatter 去重检查与 .locks 写锁。",
       "files": [],
       "expectations": [
         "输出包含完整的训练计划检查表和四板块正文",
@@ -12,9 +12,9 @@
         "构造的 write_plan 参数中包含 action、datestr、title、body_part、client_request_id、plan",
         "title 不超过 4 个汉字",
         "client_request_id 格式为 gin-workout-planner-{datestr}-{body_part_pinyin}-{plan_hash}",
-        "提到读取 .xunji-writeback/plan-writeback-log.json 进行去重",
-        "提到创建临时锁文件 .writing-lock-{datestr}-{body_part_pinyin}",
-        "说明写入后必须验证 success === true 才能更新本地记录",
+        "提到读取当天计划存档 03-训练计划/{datestr}-{body_part}*.md 的 frontmatter「训记写回:」行进行去重",
+        "提到在 03-训练计划/.locks/ 下创建临时锁文件 .writing-lock-{datestr}-{body_part_pinyin}",
+        "说明写入后必须验证 success === true 才能更新当天存档 frontmatter 的训记写回行",
         "说明 success === false 时不会自动重试"
       ]
     },
@@ -34,16 +34,16 @@
     },
     {
       "id": 3,
-      "eval_name": "duplicate-writeback-log-handling-glute-leg",
-      "prompt": "假设今天的日期是 2026-08-22，你正在为臀腿部生成训练计划。用户已确认并同意写入训记。读取 .xunji-writeback/plan-writeback-log.json 时发现它已经存在一条 datestr=2026-08-22、body_part=臀腿部的记录。请按 references/trains-train-writeback.md 的约定处理，说明你接下来会怎么做。",
-      "expected_output": "停下来向用户展示旧记录并询问覆盖/新建/取消，而不是静默新建。",
+      "eval_name": "duplicate-writeback-archive-handling-glute-leg",
+      "prompt": "假设今天的日期是 2026-08-22，你正在为臀腿部生成训练计划。用户已确认并同意写入训记。按 references/trains-train-writeback.md 的约定做调用前去重检查：glob 03-训练计划/2026-08-22-臀腿部*.md 找到当天存档，读取其 frontmatter 时发现已有「训记写回: 已写入｜localid: 123456｜client_request_id: gin-workout-planner-20260822-tuntuib-a1b2c3d4｜2026-08-22T10:30:00+08:00」一行。请说明你接下来会怎么做。",
+      "expected_output": "识别出当天同部位已有写回记录，向用户展示存档中的训记写回行并询问覆盖/新建/取消，而不是静默新建。",
       "files": [],
       "expectations": [
-        "识别出 datestr + body_part 已存在记录",
-        "向用户展示旧记录的 title 和 written_at",
+        "识别出当天同部位已写入过训记",
+        "向用户展示存档 frontmatter 中的训记写回行（含 localid、写入时间）",
         "询问用户'覆盖 / 新建 / 取消'",
         "没有直接构造新的 write_plan 调用",
-        "说明选择覆盖时会传入旧 localid"
+        "说明选择覆盖时会取最新一份存档的 localid 传入"
       ]
     }
   ]

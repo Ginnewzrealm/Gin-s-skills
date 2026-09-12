@@ -18,6 +18,37 @@
 
 ---
 
+### v3.7.1 — 2026-09-12
+
+**更新类型**：修复
+
+**涉及文件**：
+- `evals/evals.json`
+- `config/sheets-schema.md`
+- `skills/query-data/SKILL.md`
+- `skills/collect-data/SKILL.md`
+- `skills/write-verify/SKILL.md`
+- `skills/sync-xunji/SKILL.md`
+- `knowledge/polling-rules.md`
+- `knowledge/field-guide.md`
+- `knowledge/ops-lessons.md`
+- `knowledge/xunji-api-guide.md`
+- `SKILL.md`
+- `CHANGELOG.md`
+
+**内容**：
+
+1. **修复 evals.json 版本口径矛盾与过期断言**：文件头版本停留在 v3.3.0；eval-41 仍断言 `version: "v3.5.1"`，与 eval-2 的 v3.7.0 断言互相矛盾（同一文件不可能同时通过）——删除过期 eval-41，文件头与 eval-2 同步到 v3.7.1。另对齐 4 条历史漂移的 file_contains 断言（eval-26/28/31/44）：write-verify 文档经多轮重构后「写入前强制检查清单 / 字段名白名单 / 写入值 vs 复查值不一致 / Agent 不得自己构造 range」等旧措辞已被「写入前最终检查 / 字段名存在性校验 / 回读值与写入值不一致 / Agent 不得自行拼接」取代，eval 断言同步到现行权威措辞
+2. **统一「晨起心率（次/分）」字段名**：权威名称（字段元数据清单 / trigger_classifier / query-data 示例 / 单元测试）带单位后缀，`config/sheets-schema.md` 两处表头示例原写作「晨起心率」，已对齐——消除按示例建表后字段指纹对不上的风险
+3. **清除子技能示例中的过期字段名**（Bitable 时代残留，当前 42 字段表不存在）：query-data 的 `raw_record` 示例删除「本周及以后」，示例输出中的「睡眠质量 / 上午能量 / 训练内容 / 排便情况」替换为真实字段（入睡时间 / 训练状态 / 大解状态 / 晨起心率（次/分）），「全部 43 字段」改为 42；collect-data / write-verify 返回契约示例「排便情况」改为「大解状态」；sync-xunji 返回示例「训练内容」改为「力量」
+4. **删除 polling-rules.md「字段 description 规范（历史参考）」节**：Bitable 后端已移除（eval-4 即断言不得再引用），该节描述的 description 机制无任何适用场景；兜底时段表示例「训练内容」改为「训练状态」
+5. **修正 ops-lessons.md「BMI 列为公式字段」**：与当前权威口径（BMI 由 Agent 写静态值）矛盾，改为标注历史教训并指向现行约定
+6. **讯记来源标记补白名单纪律**：`记录来源` / `数据异常标记` 不在当前标准表头中，原 guide 直接要求写入这两列，会触发 FIELD_NOT_FOUND；现明确「表头有对应列才写列，否则只在 sync-xunji 返回结果与摘要中体现来源」
+7. **删除 field-guide.md 开头重复的核心原则段**（同一句连续出现两次）
+8. **版本号升级**：`SKILL.md` frontmatter version 从 `v3.7.0` 升级到 `v3.7.1`
+
+---
+
 ### v3.7.0 — 2026-09-07
 
 **更新类型**：优化

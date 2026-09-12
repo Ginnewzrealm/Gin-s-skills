@@ -416,6 +416,6 @@ collector/
 └── LICENSE                 ← MIT
 ```
 
-**版本**：v1.6.0
-**最后更新**：2026-09-02
-**更新内容**：新增 OpenCLI 浏览器自动管理（browser_manager.py），X/Twitter 采集无需手动启动 Chrome；自动处理 profile 切换、扩展连接、并发锁与残留窗口清理；新增 config/config.json 保存浏览器配置。详见 changelog/CHANGELOG.md。
+**版本**：v1.6.1
+**最后更新**：2026-09-12
+**更新内容**：修复 `scripts/fetch_url.sh` AMP 降级把改写 URL 当 curl 参数传入的问题（改为 `_fetch_and_try` 显式接收目标 URL）；`browser_manager.py` macOS 启动 Chrome 改为直接调二进制（`open -a` 会忽略 `--profile-directory`，与 opencli-chrome-launcher 对齐）；移除 `main.py` 硬编码个人路径（已由 `Path.home()` 动态覆盖）；`fetch_url_fallback` 改用已导入的 `re` 模块；`get_podcast_transcript.py` 用 `mkstemp` 替代不安全的 `mktemp`；`install.sh` 移除未使用的 `SKILL_NAME` 变量；`check_env.py` 裸 `except` 收紧为 `except Exception`。详见 changelog/CHANGELOG.md。

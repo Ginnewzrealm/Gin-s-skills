@@ -17,6 +17,7 @@ description: 当用户需要写公众号长文、整理素材成文、润色文�
 - `references/emotion-trigger-system.md`：情绪触发系统
 - `references/angle-library.md`：切入角度库
 - `references/hook-design.md`：开头钩子设计
+- `references/content-outline-framework.md`：大纲框架
 - `references/content-principles-dbs.md`：dbskill 内容原则摘录
 - `references/quality-checklist.md`：四层质量检查清单
 - `references/expansion-methodology.md`：公众号长文扩写方法论
@@ -73,7 +74,7 @@ checklist 步骤标签：
    - `init_checker.py` 返回解析后的路径字典，由主 skill 写入 `context.md.paths`。
 4. **调用 `scripts/style_selector.py` 进行风格选择与素材读取：**
    - 主 skill 将 `context.md.paths.input_dir` 和 `materials.recursive` 传入 `style_selector.scan_materials()`。
-   - 完整读取所有 `.md` 素材，生成 `materials_full.md` 保存到 `output_dir/<article_id>/materials/`。
+   - 完整读取所有文本类素材（`.md` / `.txt` / `.url`，见 `config.yaml` 的 `materials.extensions`），生成 `materials_full.md` 保存到 `output_dir/<article_id>/materials/`。
    - 主 skill 调用 `template_loader.list_all_templates(...)` 获取可用风格，
      再调用 `style_selector.recommend_styles(topic, materials_summary["summary_text"], templates)` 生成推荐列表。
    - 主 skill 展示 **Top 3 推荐模板**，按推荐度从高到低排列（1 为最推荐，2 次之，3 再次之），每个模板必须给出匹配理由。
@@ -263,7 +264,6 @@ materials_summary:
   files:
     - name: 采访记录.md
       chars: 5420
-      path: /home/user/Documents/素材/采访记录.md
   summary_text: "..."
   materials_path: /home/user/wechat-article-output/<article_id>/materials/materials_full.md
 
@@ -334,7 +334,6 @@ article_type: social-slice              # 文章类型，从 selected_template.i
 emotion_tone: "克制、平视、有温度"      # 情绪基调，从 selected_template 情绪基调提取
 angle_candidates: []                  # gin-wechat-article-angle 写入
 diagnosis_report: {}                  # gin-wechat-article-angle 写入
-word_count: 2500
 outline_candidates:                   # gin-wechat-article-outline 写入
   - rank: 1
     angle: A1
@@ -384,7 +383,7 @@ optional_deps:
   baoyu-markdown-to-html: installed
   baoyu-post-to-wechat: missing
   wps-skill: missing
-version: 0.3.5
+version: v0.4.0
 ---
 ```
 
@@ -442,7 +441,7 @@ version: 0.3.5
 
 ## 触发反馈
 
-- **首次触发**：`✅ 公众号长文写作写作中……`
+- **首次触发**：`✅ 公众号长文写作中……`
 - **阶段切换**：`当前步骤：{current_stage} → {next_stage}`
 - **长时间未推进**：自上次 stage 变化后，经过 5 次用户消息仍未推进时，提示当前 stage 和下一步预期。
 
@@ -461,7 +460,10 @@ version: 0.3.5
 - `scripts/dep_checker.py`：读取 `config.yaml` 的 `optional_dependencies`，检查可选外部 skill 的安装状态并返回。主 skill 将其写入 `context.md.optional_deps`。
 - `scripts/template_loader.py`：接收默认模板目录和用户模板目录，加载/合并 YAML 模板规则，供主 skill 和其他子技能使用。
 - `scripts/stage_validator.py`：校验 stage 转换合法性、必要字段、子 skill 执行证据、模板白名单和 narrative_protocol 完整性。
-- `scripts/sub_skill_guard.py`：检查某个子 skill 是否真正执行过（输出文件是否存在、是否晚于 context.md）。
+- `scripts/sub_skill_guard.py`：检查某个子 skill 是否真正执行过（context.md 输出字段是否存在且非空、输出文件是否存在且非空）。
+- `scripts/state_persistence.py`：维护 `progress.md` / `blocked.md` 的读写，供会话恢复使用。
+- `scripts/progress_reporter.py`：渲染宏观 6 阶段仪表盘与 micro-checklist 的纯函数库，由主 skill / flow_controller 调用。
+- `scripts/update_checker.py`：版本自检（30 天周期对比远程 origin HEAD），更新 `.last-update-check`。
 - `scripts/flow_controller.py`：**主 skill 推进 stage 的唯一入口**，封装了读取 progress.md、读取 context.md、调用 stage_validator、渲染 Progress Checklist 的完整流程。
 
 ## 输出目录结构

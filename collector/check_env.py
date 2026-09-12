@@ -64,7 +64,7 @@ def check_command(cmd):
                                   timeout=5)
             version = result.stdout.split('\n')[0] if result.stdout else "unknown"
             print_status("ok", f"{cmd} 已安装 ({version})")
-        except:
+        except Exception:
             print_status("ok", f"{cmd} 已安装")
         return True
     else:

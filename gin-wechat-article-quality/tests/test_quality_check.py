@@ -95,6 +95,50 @@ def test_l3_hook_and_cognitive_gap():
     assert result["details"]["cognitive_gap_signals"] >= 2
 
 
+def test_l1_forbidden_zone_hit_is_hard_fail():
+    title = "转化率从 3% 涨到 12%，我只改了一个按钮"
+    text = "事情是这样的。上周我帮朋友改按钮，随着AI时代的发展，三天后转化率涨了。"
+    fm = {"title": title, "article_type": "methodology", "emotion_tone": "看结果", "word_count": 40}
+    result = check_l1(title, text, fm, forbidden_zone=["随着AI时代的发展", "二元对立结论"])
+    assert result["passed"] is False
+    assert any("L1-11" in i for i in result["issues"])
+    assert result["details"]["forbidden_zone_hits"] == ["随着AI时代的发展"]
+
+
+def test_l1_forbidden_zone_clean_passes():
+    title = "转化率从 3% 涨到 12%，我只改了一个按钮"
+    text = "事情是这样的。上周帮朋友改按钮，三天后转化率涨了。"
+    fm = {"title": title, "article_type": "methodology", "emotion_tone": "看结果", "word_count": 30}
+    result = check_l1(title, text, fm, forbidden_zone=["宏观叙事"])
+    assert result["passed"] is True
+    assert result["details"]["forbidden_zone_hits"] == []
+
+
+def test_l1_trigger_param_used_when_frontmatter_lacks_emotion_tone():
+    title = "转化率从 3% 涨到 12%，我只改了一个按钮"
+    text = "事情是这样的。上周帮朋友改按钮，三天后转化率涨了。"
+    fm = {"title": title, "article_type": "methodology", "word_count": 30}
+    result = check_l1(title, text, fm, trigger="当军师")
+    assert any("L1-9" in i for i in result["issues"])
+
+
+def test_score_article_title_normalized_to_hundred_scale():
+    title = "转化率从 3% 涨到 12%，结果我只改了一个按钮"
+    text = "事情是这样的。上周我帮朋友改落地页，当时也不确定有没有用。"
+    fm = {"title": title, "article_type": "methodology", "emotion_tone": "看结果", "word_count": 30}
+    report = score_article(
+        title=title,
+        text=text,
+        frontmatter=fm,
+        supports=["转化率", "按钮"],
+        trigger="看结果",
+        forbidden_zone=["宏观叙事"],
+    )
+    # 标题满分 12 归一化为 100；L1 无问题为 100 → 总分应在百分制内
+    assert 0 <= report["objective_score"] <= 100
+    assert report["l1"]["passed"] is True
+
+
 def test_score_article_overall():
     title = "转化率从 3% 涨到 12%，结果我只改了一个按钮"
     text = (

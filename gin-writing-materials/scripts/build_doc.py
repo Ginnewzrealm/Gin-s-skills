@@ -76,7 +76,8 @@ def build(
     lines.append("|------|---------|--------------|---------|--------|")
     for s in SECTION_ORDER:
         for fm, body, p in grouped[s]:
-            quote = _extract_field(body, "原话")[:30] + "..."
+            quote_field = _extract_field(body, "原话")
+            quote = quote_field[:30] + "..." if len(quote_field) > 30 else quote_field
             anchor = fm.get("anchor", "")
             conf = fm.get("confidence", "")
             lines.append(f"| 素材 #{numbered[p]} | user_verbatim | {quote} | {anchor} | {conf} |")
@@ -137,10 +138,3 @@ def _extract_field(body, field):
     if not m:
         return ""
     return m.group(1).strip()
-
-
-if __name__ == "__main__":
-    import sys
-
-    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-    import common

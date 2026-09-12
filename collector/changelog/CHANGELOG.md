@@ -2,6 +2,14 @@
 
 > 维护规范：每一次功能升级和优化，都必须在此记录**日期、版本号、更新内容**，逐条追加，不覆盖历史。
 
+## 2026-09-12 — v1.6.1
+- 修复：`scripts/fetch_url.sh` AMP 降级 `_fetch_and_try "$AMP_URL"` 把改写后的 URL 当 curl 参数传入（实际仍抓原 URL 且输出混杂），改为 `_fetch_and_try [target_url] [curl opts...]` 显式接收目标 URL
+- 修复：`scripts/browser_manager.py` macOS 启动 Chrome 从 `open -a --args --profile-directory=...` 改为直接调 Chrome 二进制（`open -a` 会忽略 `--profile-directory`），与 opencli-chrome-launcher 的 `launch_chrome` 行为对齐
+- 清理：`main.py` 移除硬编码个人路径 `/Users/fubo/.openclaw/...`（功能已由 `Path.home()` 动态路径覆盖）
+- 清理：`main.py` `fetch_url_fallback()` 改用模块顶部已导入的 `re`，不再反复 `__import__('re')`
+- 修复：`scripts/get_podcast_transcript.py` 用 `tempfile.mkstemp` 替代不安全的 `tempfile.mktemp`
+- 清理：`install.sh` 移除未使用的 `SKILL_NAME="caijiji"` 变量；`check_env.py` 裸 `except` 收紧为 `except Exception`
+
 ## 2026-09-02 — v1.6.0
 - 新增：`scripts/chrome_launcher_adapter.py` OpenCLI 浏览器生命周期适配器，优先调用 `opencli-chrome-launcher` 管理 Chrome；未安装时自动降级到 `scripts/browser_manager.py`
 - 优化：`main.py` 的 `run_opencli_cmd()` 改由 `chrome_launcher_adapter` 准备浏览器，launcher 不可用时走内部 fallback 并保留 `allow_fallback` 行为

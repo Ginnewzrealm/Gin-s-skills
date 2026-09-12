@@ -1,6 +1,6 @@
 ---
 name: gin-wechat-article-polish
-description: 润色正文，去除 AI 味，增强活人感。
+description: 润色正文，去除 AI 味，增强活人感，并优化章节小标题。适用于 gin-wechat-article-core 主编排流程中的 draft_revised（润色）阶段与 quality_failed 返修循环，也支持用户直接调用润色公众号正文。
 ---
 
 # 润色/去 AI 味
@@ -11,13 +11,13 @@ description: 润色正文，去除 AI 味，增强活人感。
   - 若 `draft_revised` 为 true 但 `draft_revised_path` 为空，则回退读取 `context.md.draft_path`。
 - `context.md.selected_outline`：选定大纲
 - `context.md.selected_template`：模板规则
-- `context.md.narrative_protocol`（新增）
+- `context.md.narrative_protocol`
 - `context.md.reference_briefs.ai_flavor_guide`
 - `context.md.reference_briefs.writing_checklist`
 - `context.md.reference_briefs.writing_style`
 - `context.md.reference_briefs.content_principles`
 - `context.md.reference_briefs.emotion_trigger_system`
-- `context.md.reference_briefs.quality_checklist`（问题清单，可选）
+- `context.md.quality_report.issues`：质量自检问题清单（quality_failed 阶段循环传入时优先修复其中 hard-fail 项，可选）
 
 ## Progress
 

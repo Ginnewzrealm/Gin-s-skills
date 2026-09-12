@@ -24,7 +24,6 @@ materials:
     - ".txt"
     - ".url"
 
-default_template: social-slice
 templates_dir: templates/
 references_dir: references/
 

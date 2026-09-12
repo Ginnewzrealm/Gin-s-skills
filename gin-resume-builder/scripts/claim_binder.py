@@ -109,12 +109,14 @@ def main():
 
     claims = bind_claims(bullets, facts, claim_inputs)
 
-    if args.out:
-        out = args.out
-    else:
-        out = os.path.join(root, common.CLAIMS_DIR, common.CLAIMS_AGGREGATE)
-
+    # claim 记录按规范统一写入知识库 原始事实/claims/（含 claims.json 汇总维护）
     common.write_claims(root, claims)
+    out = os.path.join(root, common.CLAIMS_DIR, common.CLAIMS_AGGREGATE)
+    # --out 为可选的汇总副本输出路径（不影响知识库写入）
+    if args.out:
+        with open(args.out, "w", encoding="utf-8") as f:
+            json.dump(claims, f, ensure_ascii=False, indent=2)
+        out = "%s（副本：%s）" % (out, args.out)
     print("[完成] 已生成/更新 %d 条 claim：%s" % (len(claims), out))
 
     pending = [c for c in claims if "待用户补充" in c["boundary"] or any("待用户补充" in v for v in c["interview_details"].values())]

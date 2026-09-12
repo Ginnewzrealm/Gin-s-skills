@@ -77,3 +77,24 @@ def test_completeness_score_red_and_green():
         score = validate.completeness_score(tmp, "满")
         assert score["素材"]["light"] == "🟢"
         assert score["章节"]["light"] == "🟢"
+
+
+def test_completeness_score_yellow_for_partial_sections():
+    with tempfile.TemporaryDirectory() as tmp:
+        # 只覆盖 1 个章节（阈值 2 的一半）→ 章节应为 🟡
+        fragment.create(
+            material_root=tmp,
+            topic="半",
+            domain="writing",
+            method="A",
+            direction="钩子",
+            confidence="confirmed",
+            quote="原话",
+            scene="场景",
+            interpretation=["角度"],
+            anchor="a.md",
+            source="第1轮",
+        )
+        score = validate.completeness_score(tmp, "半")
+        assert score["章节"]["current"] == 1
+        assert score["章节"]["light"] == "🟡"

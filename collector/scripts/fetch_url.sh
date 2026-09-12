@@ -116,16 +116,22 @@ _try_output() {
 }
 
 # Fetch with curl, try JSON-LD extraction first, fall back to HTML-to-text.
-# Args: extra_curl_opts...
+# Args: [target_url] extra_curl_opts...
+# target_url 缺省取全局 $URL（AMP 降级会传入改写后的 URL）
 _fetch_and_try() {
+  local target_url="$URL"
+  if [ "${1:0:4}" = "http" ]; then
+    target_url="$1"
+    shift
+  fi
   local extra_curl_opts=("$@")
-  OUT=$(_curl --max-time 15 "${extra_curl_opts[@]}" "$URL" 2>/dev/null || true)
+  OUT=$(_curl --max-time 15 "${extra_curl_opts[@]}" "$target_url" 2>/dev/null || true)
   ARTICLE=$(_extract_jsonld_article "$OUT")
   if [ -n "$ARTICLE" ] && [ ${#ARTICLE} -gt 200 ]; then
     TITLE=$(echo "$OUT" | grep -o '<title[^>]*>[^<]*</title>' | sed 's/<[^>]*>//g' | head -1)
     echo "# ${TITLE:-Article}"
     echo ""
-    echo "Source: $URL"
+    echo "Source: $target_url"
     echo ""
     echo "$ARTICLE"
     exit 0

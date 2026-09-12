@@ -6,7 +6,6 @@
 set -e  # 遇到错误立即退出
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SKILL_NAME="caijiji"
 
 # 颜色输出
 RED='\033[0;31m'

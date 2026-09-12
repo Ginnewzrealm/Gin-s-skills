@@ -18,9 +18,6 @@ import os
 import re
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-import common
-
 STRONG_VERBS = re.compile(r"主导|负责|0→1|0->1|核心|Owner|owner")
 # 可视为具体动作/决策的动词/名词
 ACTION_MARKERS = re.compile(

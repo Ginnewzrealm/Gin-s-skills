@@ -90,7 +90,7 @@ def list_fragments(material_root, topic):
 
 
 def validate(path):
-    """检查碎片是否包含 5 个必填字段。"""
+    """检查碎片是否包含全部必填字段（见 REQUIRED_FIELDS）。"""
     errors = []
     if not os.path.exists(path):
         return [f"文件不存在：{path}"]

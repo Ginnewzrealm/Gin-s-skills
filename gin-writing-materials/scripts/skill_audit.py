@@ -56,9 +56,12 @@ def main():
     # 2. import 依赖图
     print("## 2. 模块依赖图\n")
     deps = {}
+    texts = {}
     for s in scripts:
         path = os.path.join(scripts_dir, s)
         module_name = s[:-3]
+        with open(path, encoding="utf-8") as f:
+            texts[module_name] = f.read()
         imports = parse_imports(path)
         # 只关心同目录模块
         local_deps = [m for m in imports if m in {x[:-3] for x in scripts}]
@@ -101,13 +104,18 @@ def main():
     # 4. 函数级未使用检测（粗略：其他脚本是否引用）
     print("## 4. 函数引用情况（粗略）\n")
     funcs = {s[:-3]: list_functions(os.path.join(scripts_dir, s)) for s in scripts}
-    all_text = ""
-    for s in scripts:
-        with open(os.path.join(scripts_dir, s), encoding="utf-8") as f:
-            all_text += f"\n{f.read()}"
     for mod, names in funcs.items():
         for name in names:
-            used = all_text.count(f"{name}(") > 1 or all_text.count(f"{module_name}.{name}(") > 0
+            # 定义行本身计 1 次，因此 > 1 说明模块内还有其他调用；
+            # 再检查其他模块是否以 mod.name( 形式引用
+            used = (
+                texts[mod].count(f"{name}(") > 1
+                or any(
+                    texts[other].count(f"{mod}.{name}(") > 0
+                    for other in texts
+                    if other != mod
+                )
+            )
             marker = "✅" if used else "⚠️ 可能未使用"
             print(f"- `{mod}.{name}()` {marker}")
     print()

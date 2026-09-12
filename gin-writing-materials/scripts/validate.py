@@ -60,7 +60,7 @@ def completeness_score(material_root, topic):
     def light(current, threshold):
         if current >= threshold:
             return "🟢"
-        elif current >= threshold // 2 + 1:
+        elif current >= (threshold + 1) // 2:
             return "🟡"
         return "🔴"
 

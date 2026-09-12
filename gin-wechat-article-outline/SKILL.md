@@ -89,7 +89,7 @@ Progress:
 - `outline_candidates`：候选大纲列表
 - `selected_outline`：用户选定的大纲（在 outline_selected 阶段写入）
 
-主 skill 进入 `draft_written` 前，应检查上述字段和文件是否存在。
+主 skill 进入 `outline_selected` 前，应检查上述字段和文件是否存在。
 - 每份候选附带：核心立场、副观点、说服策略、情绪目标、情绪曲线、计划金句、结尾互动、章节结构、切入角度、主/次情绪触发点、认知落差说明、排序、推荐理由、适用场景、风险点。
 - 最终写入 `context.md` 的 `outline_candidates` 列表，每项至少包含：
   - `rank`
@@ -101,15 +101,15 @@ Progress:
   - `emotion_arc`
   - `key_quotes`
   - `closing_hook`
-- `sections`
-  - `name`
-  - `purpose`
-  - `must_include`
-  - `forbidden`
-  - `content`
-  - `materials_ref`（新增）
-  - `human_needed`（新增）
-  - `word_count_estimate`（新增）
+  - `sections`，每个 section 包含：
+    - `name`
+    - `purpose`
+    - `must_include`
+    - `forbidden`
+    - `content`
+    - `materials_ref`
+    - `human_needed`
+    - `word_count_estimate`
   - `title`
   - `reason`
   - `scenario`

@@ -115,7 +115,7 @@ TECH_VOCAB = [
     "Kubernetes", "K8s", "Linux", "AWS", "GCP", "Azure", "Spark", "Flink", "Hadoop",
     "React", "Vue", "Node.js", "Django", "Flask", "Spring", "微服务", "高并发",
     "分布式", "机器学习", "深度学习", "大模型", "LLM", "NLP", "CV", "推荐系统",
-    "数据分析", "AB测试", "A/B测试", "SQL", "Excel", "SQL", "Tableau", "PowerBI",
+    "数据分析", "AB测试", "A/B测试", "SQL", "Excel", "Tableau", "PowerBI",
 ]
 ABILITY_VOCAB = [
     "项目管理", "团队管理", "跨部门协作", "客户成功", "商务拓展", "BD", "增长",
