@@ -24,7 +24,7 @@
   ]
 }
 
-bullet 若以前缀「能力小标题：」开头（前缀 ≤9 字符），自动加粗为小标题。
+bullet 若以前缀「能力小标题：」或「能力小标题:」开头（前缀 ≤32 字符），自动加粗为小标题。
 字段标签规则见 references/resume-section-standard.md；只有「工作经历」「项目经历」
 两个板块会输出标签，其他板块（含高管英文板块）按无标签渲染。
 
@@ -70,7 +70,7 @@ SECTION_FIELDS = {
 # bullet 能力小标题：「用户增长：……」前缀自动加粗（≤32 字符，允许数字，
 # 兼容岗位胜任的「渠道经营与大区管理能力（5 年经验）：……」长标签格式；
 # 岗位胜任建议用 {"tag","text"} 双字段显式传入，不依赖正则切分）
-TAG_RE = re.compile(r"(%s)(.*)$" % common.TAG_PATTERN[1:], re.S)
+TAG_RE = re.compile(r"^([^：:]{1,32})[：:](.*)$", re.S)
 
 
 def esc(s):
@@ -95,7 +95,7 @@ def rich_item(item):
     """板块 items 条目：{"tag","text"} 双字段显式渲染，纯文本走正则切分。"""
     if isinstance(item, dict):
         return ('<span class="bullet-tag">%s</span>：%s'
-                % (rich(item.get("tag", "")), rich(item.get("text", ""))))
+                % (rich(str(item.get("tag", "")).rstrip("：: ")), rich(item.get("text", ""))))
     return rich_bullet(item)
 
 
@@ -105,79 +105,24 @@ def field_line(label, text):
             % (esc(label), rich(text)))
 
 
-EDU_DEGREES = ["博士", "硕士", "MBA", "EMBA", "本科", "大专", "专科"]
-EDU_RANK = {d: i for i, d in enumerate(EDU_DEGREES)}  # 数字越小，学历越高
-
-
-def _extract_degree(text):
-    """从文本中提取最高学历关键词（按 EDU_DEGREES 顺序匹配）。"""
-    for d in EDU_DEGREES:
-        if d in text:
-            return d
-    return ""
-
-
-def _simplify_education(text):
-    """简化教育背景：只保留学校 + 学历，去掉专业和时间。"""
-    text = str(text).strip()
-    if not text:
-        return ""
-    # 按常见分隔符切分：全角竖线、半角竖线、中英文分号、空格、逗号
-    parts = re.split(r"[｜|;；\s,，]+", text)
-    school = parts[0].strip() if parts else ""
-    degree = _extract_degree(text)
-    if school and degree:
-        return "%s %s" % (school, degree)
-    return text
-
-
-def _pick_highest_education(text):
-    """从可能包含多段学历的文本中，只保留最高学历。"""
-    text = str(text).strip()
-    if not text:
-        return ""
-    # 先按中英文分号拆成多条学历
-    entries = re.split(r"[;；]+", text)
-    candidates = []
-    for entry in entries:
-        simplified = _simplify_education(entry)
-        if not simplified:
-            continue
-        degree = _extract_degree(simplified)
-        rank = EDU_RANK.get(degree, 99)
-        candidates.append((rank, simplified))
-    if not candidates:
-        return ""
-    candidates.sort(key=lambda x: x[0])
-    return candidates[0][1]
-
-
-def _education_text(section):
-    """把教育背景 section 转换为单行简化文本，只取最高学历。"""
-    candidates = []
-    if section.get("entries"):
-        for e in section["entries"]:
-            org = e.get("org", "")
-            role = e.get("role", "")
-            degree = _extract_degree(role) or _extract_degree(org)
-            if org and degree:
-                candidates.append((EDU_RANK.get(degree, 99), "%s %s" % (org.strip(), degree)))
-            elif org:
-                candidates.append((99, org.strip()))
-    if section.get("items"):
-        for i in section["items"]:
-            if isinstance(i, dict):
-                text = "%s：%s" % (i.get("tag", ""), i.get("text", ""))
-            else:
-                text = str(i)
-            simplified = _simplify_education(text)
-            if simplified:
-                degree = _extract_degree(simplified)
-                candidates.append((EDU_RANK.get(degree, 99), simplified))
-    if not candidates:
-        return ""
-    candidates.sort(key=lambda x: x[0])
-    return candidates[0][1]
+def _education_section(education):
+    """兼容顶层 education；完整保留学校、学历、专业、时间。"""
+    if not isinstance(education, list):
+        education = [education]
+    entries = []
+    for item in education:
+        if isinstance(item, dict):
+            entry = dict(item)
+            entry["org"] = item.get("org") or item.get("school", "")
+            entry["role"] = "｜".join(str(v) for v in
+                                      (item.get("role"), item.get("major"), item.get("degree")) if v)
+            entry["period"] = item.get("period") or item.get("dates", "")
+            if not entry["org"] and item.get("text"):
+                entry["org"] = "：".join(str(v) for v in (item.get("tag"), item["text"]) if v)
+        else:
+            entry = {"org": str(item)}
+        entries.append(entry)
+    return {"title": "教育背景", "entries": entries}
 
 
 GAP_TITLES = {"职业休整期", "职业空窗期", "career break", "career gap"}
@@ -204,19 +149,12 @@ def build_body(resume):
     L = ['<header class="header"><h1 class="name">%s</h1>' % esc(basic.get("姓名", "（姓名）"))]
 
     sections = list(resume.get("sections", []))
-    # 教育背景统一抽到 header 联系信息行末尾，并简化为“学校 学历”
-    edu_text = basic.get("教育背景", "")
-    edu_from_basic = bool(edu_text)
-    for s in sections[:]:
-        if s.get("title") == "教育背景":
-            sections.remove(s)
-            if not edu_text:
-                edu_text = _education_text(s)
-                edu_from_basic = False
-            break
-    # basic 里的原始字符串需要简化并只保留最高学历；section 派生的已经在 _education_text 中处理
-    if edu_text and edu_from_basic:
-        edu_text = _pick_highest_education(edu_text)
+    # 保留完整教育信息。显式 section 优先，顶层 education 兼容旧预览数据。
+    # basic 中的教育字符串仍位于联系信息行，避免改变旧数据的展示位置。
+    has_education_section = any(s.get("title") == "教育背景" for s in sections)
+    edu_text = basic.get("教育背景", "") if not has_education_section else ""
+    if not has_education_section and not edu_text and resume.get("education"):
+        sections.append(_education_section(resume["education"]))
 
     contact = [esc(basic[k]) for k in ("电话", "邮箱", "城市", "求职意向") if basic.get(k)]
     if edu_text:
@@ -291,16 +229,18 @@ def _make_editable(body_html):
     """给 body 中的文本容器添加 edit-block 与 contenteditable 属性。"""
     # 给无 class 的 block 元素添加 edit-block；保留已有 class 的元素
     def add_edit_block(m):
-        tag = m.group(1)
-        attrs = m.group(2)
+        tag = m.group(1) or m.group(3)
+        attrs = m.group(2) if m.group(1) else m.group(4)
         if 'class="' in attrs:
             attrs = attrs.replace('class="', 'class="edit-block ')
         else:
             attrs += ' class="edit-block"'
         return '<%s%s contenteditable="true">' % (tag, attrs)
 
-    # 只处理直接的文本容器：h1, h2, p, li
-    pattern = re.compile(r'<(h1|h2|p|li)([^>]*)>')
+    # 顶部联系信息及经历头部也是叶子文本容器，必须能编辑教育字段。
+    pattern = re.compile(
+        r'<(h1|h2|p|li)([^>]*)>|<(span)([^>]*class="(?:contact-item|entry-company|entry-position|entry-meta)"[^>]*)>'
+    )
     body_html = pattern.sub(add_edit_block, body_html)
     return body_html
 
@@ -335,7 +275,11 @@ def _resume_to_markdown(resume):
         for k, v in basic.items():
             lines.append("- %s：%s\n" % (k, v))
         lines.append("\n")
-    for sec in resume.get("sections", []):
+    sections = list(resume.get("sections", []))
+    if (resume.get("education") and not basic.get("教育背景")
+            and not any(s.get("title") == "教育背景" for s in sections)):
+        sections.append(_education_section(resume["education"]))
+    for sec in sections:
         title = sec.get("title", "")
         lines.append("## %s\n" % title)
         if sec.get("items"):

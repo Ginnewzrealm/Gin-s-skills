@@ -728,6 +728,28 @@ body.theme-editorial .field-line { break-inside: avoid; }
 body.theme-editorial .field-line,
 body.theme-editorial .bullet-list li { orphans: 2; widows: 2; }
 }
+/* 打印收口必须置于所有主题之后；只清除纸张外层装饰，保留正文配色。 */
+@media print {
+  html, body, body.theme-bank, body.theme-editorial {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  body .page, body .page[contenteditable],
+  body.theme-bank .page, body.theme-bank .page[contenteditable],
+  body.theme-editorial .page, body.theme-editorial .page[contenteditable] {
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+    box-shadow: none !important;
+    outline: none !important;
+  }
+}
 </style>
 </head>
 <body>
