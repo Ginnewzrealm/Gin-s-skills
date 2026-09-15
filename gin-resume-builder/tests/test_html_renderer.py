@@ -55,6 +55,31 @@ def test_render_default_html():
     assert "13800000000" in html
 
 
+def test_basic_age_is_rendered_in_contact_row():
+    resume = _resume()
+    resume["basic"]["年龄"] = "32岁"
+    resume["basic"]["教育背景"] = "本科"
+    markup = hr.build_body(resume)
+    class Parser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.in_contact = False
+            self.items = []
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if tag == "div" and attrs.get("class") == "contact-row":
+                self.in_contact = True
+        def handle_endtag(self, tag):
+            if tag == "div":
+                self.in_contact = False
+        def handle_data(self, data):
+            if self.in_contact and data.strip():
+                self.items.append(data.strip())
+    parser = Parser()
+    parser.feed(markup)
+    assert parser.items == ["13800000000", "liming@example.com", "杭州", "高级销售经理", "32岁", "本科"]
+
+
 def test_render_editable_html():
     html = render(_resume(), editable=True)
     assert "contenteditable" in html

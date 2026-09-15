@@ -26,7 +26,7 @@ SECTION_FIELDS = {
 def render(resume):
     basic = resume.get("basic", {})
     L = ["# %s" % basic.get("姓名", "（姓名）"), ""]
-    contact = "　·　".join(basic[k] for k in ("电话", "邮箱", "城市", "求职意向") if basic.get(k))
+    contact = "　·　".join(basic[k] for k in ("电话", "邮箱", "城市", "求职意向", "年龄") if basic.get(k))
     if contact:
         L += [contact, ""]
     for sec in resume.get("sections", []):

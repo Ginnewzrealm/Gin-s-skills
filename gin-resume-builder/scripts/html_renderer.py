@@ -5,7 +5,7 @@
 输入 resume.json（由 Claude 在溯源校验通过后组装）：
 {
   "title": "张三-高级后端工程师-简历",
-  "basic": {"姓名": "张三", "电话": "138…", "邮箱": "…", "城市": "杭州", "求职意向": "高级后端工程师"},
+  "basic": {"姓名": "张三", "电话": "138…", "邮箱": "…", "城市": "杭州", "求职意向": "高级后端工程师", "年龄": "32岁"},
   "sections": [
     {"title": "岗位胜任", "items": [{"tag": "渠道经营与大区管理能力（5 年经验）",
        "text": "做事方法论与价值主张……"}]},  # 双字段：能力标签 + 内容体现；置顶板块
@@ -156,7 +156,7 @@ def build_body(resume):
     if not has_education_section and not edu_text and resume.get("education"):
         sections.append(_education_section(resume["education"]))
 
-    contact = [esc(basic[k]) for k in ("电话", "邮箱", "城市", "求职意向") if basic.get(k)]
+    contact = [esc(basic[k]) for k in ("电话", "邮箱", "城市", "求职意向", "年龄") if basic.get(k)]
     if edu_text:
         contact.append(esc(edu_text))
     if contact:
