@@ -150,9 +150,9 @@ def build_body(resume):
 
     sections = list(resume.get("sections", []))
     # 保留完整教育信息。显式 section 优先，顶层 education 兼容旧预览数据。
-    # basic 中的教育字符串仍位于联系信息行，避免改变旧数据的展示位置。
+    # basic 中的教育字符串固定保留在联系信息行，便于三种模板顶部统一展示学历。
     has_education_section = any(s.get("title") == "教育背景" for s in sections)
-    edu_text = basic.get("教育背景", "") if not has_education_section else ""
+    edu_text = basic.get("教育背景", "")
     if not has_education_section and not edu_text and resume.get("education"):
         sections.append(_education_section(resume["education"]))
 

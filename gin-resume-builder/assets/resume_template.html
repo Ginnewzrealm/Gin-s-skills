@@ -728,6 +728,153 @@ body.theme-editorial .field-line { break-inside: avoid; }
 body.theme-editorial .field-line,
 body.theme-editorial .bullet-list li { orphans: 2; widows: 2; }
 }
+/* ===== 三主题版式优化：纸面感、层级感、减少文字墙 ===== */
+:root {
+  --section-gap: 26pt;
+  --entry-gap: 16pt;
+  --line-height: 1.58;
+}
+body { font-size: 10.2pt; letter-spacing: 0; text-rendering: optimizeLegibility; }
+.page { padding: 18mm 21mm 21mm; }
+.header { padding-bottom: 12pt; margin-bottom: 22pt; }
+.name { font-size: 23.5pt; line-height: 1.08; letter-spacing: 0.2pt; margin-bottom: 7pt; }
+.contact-row { row-gap: 4pt; font-size: 9.2pt; line-height: 1.36; letter-spacing: 0; }
+.contact-item::before { height: 7pt; margin: 0 7pt; border-color: #d9d9d9; }
+.section { margin-bottom: var(--section-gap); }
+.section-title { font-size: 12pt; line-height: 1.22; letter-spacing: 0.55pt; padding-bottom: 5pt; margin-bottom: 10.5pt; }
+.section-title .en { font-size: 7pt; letter-spacing: 0.75pt; }
+.entry { margin-bottom: var(--entry-gap); padding-bottom: 12pt; }
+.entry-header { margin-bottom: 6pt; }
+.entry-left { gap: 6pt; min-width: 0; }
+.entry-company { font-size: 10.55pt; line-height: 1.35; }
+.entry-position, .entry-meta { font-size: 9.2pt; line-height: 1.35; }
+.field-line { margin: 3.3pt 0; font-size: 10pt; line-height: var(--line-height); color: #4d4d4d; text-align: left; }
+.field-label { margin-right: 6pt; padding: 0.2pt 4.2pt; font-size: 7.6pt; letter-spacing: 0.25pt; border-radius: 1.5pt; }
+.bullet-list { padding-left: 1.05em; margin-top: 2pt; }
+.bullet-list li { padding-left: 10.5pt; margin-bottom: 2.7pt; font-size: 10pt; line-height: var(--line-height); color: #4d4d4d; text-align: left; }
+.bullet-list li::before { top: 7pt; width: 2.5pt; height: 2.5pt; background: #444; }
+.skills-grid { gap: 3pt 8pt; font-size: 10pt; line-height: 1.46; }
+
+/* 极简：黑白灰，靠段落层级和浅标签分组，不靠装饰 */
+body:not(.theme-bank):not(.theme-editorial) .header { border-bottom: 1pt solid #222; }
+body:not(.theme-bank):not(.theme-editorial) .section-title { border-bottom: 0.8pt solid #252525; letter-spacing: 0.45pt; }
+body:not(.theme-bank):not(.theme-editorial) .section-title::before { content: ''; width: 3pt; height: 9pt; background: #252525; display: inline-block; }
+body:not(.theme-bank):not(.theme-editorial) .field-label { color: #222; background: #f3f3f3; border: 0.45pt solid #d8d8d8; }
+body:not(.theme-bank):not(.theme-editorial) .entry { border-bottom-color: #e8e8e8; }
+body:not(.theme-bank):not(.theme-editorial) .entry-company { color: #161616; }
+body:not(.theme-bank):not(.theme-editorial) .entry-position, body:not(.theme-bank):not(.theme-editorial) .entry-meta { color: #6b6b6b; }
+body:not(.theme-bank):not(.theme-editorial) .metric { color: #111; font-weight: 750; }
+body:not(.theme-bank):not(.theme-editorial) .bullet-tag { color: #222; }
+
+/* 投行：低饱和蓝金渐变，只加强结构，不做炫光 */
+body.theme-bank {
+  --section-gap: 20pt;
+  --entry-gap: 13pt;
+  --line-height: 1.51;
+  font-size: 10pt;
+  background: linear-gradient(135deg, #edf2f4 0%, #f8f8f5 52%, #eef4f5 100%);
+}
+body.theme-bank .page { padding: 17mm 19mm 20mm; background: linear-gradient(180deg, #ffffff 0%, #ffffff 78%, #fbfcfb 100%); }
+body.theme-bank .header { margin-bottom: 18pt; padding-bottom: 10pt; border-bottom-color: #d4e0e5; }
+body.theme-bank .header::after { width: 36mm; height: 1.35pt; background: linear-gradient(90deg, #a78c55 0%, #c5b179 30%, #3b829d 68%, #0a2f46 100%); }
+body.theme-bank .name { font-size: 26pt; letter-spacing: 0.25pt; margin-bottom: 6.5pt; color: #082d43; }
+body.theme-bank .contact-row { font-size: 9pt; line-height: 1.34; letter-spacing: 0; color: #6d757a; }
+body.theme-bank .contact-item:last-child { color: #1b6485; }
+body.theme-bank .section-title {
+  font-size: 10.8pt;
+  line-height: 1.2;
+  letter-spacing: 0.08pt;
+  padding: 4.8pt 8pt;
+  margin-bottom: 9.5pt;
+  color: #fff;
+  background: linear-gradient(102deg, #9e8754 0%, #bba46e 16%, #2e7892 50%, #0a2f46 100%);
+  box-shadow: inset 0 -0.8pt 0 rgba(255,255,255,.18);
+}
+body.theme-bank .section-title .en { font-size: 6.9pt; letter-spacing: 0.65pt; color: rgba(255,255,255,.66); }
+body.theme-bank .entry { margin-bottom: 13pt; padding-bottom: 10pt; border-bottom: 0.45pt solid #e1e9ed; }
+body.theme-bank .entry:last-child { border-bottom: 0; }
+body.theme-bank .entry-header { margin-bottom: 5pt; }
+body.theme-bank .field-label { background: #eef5f7; color: #0a2f46; border: 0.45pt solid #cedfe6; }
+body.theme-bank .bullet-list li, body.theme-bank .field-line { font-size: 9.9pt; line-height: 1.51; color: #535c62; }
+body.theme-bank .bullet-list li::before { background: #a78c55; }
+body.theme-bank .metric { color: #0a2f46; }
+
+/* 欧美：暖灰纸、墨色、细线；彻底移除蓝色渐变框和蓝色正文 */
+body.theme-editorial {
+  --editorial-ink: #1f1d1a;
+  --editorial-copy: #504d48;
+  --editorial-muted: #77726a;
+  --editorial-rule: #d8d2c8;
+  --editorial-tint: #f4f1ea;
+  --editorial-paper: #fffdf8;
+  --section-gap: 22pt;
+  --entry-gap: 13pt;
+  --line-height: 1.54;
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 10pt;
+  color: var(--editorial-ink);
+  background: #ebe7df;
+}
+body.theme-editorial .page { padding: 17mm 19.5mm 20mm; background: var(--editorial-paper); }
+body.theme-editorial .header { margin-bottom: 19pt; padding: 11pt 0 10pt; border-bottom: 1pt solid #24211e; }
+body.theme-editorial .header::after { width: 24mm; height: 1pt; background: #8b7d68; }
+body.theme-editorial .name {
+  color: #1f1d1a;
+  font-family: Baskerville, "Iowan Old Style", "Times New Roman", "Songti SC", STSong, serif;
+  font-size: 26.5pt;
+  line-height: 1.02;
+  font-weight: 600;
+  letter-spacing: 0.08pt;
+  margin-bottom: 7pt;
+}
+body.theme-editorial .contact-row { font-size: 8.9pt; line-height: 1.36; letter-spacing: 0; color: var(--editorial-muted); }
+body.theme-editorial .contact-item::before { border-color: var(--editorial-rule); }
+body.theme-editorial .contact-item:last-child { color: #5f584d; font-weight: 600; }
+body.theme-editorial .section-title {
+  color: #2b2823;
+  background: transparent;
+  border: 0;
+  border-bottom: 0.8pt solid var(--editorial-rule);
+  padding: 0 0 5pt;
+  margin-bottom: 10pt;
+  font-size: 11pt;
+  line-height: 1.22;
+  font-weight: 700;
+  letter-spacing: 0.28pt;
+}
+body.theme-editorial .section-title::before,
+body.theme-editorial .section-title::after {
+  display: none !important;
+  content: none !important;
+}
+body.theme-editorial .section-title .en { margin-left: 7pt; font-size: 6.8pt; letter-spacing: 0.55pt; color: #8a847a; }
+body.theme-editorial .entry { margin-bottom: 13pt; padding-bottom: 0; border-bottom: 0; }
+body.theme-editorial .entry + .entry { margin-top: 10pt; padding-top: 10pt; border-top: 0.5pt solid var(--editorial-rule); }
+body.theme-editorial .entry-header { margin-bottom: 5.8pt; gap: 14pt; }
+body.theme-editorial .entry-left { gap: 3pt; }
+body.theme-editorial .entry-company { color: var(--editorial-ink); font-size: 10.45pt; font-weight: 650; letter-spacing: 0; }
+body.theme-editorial .entry-position { color: var(--editorial-muted); font-size: 9.15pt; font-weight: 400; }
+body.theme-editorial .entry-meta { color: var(--editorial-muted); font-size: 8.65pt; letter-spacing: 0; }
+body.theme-editorial .field-line { color: var(--editorial-copy); font-size: 9.9pt; line-height: 1.54; margin: 3pt 0; }
+body.theme-editorial .field-label {
+  color: #4b4438;
+  background: var(--editorial-tint);
+  border: 0.45pt solid var(--editorial-rule);
+  font-size: 7.55pt;
+  font-weight: 650;
+  letter-spacing: 0.12pt;
+  padding: 0.15pt 4.2pt;
+}
+body.theme-editorial .bullet-list { margin-top: 2pt; padding-left: 0; }
+body.theme-editorial .bullet-list li { color: var(--editorial-copy); font-size: 9.9pt; line-height: 1.54; margin-bottom: 2.8pt; padding-left: 11pt; }
+body.theme-editorial .bullet-list li::before { top: 6.6pt; width: 2.4pt; height: 2.4pt; background: #8b7d68; }
+body.theme-editorial .metric { color: #1f1d1a; font-weight: 650; }
+body.theme-editorial .bullet-tag { color: #2b2823; font-weight: 650; }
+body.theme-editorial .skills-grid { font-size: 9.9pt; line-height: 1.46; gap: 3pt 9pt; }
+body.theme-editorial .skill-label { color: #2b2823; }
+body.theme-editorial .skill-content { color: var(--editorial-copy); }
+
+
 /* 打印收口必须置于所有主题之后；只清除纸张外层装饰，保留正文配色。 */
 @media print {
   html, body, body.theme-bank, body.theme-editorial {

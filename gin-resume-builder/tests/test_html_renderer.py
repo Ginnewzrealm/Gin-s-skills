@@ -80,6 +80,18 @@ def test_basic_age_is_rendered_in_contact_row():
     assert parser.items == ["13800000000", "liming@example.com", "杭州", "高级销售经理", "32岁", "本科"]
 
 
+def test_basic_education_stays_in_contact_row_when_education_section_exists():
+    resume = _resume()
+    resume["basic"]["年龄"] = "32岁"
+    resume["basic"]["教育背景"] = "浙江大学｜市场营销｜本科"
+    resume["sections"].append({"title": "教育背景", "entries": [
+        {"org": "浙江大学", "role": "市场营销｜本科", "period": "2014-2018"}
+    ]})
+    markup = hr.build_body(resume)
+    assert markup.index("浙江大学｜市场营销｜本科") < markup.index("岗位胜任")
+    assert visible_text(markup).count("浙江大学") == 2
+
+
 def test_render_editable_html():
     html = render(_resume(), editable=True)
     assert "contenteditable" in html
@@ -166,5 +178,6 @@ def test_education_section_takes_precedence_without_mutating_input():
     before = json.dumps(resume, ensure_ascii=False)
     text = visible_text(hr.build_body(resume))
     assert text.count('已确认大学') == 1
-    assert '旧学校' not in text and '旧摘要' not in text
+    assert '旧学校' not in text
+    assert '旧摘要' in text
     assert json.dumps(resume, ensure_ascii=False) == before
