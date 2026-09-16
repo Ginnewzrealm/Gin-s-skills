@@ -274,7 +274,8 @@ def build_body(resume):
             L.append("</div>")
         if sec.get("groups"):
             L.append('<div class="skills-grid">'
-                     + "".join('<div class="skill-label">%s</div><div class="skill-content">%s</div>'
+                     + "".join('<div class="skill-row"><div class="skill-label">%s</div>'
+                               '<div class="skill-content">%s</div></div>'
                                % (rich(g.get("label", "")), rich("、".join(g.get("items", []))))
                                for g in sec["groups"])
                      + "</div>")

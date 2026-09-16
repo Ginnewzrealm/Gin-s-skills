@@ -165,6 +165,31 @@ def test_skill_groups_use_locked_two_column_layout_and_preserve_heading():
     assert '>专业能力' in source
 
 
+def test_skill_groups_render_as_compact_label_colon_content_rows():
+    r = resume()
+    r['sections'][2]['groups'] = [
+        {'label': '客户开发与维护', 'items': ['陌拜与陌生开发', '客户关系维护']},
+        {'label': '语言与沟通', 'items': ['商务谈判', '跨部门协同']},
+    ]
+    source = hr.build_body(r)
+    assert source.count('<div class="skill-row">') == 2
+    assert ('<div class="skill-row"><div class="skill-label">客户开发与维护</div>'
+            '<div class="skill-content">陌拜与陌生开发、客户关系维护</div></div>') in source
+
+
+def test_fields_and_skill_rows_use_approved_compact_layout():
+    for template_name in ('resume_template.html', 'editable_resume_base.html'):
+        template = (ROOT / 'assets' / template_name).read_text()
+        assert ('grid-template-columns: max-content minmax(0, 1fr) !important;\n'
+                '  column-gap: 0 !important;') in template
+        assert ('.field-line:not(.field-label-only) .field-label::after { '
+                'content: "："; }') in template
+        assert '.skills-grid { display: block !important; }' in template
+        assert ('.skill-row {\n  display: grid;\n'
+                '  grid-template-columns: max-content minmax(0, 1fr);') in template
+        assert '.skill-row .skill-label::after { content: "："; }' in template
+
+
 def test_invalid_workspace_does_not_overwrite_any_saved_files(tmp_path):
     out = tmp_path / '基础简历.html'
     saved = [out, tmp_path / '基础简历.md', tmp_path / '简历版式档案.md']

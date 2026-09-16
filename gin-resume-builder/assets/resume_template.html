@@ -1154,15 +1154,17 @@ body.theme-editorial .field-line .field-label {
 </style>
 
 <style id="field-label-final-v7">
-/* 字段标题最终规则：单行、无背景、固定宽度、全文统一 */
+/* 字段标题最终规则：单行、无背景、标题与正文紧接 */
 .field-line {
-  grid-template-columns: 6em minmax(0, 1fr) !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  column-gap: 0 !important;
+  align-items: start;
 }
 .field-line .field-label,
 .field-line.field-label-only .field-label,
 .skills-grid .skill-label {
-  width: 6em !important;
-  min-width: 6em !important;
+  width: auto !important;
+  min-width: 0 !important;
   white-space: nowrap !important;
   overflow: visible !important;
   background: transparent !important;
@@ -1172,7 +1174,18 @@ body.theme-editorial .field-line .field-label {
   box-shadow: none !important;
 }
 .field-line.field-label-only .field-label { display: inline-block !important; }
-.skills-grid { grid-template-columns: 6em minmax(0, 1fr) !important; }
+.field-line:not(.field-label-only) .field-label::after { content: "："; }
+.skills-grid { display: block !important; }
+.skill-row {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 0;
+  align-items: start;
+  margin-bottom: 6pt;
+}
+.skill-row:last-child { margin-bottom: 0; }
+.skill-row .skill-label::after { content: "："; }
+.skill-row .skill-content { min-width: 0; line-height: 1.7; }
 </style>
 
 <style id="type-hierarchy-v8">
@@ -1362,16 +1375,16 @@ body.theme-editorial .entry-meta {
 }
 body.theme-editorial .field-line {
   display: grid !important;
-  grid-template-columns: 6em minmax(0, 1fr) !important;
-  column-gap: 8pt !important;
+  grid-template-columns: max-content minmax(0, 1fr) !important;
+  column-gap: 0 !important;
   margin: 7pt 0 !important;
   font-size: 9.7pt !important;
   line-height: 1.72 !important;
   color: var(--editorial-copy) !important;
 }
 body.theme-editorial .field-line .field-label {
-  width: 6em !important;
-  min-width: 6em !important;
+  width: auto !important;
+  min-width: 0 !important;
   padding: 0 !important;
   background: transparent !important;
   border: 0 !important;
@@ -1406,13 +1419,13 @@ body.theme-editorial .metric {
   font-family: inherit !important;
 }
 body.theme-editorial .skills-grid {
-  grid-template-columns: 6em minmax(0, 1fr) !important;
-  column-gap: 12pt !important;
+  display: block !important;
   font-size: 9.7pt !important;
   line-height: 1.65 !important;
 }
 body.theme-editorial .skills-grid .skill-label {
-  width: 6em !important;
+  width: auto !important;
+  min-width: 0 !important;
   font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, "PingFang SC", sans-serif !important;
   font-size: 10pt !important;
   font-weight: 700 !important;
