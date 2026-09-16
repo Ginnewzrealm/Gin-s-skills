@@ -252,7 +252,8 @@
   .theme-switch button.active { background: #1a1a1a !important; color: #fff !important; border-color: #1a1a1a !important; }
 
   /* ===== 打印（导出 PDF） ===== */
-  @page { size: A4; margin: 15mm 18mm; }
+  /* 页边距由纸张边距与页面安全内边距共同组成，避免导出器裁切贴边文字。 */
+  @page { size: A4; margin: 10mm 12mm 12mm; }
 
   @media print {
     html, body {
@@ -1493,7 +1494,8 @@ body.theme-editorial .bullet-list li {
 }
 </style>
 <style id="print-final">
-/* 打印收口必须置于所有主题之后；只清除纸张外层装饰，保留正文配色。 */
+/* 打印收口必须置于所有主题之后；保留每页边距并为不同 PDF 导出器提供安全内边距。 */
+@page { size: A4; margin: 10mm 12mm 12mm; }
 @media print {
   html, body, body.theme-bank, body.theme-editorial {
     background: #fff !important;
@@ -1504,15 +1506,40 @@ body.theme-editorial .bullet-list li {
   body.theme-bank .page, body.theme-bank .page[contenteditable],
   body.theme-editorial .page, body.theme-editorial .page[contenteditable] {
     width: auto !important;
+    max-width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     max-height: none !important;
     margin: 0 !important;
-    padding: 0 !important;
+    padding: 5mm 6mm !important;
+    box-sizing: border-box !important;
     overflow: visible !important;
+    overflow-wrap: anywhere !important;
     background: #fff !important;
     box-shadow: none !important;
     outline: none !important;
+  }
+  body .contact-item,
+  body .entry-left,
+  body .entry-company,
+  body .entry-position,
+  body .field-content,
+  body .skill-content,
+  body .bullet-list li {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: anywhere !important;
+  }
+  body .entry-header,
+  body .entry-left,
+  body .contact-row { flex-wrap: wrap !important; }
+  body .skills-grid {
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+  body .skill-row {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 }
 </style>
@@ -1529,7 +1556,7 @@ body.theme-editorial .bullet-list li {
     <button class="secondary" onclick="resetContent()">还原</button>
     <button onclick="window.print()">导出 PDF</button>
   </div>
-  <div class="toolbar-hint">「预览/编辑」修改正文，改动自动暂存在本浏览器；「保存修改」把含改动的完整 HTML 下载到本地；「还原」清空改动恢复初始内容；导出 PDF 时取消勾选「页眉和页脚」，边距选「默认」</div>
+  <div class="toolbar-hint">「预览/编辑」修改正文，改动自动暂存在本浏览器；「保存修改」把含改动的完整 HTML 下载到本地；「还原」清空改动恢复初始内容；导出 PDF 时取消勾选「页眉和页脚」，边距选「默认」，缩放保持 100%</div>
 
   <div class="page" id="page" contenteditable="true" spellcheck="false">
 {{BODY}}

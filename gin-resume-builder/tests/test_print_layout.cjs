@@ -50,18 +50,33 @@ const template = fs.readFileSync(path.join(root, 'assets/resume_template.html'),
           try {
             const body = '<header class="header"><h1 class="name">打印回归样本</h1></header>' +
               Array.from({length:count}, (_, i) => `<section class="section" data-section="work"><h2 class="section-title">工作经历 ${i + 1}</h2><div class="entry"><p class="field-line">模拟内容：验证背景、阴影及长文分页。</p></div></section>`).join('');
-            await page.setContent(template.replace('{{TITLE}}', label).replace('{{BODY}}', body));
+            const printableBody = body + '<section class="section" data-section="skills"><h2 class="section-title">专业技能</h2><div class="skills-grid"><div class="skill-row"><div class="skill-label">长内容</div><div class="skill-content">用于验证专业能力可以自然跨页。</div></div></div></section>';
+            await page.setContent(template.replace('{{TITLE}}', label).replace('{{BODY}}', printableBody));
             await page.evaluate(({theme,editing}) => {setTheme(theme); document.getElementById('page').contentEditable = String(editing);}, {theme,editing});
             await page.emulateMedia({media:'print'});
             const styles = await page.evaluate(() => {
               const p = getComputedStyle(document.getElementById('page'));
               const b = getComputedStyle(document.body);
-              return {shadow:p.boxShadow, minHeight:p.minHeight, padding:p.padding, margin:p.margin,
-                overflow:p.overflow, background:b.backgroundColor, bodyPadding:b.padding,
+              const skills = getComputedStyle(document.querySelector('.skills-grid'));
+              return {shadow:p.boxShadow, minHeight:p.minHeight, paddingTop:p.paddingTop,
+                paddingRight:p.paddingRight, margin:p.margin, maxWidth:p.maxWidth,
+                boxSizing:p.boxSizing, overflow:p.overflow, overflowWrap:p.overflowWrap,
+                skillsBreakInside:skills.breakInside, background:b.backgroundColor, bodyPadding:b.padding,
                 toolbar:getComputedStyle(document.querySelector('.toolbar')).display};
             });
-            assert.deepEqual(styles, {shadow:'none', minHeight:'0px', padding:'0px', margin:'0px',
-              overflow:'visible', background:'rgb(255, 255, 255)', bodyPadding:'0px', toolbar:'none'});
+            assert.equal(styles.shadow, 'none');
+            assert.equal(styles.minHeight, '0px');
+            assert.ok(parseFloat(styles.paddingTop) >= 18, styles.paddingTop);
+            assert.ok(parseFloat(styles.paddingRight) >= 22, styles.paddingRight);
+            assert.equal(styles.margin, '0px');
+            assert.equal(styles.maxWidth, '100%');
+            assert.equal(styles.boxSizing, 'border-box');
+            assert.equal(styles.overflow, 'visible');
+            assert.equal(styles.overflowWrap, 'anywhere');
+            assert.equal(styles.skillsBreakInside, 'auto');
+            assert.equal(styles.background, 'rgb(255, 255, 255)');
+            assert.equal(styles.bodyPadding, '0px');
+            assert.equal(styles.toolbar, 'none');
             if (process.env.PDF_OUT) {
               fs.mkdirSync(process.env.PDF_OUT, {recursive:true});
               await page.pdf({path:path.join(process.env.PDF_OUT, `${label}.pdf`), preferCSSPageSize:true, printBackground:true});

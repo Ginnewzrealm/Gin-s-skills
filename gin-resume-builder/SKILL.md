@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 10 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.25.1（2026-09-16）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.25.2（2026-09-16）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -165,7 +165,7 @@ Progress:
 10. **初稿确认**：按 `references/resume-section-standard.md` 的字段结构组装 resume.json 展示给用户，用户要求修改则返回第 6 步。七项基本信息（姓名、联系电话、邮箱、居住地、求职职位、学历、年龄）和岗位匹配/岗位胜任必须齐全，别名及布局规则见 `references/locked-template-output.md`；缺项先从已确认事实补齐，仍缺则询问用户，禁止编造或静默省略
 11. **结构校验**：`resume_structure_check.py --resume resume.json`；退出码 2 = 字段不达标 → 修正后重新组装再校，不得跳过
 12. **渲染前确认（硬闸门）**：把简历文字稿（基于 resume.json 生成）发给用户确认。用户说 OK / 没问题后，将 `render_approved = true` 写入 `review_state.json`，才能进入下一步。用户要求修改时，记录反馈并返回第 6 步或第 10 步重新修改，修改完成后需重新走强主张审计、主张绑定、溯源校验、结构校验和渲染前确认。**未获得用户明确确认前，禁止执行渲染。**
-13. **渲染**：先读 `references/locked-template-output.md`。使用 `html_renderer.py --resume resume.json --theme minimal|bank|editorial --out 简历.html`（按已确认风格选择一个值；默认 minimal；用户要求 Markdown 时用 `markdown_renderer.py`；可编辑版本加 `--editable`，使用同一锁定版式）。若用户选择可编辑版本或首次生成母版，调用 `save_workspace()` 同时生成 `基础简历.md`、`简历版式档案.md`、`基础简历.html`，供后续岗位定制复用。
+13. **渲染**：先读 `references/locked-template-output.md`。使用 `html_renderer.py --resume resume.json --theme minimal|bank|editorial --out 简历.html`（按已确认风格选择一个值；默认 minimal；用户要求 Markdown 时用 `markdown_renderer.py`；可编辑版本加 `--editable`，使用同一锁定版式）。若用户选择可编辑版本或首次生成母版，调用 `save_workspace()` 同时生成 `基础简历.md`、`简历版式档案.md`、`基础简历.html`，供后续岗位定制复用。HTML 导出 PDF 时保留模板打印规则，打印对话框取消页眉页脚、边距选“默认”、缩放保持 100%；不得为避免裁切把整页缩小或删除内容。
 
 ### 其余子功能
 

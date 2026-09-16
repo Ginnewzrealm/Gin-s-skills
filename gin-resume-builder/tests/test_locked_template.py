@@ -190,6 +190,19 @@ def test_fields_and_skill_rows_use_approved_compact_layout():
         assert '.skill-row .skill-label::after { content: "："; }' in template
 
 
+def test_print_layout_keeps_safe_margins_and_wraps_long_content():
+    for template_name in ('resume_template.html', 'editable_resume_base.html'):
+        template = (ROOT / 'assets' / template_name).read_text()
+        print_final = template.split('<style id="print-final">', 1)[1].split('</style>', 1)[0]
+        assert '@page { size: A4; margin: 10mm 12mm 12mm; }' in print_final
+        assert 'padding: 5mm 6mm !important;' in print_final
+        assert 'max-width: 100% !important;' in print_final
+        assert 'box-sizing: border-box !important;' in print_final
+        assert 'overflow-wrap: anywhere !important;' in print_final
+        assert 'break-inside: auto !important;' in print_final
+        assert 'padding: 0 !important;' not in print_final.split('body .page', 1)[1]
+
+
 def test_invalid_workspace_does_not_overwrite_any_saved_files(tmp_path):
     out = tmp_path / '基础简历.html'
     saved = [out, tmp_path / '基础简历.md', tmp_path / '简历版式档案.md']
