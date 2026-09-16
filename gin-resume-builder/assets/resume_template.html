@@ -441,7 +441,6 @@ body.theme-bank .entry-header { break-inside: avoid; break-after: avoid; }
 body.theme-bank .field-line { break-inside: avoid; }
 body.theme-bank .field-line,
 body.theme-bank .bullet-list li { orphans: 2; widows: 2; }
-}
 
   /* ================= 主题：欧美高端（墨色+灰蓝） ================= */
 /* ===== Premium Western editorial style ===== */
@@ -728,153 +727,759 @@ body.theme-editorial .field-line { break-inside: avoid; }
 body.theme-editorial .field-line,
 body.theme-editorial .bullet-list li { orphans: 2; widows: 2; }
 }
-/* ===== 三主题版式优化：纸面感、层级感、减少文字墙 ===== */
+</style>
+
+<style>
+/* 可读性实验层：统一字体家族，强化层级、缩进、行间距与字间距 */
+:root{--text-primary:#18232b;--text-secondary:#45515a;--text-muted:#78838a;--border:#d9e0e3;--line-height:1.78}
+body{font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;font-size:10.4pt;letter-spacing:.018em}
+.page{padding:18mm 21mm 22mm}
+/* 字体规则：展示层=宋体，正文层=黑体，信息层=Avenir/Georgia */
+.name,.entry-company,.bullet-tag,.skill-label{font-family:"Songti SC",STSong,Georgia,serif}
+.section-title,.entry-position,.field-label{font-family:"Avenir Next","PingFang SC",sans-serif}
+.entry-meta,.metric,.section-title .en{font-family:Georgia,"Times New Roman",serif}
+.name{font-weight:600;letter-spacing:.12em}.section-title{letter-spacing:.14em;font-size:12.5pt;margin-bottom:16pt;padding-bottom:8pt}.section-title .en{font-style:italic;letter-spacing:.08em}
+.entry{margin-bottom:24pt;padding:0 0 19pt 8pt;border-left:0;border-bottom:0;position:relative}.entry:before{display:none}.entry-header{margin-left:-8pt;margin-bottom:10pt}.entry-company{font-size:11.5pt;letter-spacing:.03em}.entry-position{font-size:9.5pt;letter-spacing:.06em}.entry-meta{font-size:9pt;letter-spacing:.04em}
+.field-line{margin:10pt 0 0 11pt;padding-left:0;font-family:"PingFang SC","Noto Sans SC",sans-serif;font-size:10.2pt;line-height:1.82;letter-spacing:.02em;text-align:left;max-width:155mm}.field-label{display:block;width:max-content;margin:0 0 4pt -11pt;padding:1.5pt 7pt 1pt;font-size:8pt;letter-spacing:.12em;color:#2e6479;background:#eaf2f4;border-left:0;border-radius:0}
+.bullet-list{padding-left:1.5em;margin-top:9pt}.bullet-list li{margin-bottom:8pt;padding-left:12pt;font-size:10.2pt;line-height:1.82;letter-spacing:.02em;text-align:left}.bullet-list li:before{top:9pt;width:3pt;height:3pt;background:#2e6479}.bullet-tag{letter-spacing:.04em}.metric{font-size:1.02em;letter-spacing:.02em}.org-note{font-family:"PingFang SC",sans-serif;font-size:9pt;letter-spacing:.02em}.skills-grid{line-height:1.75;letter-spacing:.018em}.skill-label{letter-spacing:.05em}.field-line + .field-line{margin-top:12pt}.entry:has(.bullet-list li:nth-child(3)){padding-bottom:22pt}
+@media print{.entry{break-inside:auto}.field-line,.bullet-list li{orphans:3;widows:3}}
+</style>
+
+<style id="readability-layout-v2">
+/* v2 排版：只调整视觉，不改变简历字段结构 */
 :root {
-  --section-gap: 26pt;
-  --entry-gap: 16pt;
-  --line-height: 1.58;
+  --resume-ink: #20282d;
+  --resume-copy: #4d585e;
+  --resume-muted: #778187;
+  --resume-rule: #cfd7da;
+  --resume-accent: #2e6479;
 }
-body { font-size: 10.2pt; letter-spacing: 0; text-rendering: optimizeLegibility; }
-.page { padding: 18mm 21mm 21mm; }
-.header { padding-bottom: 12pt; margin-bottom: 22pt; }
-.name { font-size: 23.5pt; line-height: 1.08; letter-spacing: 0.2pt; margin-bottom: 7pt; }
-.contact-row { row-gap: 4pt; font-size: 9.2pt; line-height: 1.36; letter-spacing: 0; }
-.contact-item::before { height: 7pt; margin: 0 7pt; border-color: #d9d9d9; }
-.section { margin-bottom: var(--section-gap); }
-.section-title { font-size: 12pt; line-height: 1.22; letter-spacing: 0.55pt; padding-bottom: 5pt; margin-bottom: 10.5pt; }
-.section-title .en { font-size: 7pt; letter-spacing: 0.75pt; }
-.entry { margin-bottom: var(--entry-gap); padding-bottom: 12pt; }
-.entry-header { margin-bottom: 6pt; }
-.entry-left { gap: 6pt; min-width: 0; }
-.entry-company { font-size: 10.55pt; line-height: 1.35; }
-.entry-position, .entry-meta { font-size: 9.2pt; line-height: 1.35; }
-.field-line { margin: 3.3pt 0; font-size: 10pt; line-height: var(--line-height); color: #4d4d4d; text-align: left; }
-.field-label { margin-right: 6pt; padding: 0.2pt 4.2pt; font-size: 7.6pt; letter-spacing: 0.25pt; border-radius: 1.5pt; }
-.bullet-list { padding-left: 1.05em; margin-top: 2pt; }
-.bullet-list li { padding-left: 10.5pt; margin-bottom: 2.7pt; font-size: 10pt; line-height: var(--line-height); color: #4d4d4d; text-align: left; }
-.bullet-list li::before { top: 7pt; width: 2.5pt; height: 2.5pt; background: #444; }
-.skills-grid { gap: 3pt 8pt; font-size: 10pt; line-height: 1.46; }
-
-/* 极简：黑白灰，靠段落层级和浅标签分组，不靠装饰 */
-body:not(.theme-bank):not(.theme-editorial) .header { border-bottom: 1pt solid #222; }
-body:not(.theme-bank):not(.theme-editorial) .section-title { border-bottom: 0.8pt solid #252525; letter-spacing: 0.45pt; }
-body:not(.theme-bank):not(.theme-editorial) .section-title::before { content: ''; width: 3pt; height: 9pt; background: #252525; display: inline-block; }
-body:not(.theme-bank):not(.theme-editorial) .field-label { color: #222; background: #f3f3f3; border: 0.45pt solid #d8d8d8; }
-body:not(.theme-bank):not(.theme-editorial) .entry { border-bottom-color: #e8e8e8; }
-body:not(.theme-bank):not(.theme-editorial) .entry-company { color: #161616; }
-body:not(.theme-bank):not(.theme-editorial) .entry-position, body:not(.theme-bank):not(.theme-editorial) .entry-meta { color: #6b6b6b; }
-body:not(.theme-bank):not(.theme-editorial) .metric { color: #111; font-weight: 750; }
-body:not(.theme-bank):not(.theme-editorial) .bullet-tag { color: #222; }
-
-/* 投行：低饱和蓝金渐变，只加强结构，不做炫光 */
-body.theme-bank {
-  --section-gap: 20pt;
-  --entry-gap: 13pt;
-  --line-height: 1.51;
+body {
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 10.2pt;
+  line-height: 1.65;
+  letter-spacing: .012em;
+  color: var(--resume-ink);
+}
+.page { padding: 17mm 21mm 22mm; }
+.name {
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 25pt;
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.1;
+}
+.contact-row {
+  font-size: 9.2pt;
+  line-height: 1.35;
+  letter-spacing: .02em;
+}
+.header { padding-bottom: 12pt; margin-bottom: 23pt; }
+.section { margin-bottom: 23pt; }
+.section-title {
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 12pt;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: .16em;
+  padding-bottom: 7pt;
+  margin-bottom: 13pt;
+}
+.section-title .en {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 7.5pt;
+  line-height: 1;
+  font-style: italic;
+  letter-spacing: .1em;
+}
+.entry {
+  margin-bottom: 19pt;
+  padding: 0 0 17pt 0;
+  border: 0;
+}
+.entry:last-child { margin-bottom: 0; padding-bottom: 0; }
+.entry-header { margin-bottom: 7pt; }
+.entry-company {
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 11pt;
+  line-height: 1.3;
+  font-weight: 700;
+  letter-spacing: .025em;
+}
+.entry-position {
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 9.5pt;
+  line-height: 1.3;
+  color: var(--resume-muted);
+  letter-spacing: .035em;
+}
+.entry-meta {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 8.8pt;
+  line-height: 1.25;
+  color: var(--resume-muted);
+  letter-spacing: .035em;
+}
+/* 工作经历：信息密度较高，行距适中 */
+.section[data-section="work"] .field-line,
+.section[data-section="work"] .bullet-list li {
   font-size: 10pt;
-  background: linear-gradient(135deg, #edf2f4 0%, #f8f8f5 52%, #eef4f5 100%);
+  line-height: 1.64;
+  letter-spacing: .014em;
 }
-body.theme-bank .page { padding: 17mm 19mm 20mm; background: linear-gradient(180deg, #ffffff 0%, #ffffff 78%, #fbfcfb 100%); }
-body.theme-bank .header { margin-bottom: 18pt; padding-bottom: 10pt; border-bottom-color: #d4e0e5; }
-body.theme-bank .header::after { width: 36mm; height: 1.35pt; background: linear-gradient(90deg, #a78c55 0%, #c5b179 30%, #3b829d 68%, #0a2f46 100%); }
-body.theme-bank .name { font-size: 26pt; letter-spacing: 0.25pt; margin-bottom: 6.5pt; color: #082d43; }
-body.theme-bank .contact-row { font-size: 9pt; line-height: 1.34; letter-spacing: 0; color: #6d757a; }
-body.theme-bank .contact-item:last-child { color: #1b6485; }
-body.theme-bank .section-title {
-  font-size: 10.8pt;
-  line-height: 1.2;
-  letter-spacing: 0.08pt;
-  padding: 4.8pt 8pt;
-  margin-bottom: 9.5pt;
-  color: #fff;
-  background: linear-gradient(102deg, #9e8754 0%, #bba46e 16%, #2e7892 50%, #0a2f46 100%);
-  box-shadow: inset 0 -0.8pt 0 rgba(255,255,255,.18);
+.section[data-section="work"] .field-line { margin: 5pt 0; }
+.section[data-section="work"] .bullet-list { margin-top: 3pt; }
+.section[data-section="work"] .bullet-list li { margin-bottom: 4.5pt; }
+/* 项目经历：说明和行动较长，主动放松行距 */
+.section[data-section="projects"] .field-line,
+.section[data-section="projects"] .bullet-list li {
+  font-size: 10.1pt;
+  line-height: 1.74;
+  letter-spacing: .016em;
 }
-body.theme-bank .section-title .en { font-size: 6.9pt; letter-spacing: 0.65pt; color: rgba(255,255,255,.66); }
-body.theme-bank .entry { margin-bottom: 13pt; padding-bottom: 10pt; border-bottom: 0.45pt solid #e1e9ed; }
-body.theme-bank .entry:last-child { border-bottom: 0; }
-body.theme-bank .entry-header { margin-bottom: 5pt; }
-body.theme-bank .field-label { background: #eef5f7; color: #0a2f46; border: 0.45pt solid #cedfe6; }
-body.theme-bank .bullet-list li, body.theme-bank .field-line { font-size: 9.9pt; line-height: 1.51; color: #535c62; }
-body.theme-bank .bullet-list li::before { background: #a78c55; }
-body.theme-bank .metric { color: #0a2f46; }
-
-/* 欧美：暖灰纸、墨色、细线；彻底移除蓝色渐变框和蓝色正文 */
-body.theme-editorial {
-  --editorial-ink: #1f1d1a;
-  --editorial-copy: #504d48;
-  --editorial-muted: #77726a;
-  --editorial-rule: #d8d2c8;
-  --editorial-tint: #f4f1ea;
-  --editorial-paper: #fffdf8;
-  --section-gap: 22pt;
-  --entry-gap: 13pt;
-  --line-height: 1.54;
-  font-family: "Avenir Next", Avenir, "Helvetica Neue", Helvetica, Arial, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-  font-size: 10pt;
-  color: var(--editorial-ink);
-  background: #ebe7df;
+.section[data-section="projects"] .field-line { margin: 7pt 0; }
+.section[data-section="projects"] .bullet-list { margin-top: 4pt; }
+.section[data-section="projects"] .bullet-list li { margin-bottom: 6pt; }
+/* 字段标签：保持原有行内标签，不制造新层级 */
+.field-line {
+  color: var(--resume-copy);
+  text-align: left;
+  max-width: none;
 }
-body.theme-editorial .page { padding: 17mm 19.5mm 20mm; background: var(--editorial-paper); }
-body.theme-editorial .header { margin-bottom: 19pt; padding: 11pt 0 10pt; border-bottom: 1pt solid #24211e; }
-body.theme-editorial .header::after { width: 24mm; height: 1pt; background: #8b7d68; }
-body.theme-editorial .name {
-  color: #1f1d1a;
-  font-family: Baskerville, "Iowan Old Style", "Times New Roman", "Songti SC", STSong, serif;
-  font-size: 26.5pt;
-  line-height: 1.02;
-  font-weight: 600;
-  letter-spacing: 0.08pt;
-  margin-bottom: 7pt;
-}
-body.theme-editorial .contact-row { font-size: 8.9pt; line-height: 1.36; letter-spacing: 0; color: var(--editorial-muted); }
-body.theme-editorial .contact-item::before { border-color: var(--editorial-rule); }
-body.theme-editorial .contact-item:last-child { color: #5f584d; font-weight: 600; }
-body.theme-editorial .section-title {
-  color: #2b2823;
+.field-label {
+  display: inline-block;
+  margin-right: 6pt;
+  margin-bottom: 0;
+  padding: 0;
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 8.2pt;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: .08em;
+  color: var(--resume-accent);
   background: transparent;
   border: 0;
-  border-bottom: 0.8pt solid var(--editorial-rule);
-  padding: 0 0 5pt;
-  margin-bottom: 10pt;
-  font-size: 11pt;
-  line-height: 1.22;
+  vertical-align: .08em;
+}
+.field-label-only {
+  display: block;
+  margin: 10pt 0 4pt;
+  line-height: 1.35;
+}
+.field-label-only .field-label {
+  display: inline-block;
+  margin: 0;
+  padding: 2pt 6pt 1.5pt;
+  font-size: 8.5pt;
+  line-height: 1.35;
+  color: var(--resume-accent);
+  background: #edf4f6;
+  border: 0;
+}
+.bullet-list { padding-left: 1.35em; }
+.bullet-list li {
+  color: var(--resume-copy);
+  text-align: left;
+}
+.bullet-list li::before {
+  top: .72em;
+  width: 2.8pt;
+  height: 2.8pt;
+  background: var(--resume-accent);
+}
+.bullet-tag {
+  /* 内容内部小标题：业绩增长、客户关系维护、跨部门协同等 */
+  display: inline;
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 1em;
   font-weight: 700;
-  letter-spacing: 0.28pt;
+  color: var(--resume-ink);
+  letter-spacing: .025em;
+  white-space: nowrap;
 }
-body.theme-editorial .section-title::before,
-body.theme-editorial .section-title::after {
-  display: none !important;
-  content: none !important;
+.bullet-tag::after {
+  content: "";
+  display: inline-block;
+  width: .18em;
 }
-body.theme-editorial .section-title .en { margin-left: 7pt; font-size: 6.8pt; letter-spacing: 0.55pt; color: #8a847a; }
-body.theme-editorial .entry { margin-bottom: 13pt; padding-bottom: 0; border-bottom: 0; }
-body.theme-editorial .entry + .entry { margin-top: 10pt; padding-top: 10pt; border-top: 0.5pt solid var(--editorial-rule); }
-body.theme-editorial .entry-header { margin-bottom: 5.8pt; gap: 14pt; }
-body.theme-editorial .entry-left { gap: 3pt; }
-body.theme-editorial .entry-company { color: var(--editorial-ink); font-size: 10.45pt; font-weight: 650; letter-spacing: 0; }
-body.theme-editorial .entry-position { color: var(--editorial-muted); font-size: 9.15pt; font-weight: 400; }
-body.theme-editorial .entry-meta { color: var(--editorial-muted); font-size: 8.65pt; letter-spacing: 0; }
-body.theme-editorial .field-line { color: var(--editorial-copy); font-size: 9.9pt; line-height: 1.54; margin: 3pt 0; }
-body.theme-editorial .field-label {
-  color: #4b4438;
-  background: var(--editorial-tint);
-  border: 0.45pt solid var(--editorial-rule);
-  font-size: 7.55pt;
-  font-weight: 650;
-  letter-spacing: 0.12pt;
-  padding: 0.15pt 4.2pt;
+.metric {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 700;
+  color: var(--resume-ink);
+  letter-spacing: .01em;
 }
-body.theme-editorial .bullet-list { margin-top: 2pt; padding-left: 0; }
-body.theme-editorial .bullet-list li { color: var(--editorial-copy); font-size: 9.9pt; line-height: 1.54; margin-bottom: 2.8pt; padding-left: 11pt; }
-body.theme-editorial .bullet-list li::before { top: 6.6pt; width: 2.4pt; height: 2.4pt; background: #8b7d68; }
-body.theme-editorial .metric { color: #1f1d1a; font-weight: 650; }
-body.theme-editorial .bullet-tag { color: #2b2823; font-weight: 650; }
-body.theme-editorial .skills-grid { font-size: 9.9pt; line-height: 1.46; gap: 3pt 9pt; }
-body.theme-editorial .skill-label { color: #2b2823; }
-body.theme-editorial .skill-content { color: var(--editorial-copy); }
+/* 技能区：最紧凑，便于 ATS 和人工扫读 */
+.section[data-section="skills"] .skills-grid {
+  font-size: 9.8pt;
+  line-height: 1.55;
+  letter-spacing: .012em;
+  gap: 4pt 11pt;
+}
+.skill-label {
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-weight: 700;
+  color: var(--resume-ink);
+}
+.skill-content { color: var(--resume-copy); }
+@media print {
+  .section[data-section="work"] .field-line, .section[data-section="work"] .bullet-list li { line-height: 1.64; }
+  .section[data-section="projects"] .field-line, .section[data-section="projects"] .bullet-list li { line-height: 1.74; }
+}
+</style>
 
+<style id="content-subheading-system">
+/* 全文内容小标题系统：工作经历、项目经历、岗位胜任、技能分组统一生效 */
+.bullet-list li {
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 10pt;
+  line-height: 1.68;
+  letter-spacing: .012em;
+}
+.bullet-list .bullet-tag,
+.skills-grid .skill-label {
+  font-family: "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: 10.2pt;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: .045em;
+  color: #20282d;
+}
+.bullet-list .bullet-tag::after {
+  width: .24em;
+}
+/* 岗位胜任内容通常是完整句，正文略松；其能力标签继续保持标题字体 */
+.section-title + .bullet-list li {
+  line-height: 1.78;
+}
+.section-title + .bullet-list .bullet-tag {
+  font-size: 10.5pt;
+}
+/* 工作/项目的正文与内容小标题形成可见但克制的字号差 */
+.section[data-section="work"] .bullet-list li,
+.section[data-section="projects"] .bullet-list li {
+  font-size: 9.9pt;
+}
+.section[data-section="work"] .bullet-list .bullet-tag,
+.section[data-section="projects"] .bullet-list .bullet-tag {
+  font-size: 10.1pt;
+}
+</style>
 
+<style id="content-subheading-v3">
+/* v3：全文能力小标题的明确层级 */
+.bullet-list li {
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 9.7pt;
+  line-height: 1.72;
+  letter-spacing: .012em;
+  color: #4d585e;
+}
+.bullet-list li .bullet-tag {
+  font-family: "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: 11pt;
+  line-height: 1.35;
+  font-weight: 700;
+  letter-spacing: .055em;
+  color: #1f5267;
+  white-space: nowrap;
+}
+.bullet-list li .bullet-tag::after { content: ""; display: inline-block; width: .28em; }
+.field-line .field-label {
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 8.5pt;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: #1f5267;
+  background: #edf4f6;
+  padding: 1.5pt 5pt;
+  margin-right: 6pt;
+}
+.field-label-only .field-label { font-size: 8.8pt; padding: 2pt 6pt; }
+.ability-tag {
+  font-family: "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: 10pt;
+  font-weight: 700;
+  color: #1f5267;
+  letter-spacing: .04em;
+}
+</style>
+
+<style id="alignment-black-v4">
+/* v4：统一黑色、固定字段列宽、正文起始线对齐 */
+:root {
+  --resume-ink: #222;
+  --resume-copy: #4b4b4b;
+  --resume-muted: #777;
+  --resume-label-bg: #f1f1f1;
+  --resume-accent: #222;
+}
+/* 所有字段标签固定在同一列，正文从同一条线开始 */
+.field-line {
+  display: grid;
+  grid-template-columns: 5.2em minmax(0, 1fr);
+  column-gap: 8pt;
+  align-items: baseline;
+  color: var(--resume-copy);
+  text-align: left;
+}
+.field-line .field-label {
+  display: block;
+  width: 5.2em;
+  margin: 0;
+  padding: 1.5pt 0;
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  font-size: 8.5pt;
+  line-height: 1.4;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-align: left;
+  color: #222;
+  background: var(--resume-label-bg);
+}
+.field-label-only {
+  display: block;
+  margin-top: 9pt;
+}
+.field-label-only .field-label {
+  display: inline-block;
+  width: 5.2em;
+  padding: 1.5pt 4pt;
+}
+/* 内容小标题与正文也只用黑色，靠字体和字号区分 */
+.bullet-list li { color: var(--resume-copy); }
+.bullet-list li .bullet-tag,
+.ability-tag,
+.skills-grid .skill-label {
+  color: #222;
+}
+.bullet-list li .bullet-tag {
+  font-family: "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: 10.7pt;
+  font-weight: 700;
+  letter-spacing: .035em;
+}
+.ability-tag {
+  font-family: "Songti SC", STSong, "Noto Serif CJK SC", serif;
+  font-size: 10pt;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+/* 全局技能：分类列固定宽度，内容列从同一条线开始 */
+.skills-grid {
+  grid-template-columns: 5.2em minmax(0, 1fr);
+  column-gap: 12pt;
+  color: var(--resume-copy);
+}
+.skills-grid .skill-label {
+  width: 5.2em;
+  font-family: "PingFang SC", "Noto Sans SC", sans-serif;
+  font-size: 9.8pt;
+  font-weight: 700;
+  letter-spacing: .035em;
+}
+.skills-grid .skill-content { color: var(--resume-copy); }
+.bullet-list li::before { background: #222; }
+</style>
+
+<style id="force-monochrome-final">
+/* 最终单色覆盖：避免旧主题或 localStorage 恢复蓝色 */
+body, body.theme-bank, body.theme-editorial {
+  --bank-navy: #222 !important;
+  --bank-blue: #222 !important;
+  --bank-cyan: #222 !important;
+  --bank-gold: #222 !important;
+  --editorial-accent: #222 !important;
+  --resume-accent: #222 !important;
+}
+body .field-label, body.theme-bank .field-label, body.theme-editorial .field-label,
+body .bullet-tag, body.theme-bank .bullet-tag, body.theme-editorial .bullet-tag,
+body .ability-tag, body .skill-label, body .entry-company, body .entry-position,
+body .section-title, body .section-title .en {
+  color: #222 !important;
+}
+body .field-label, body.theme-bank .field-label, body.theme-editorial .field-label {
+  background: #f1f1f1 !important;
+  border-color: #222 !important;
+}
+body .bullet-list li::before, body.theme-bank .bullet-list li::before, body.theme-editorial .bullet-list li::before {
+  background: #222 !important;
+}
+body.theme-editorial .header::after, body.theme-bank .header::after {
+  background: #222 !important;
+}
+</style>
+
+<style id="field-content-alignment-v5">
+.field-line {
+  display: grid;
+  grid-template-columns: 5.2em minmax(0, 1fr);
+  column-gap: 8pt;
+  align-items: baseline;
+}
+.field-line .field-label { grid-column: 1; }
+.field-line .field-content {
+  grid-column: 2;
+  min-width: 0;
+  display: block;
+}
+.field-line.field-label-only { display: block; }
+.field-line.field-label-only .field-label { display: inline-block; }
+.field-content .ability-tag { white-space: nowrap; }
+</style>
+
+<style id="consistent-field-style-v6">
+/* 全文一致：字段标题不使用灰块，所有板块只用黑色文字与留白分层 */
+.field-line .field-label,
+.field-line.field-label-only .field-label,
+body.theme-bank .field-line .field-label,
+body.theme-editorial .field-line .field-label {
+  background: transparent !important;
+  border: 0 !important;
+  color: #222 !important;
+  padding: 0 !important;
+  font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif !important;
+  font-size: 8.6pt !important;
+  font-weight: 700 !important;
+  line-height: 1.4 !important;
+  letter-spacing: .06em !important;
+}
+.field-line,
+.field-line.field-label-only,
+.section[data-section="work"] .field-line,
+.section[data-section="projects"] .field-line {
+  margin-top: 6pt;
+  margin-bottom: 6pt;
+}
+.field-line.field-label-only { margin-top: 10pt; margin-bottom: 3pt; }
+</style>
+
+<style id="field-label-final-v7">
+/* 字段标题最终规则：单行、无背景、固定宽度、全文统一 */
+.field-line {
+  grid-template-columns: 6em minmax(0, 1fr) !important;
+}
+.field-line .field-label,
+.field-line.field-label-only .field-label,
+.skills-grid .skill-label {
+  width: 6em !important;
+  min-width: 6em !important;
+  white-space: nowrap !important;
+  overflow: visible !important;
+  background: transparent !important;
+  border: 0 !important;
+  color: #222 !important;
+  padding: 0 !important;
+  box-shadow: none !important;
+}
+.field-line.field-label-only .field-label { display: inline-block !important; }
+.skills-grid { grid-template-columns: 6em minmax(0, 1fr) !important; }
+</style>
+
+<style id="type-hierarchy-v8">
+/* 字体层级：字段标题不小于正文，内容小标题略高于正文 */
+.field-line .field-label,
+.field-line.field-label-only .field-label {
+  font-size: 10pt !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  letter-spacing: .035em !important;
+}
+.field-line .field-content,
+.section[data-section="work"] .field-line .field-content,
+.section[data-section="projects"] .field-line .field-content {
+  font-size: 9.7pt;
+  line-height: 1.7;
+}
+.bullet-list li {
+  font-size: 9.7pt;
+  line-height: 1.7;
+}
+.bullet-list li .bullet-tag {
+  font-size: 10.2pt !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  letter-spacing: .035em !important;
+}
+.ability-tag {
+  font-size: 10.2pt !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+}
+</style>
+
+<style id="metric-normal-v9">
+/* 仅按本次要求：正文数字恢复普通字重 */
+.metric {
+  font-weight: 400 !important;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  letter-spacing: inherit !important;
+}
+</style>
+
+<style id="bank-original-restore-v10">
+/* 投行主题：恢复原版视觉，只保留内容排版优化 */
+body.theme-bank {
+  --bank-navy: #0a2f46 !important;
+  --bank-blue: #1b6485 !important;
+  --bank-cyan: #36a7c4 !important;
+  --bank-gold: #b49a67 !important;
+  --bank-ice: #edf4f6 !important;
+  --bank-rule: #d5e0e5 !important;
+}
+body.theme-bank .name {
+  font-family: Georgia, "Times New Roman", "Songti SC", STSong, serif !important;
+  font-size: 29pt !important;
+  line-height: 1.05 !important;
+  font-weight: 700 !important;
+  letter-spacing: 1.2pt !important;
+  color: var(--bank-navy) !important;
+}
+body.theme-bank .contact-row {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", sans-serif !important;
+  font-size: 8.8pt !important;
+  line-height: 1.3 !important;
+  color: var(--ref-muted) !important;
+}
+body.theme-bank .section-title {
+  color: #fff !important;
+  background: linear-gradient(90deg, var(--bank-gold) 0 2mm, var(--bank-navy) 2mm 100%) !important;
+  font-size: 11.7pt !important;
+  line-height: 1.25 !important;
+  letter-spacing: .35pt !important;
+  padding: 6pt 10pt 6pt 7mm !important;
+  border: 0 !important;
+}
+body.theme-bank .section-title .en {
+  color: rgba(255,255,255,.72) !important;
+  font-family: "PingFang SC", sans-serif !important;
+  font-size: 7.5pt !important;
+  letter-spacing: 1.5pt !important;
+}
+body.theme-bank .entry-company {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "PingFang SC", sans-serif !important;
+  font-size: 10.5pt !important;
+  font-weight: 700 !important;
+  color: var(--bank-navy) !important;
+}
+body.theme-bank .entry-position {
+  font-size: 10pt !important;
+  font-weight: 400 !important;
+  color: var(--ref-muted) !important;
+}
+body.theme-bank .entry-meta {
+  font-size: 10pt !important;
+  color: var(--ref-muted) !important;
+}
+body.theme-bank .field-label {
+  color: var(--bank-navy) !important;
+  background: transparent !important;
+  font-size: 8.5pt !important;
+}
+body.theme-bank .bullet-tag {
+  color: var(--bank-navy) !important;
+  font-family: "PingFang SC", sans-serif !important;
+  font-size: 10pt !important;
+  font-weight: 700 !important;
+}
+body.theme-bank .metric {
+  font-weight: 400 !important;
+  font-family: inherit !important;
+}
+body.theme-bank .bullet-list li::before { background: var(--bank-blue) !important; }
+</style>
+
+<style id="editorial-layout-v11">
+/* 欧美编辑风：只增强分组和层级，不改变极简/投行主题 */
+body.theme-editorial {
+  --editorial-ink: #17191c !important;
+  --editorial-copy: #555c63 !important;
+  --editorial-muted: #747b82 !important;
+  --editorial-accent: #315d78 !important;
+  --editorial-rule: #cfd3d5 !important;
+}
+body.theme-editorial .name {
+  font-family: Baskerville, "Iowan Old Style", "Times New Roman", "Songti SC", STSong, serif !important;
+  font-size: 30pt !important;
+  line-height: 1 !important;
+  font-weight: 600 !important;
+  letter-spacing: 2.8pt !important;
+  color: var(--editorial-ink) !important;
+}
+body.theme-editorial .contact-row {
+  font-size: 8.9pt !important;
+  line-height: 1.3 !important;
+  color: var(--editorial-muted) !important;
+}
+body.theme-editorial .section { margin-bottom: 25pt !important; }
+body.theme-editorial .section-title {
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, "PingFang SC", sans-serif !important;
+  font-size: 12.5pt !important;
+  line-height: 1.25 !important;
+  font-weight: 700 !important;
+  letter-spacing: .12em !important;
+  color: var(--editorial-ink) !important;
+  border-bottom: 1pt solid var(--editorial-ink) !important;
+  padding-bottom: 8pt !important;
+  margin-bottom: 15pt !important;
+}
+body.theme-editorial .section-title .en {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 7.5pt !important;
+  line-height: 1 !important;
+  letter-spacing: .1em !important;
+  color: var(--editorial-muted) !important;
+}
+body.theme-editorial .entry {
+  margin-bottom: 22pt !important;
+  padding-bottom: 17pt !important;
+  border-bottom: .5pt solid var(--editorial-rule) !important;
+}
+body.theme-editorial .entry:last-child {
+  margin-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  border-bottom: 0 !important;
+}
+body.theme-editorial .entry-header { margin-bottom: 9pt !important; }
+body.theme-editorial .entry-company {
+  font-family: Baskerville, "Iowan Old Style", "Times New Roman", "Songti SC", STSong, serif !important;
+  font-size: 11.5pt !important;
+  line-height: 1.25 !important;
+  font-weight: 600 !important;
+  letter-spacing: .025em !important;
+  color: var(--editorial-ink) !important;
+}
+body.theme-editorial .entry-position {
+  font-size: 9.5pt !important;
+  line-height: 1.3 !important;
+  color: var(--editorial-muted) !important;
+}
+body.theme-editorial .entry-meta {
+  font-family: Georgia, "Times New Roman", serif !important;
+  font-size: 8.8pt !important;
+  line-height: 1.25 !important;
+  color: var(--editorial-muted) !important;
+}
+body.theme-editorial .field-line {
+  display: grid !important;
+  grid-template-columns: 6em minmax(0, 1fr) !important;
+  column-gap: 8pt !important;
+  margin: 7pt 0 !important;
+  font-size: 9.7pt !important;
+  line-height: 1.72 !important;
+  color: var(--editorial-copy) !important;
+}
+body.theme-editorial .field-line .field-label {
+  width: 6em !important;
+  min-width: 6em !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border: 0 !important;
+  white-space: nowrap !important;
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, "PingFang SC", sans-serif !important;
+  font-size: 10pt !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  letter-spacing: .035em !important;
+  color: var(--editorial-ink) !important;
+}
+body.theme-editorial .field-line .field-content { grid-column: 2 !important; min-width: 0 !important; }
+body.theme-editorial .field-label-only { display: block !important; margin: 11pt 0 3pt !important; }
+body.theme-editorial .field-label-only .field-label { display: inline-block !important; }
+body.theme-editorial .bullet-list { margin-top: 4pt !important; }
+body.theme-editorial .bullet-list li {
+  font-size: 9.7pt !important;
+  line-height: 1.72 !important;
+  margin-bottom: 6pt !important;
+  color: var(--editorial-copy) !important;
+}
+body.theme-editorial .bullet-list li .bullet-tag {
+  font-family: Baskerville, "Iowan Old Style", "Times New Roman", "Songti SC", STSong, serif !important;
+  font-size: 10.2pt !important;
+  line-height: 1.35 !important;
+  font-weight: 700 !important;
+  letter-spacing: .03em !important;
+  color: var(--editorial-ink) !important;
+}
+body.theme-editorial .metric {
+  font-weight: 400 !important;
+  font-family: inherit !important;
+}
+body.theme-editorial .skills-grid {
+  grid-template-columns: 6em minmax(0, 1fr) !important;
+  column-gap: 12pt !important;
+  font-size: 9.7pt !important;
+  line-height: 1.65 !important;
+}
+body.theme-editorial .skills-grid .skill-label {
+  width: 6em !important;
+  font-family: "Avenir Next", Avenir, "Helvetica Neue", Arial, "PingFang SC", sans-serif !important;
+  font-size: 10pt !important;
+  font-weight: 700 !important;
+  color: var(--editorial-ink) !important;
+}
+body.theme-editorial .skills-grid .skill-content { color: var(--editorial-copy) !important; }
+</style>
+
+<style id="editorial-cleanup-v12">
+/* 欧美主题清理：单线、无短竖、无蓝色 */
+body.theme-editorial {
+  --editorial-accent: #222 !important;
+  --editorial-ink: #222 !important;
+  --editorial-copy: #555 !important;
+  --editorial-muted: #777 !important;
+  --editorial-rule: #d8d8d8 !important;
+}
+/* 联系方式下方只保留 header 的一条底线 */
+body.theme-editorial .header { border-bottom: 1.2pt solid #222 !important; }
+body.theme-editorial .header::after { display: none !important; content: none !important; }
+/* 区块标题取消左侧短竖和色块，只保留底部细线 */
+body.theme-editorial .section-title {
+  border-left: 0 !important;
+  border-bottom: 1pt solid #222 !important;
+  background: transparent !important;
+  color: #222 !important;
+  padding-left: 0 !important;
+}
+body.theme-editorial .section-title .en { color: #777 !important; }
+body.theme-editorial .contact-item:last-child { color: #555 !important; }
+body.theme-editorial .bullet-list li::before { background: #222 !important; }
+body.theme-editorial .field-label,
+body.theme-editorial .bullet-tag,
+body.theme-editorial .ability-tag,
+body.theme-editorial .skill-label { color: #222 !important; }
+body.theme-editorial .field-label { background: transparent !important; }
+</style>
+
+<style id="editorial-entry-spacing-v13">
+/* 欧美主题：相邻条目只保留一根分隔线 */
+body.theme-editorial .entry {
+  border-bottom: 0 !important;
+  padding-bottom: 0 !important;
+  margin-bottom: 18pt !important;
+}
+body.theme-editorial .entry + .entry {
+  border-top: .5pt solid var(--editorial-rule) !important;
+  padding-top: 17pt !important;
+}
+body.theme-editorial .entry:last-child {
+  margin-bottom: 0 !important;
+}
+/* 正文缩进统一：字段正文固定从第二列开始，bullet 正文统一从同一缩进线开始 */
+body.theme-editorial .field-line .field-content {
+  padding-left: 0 !important;
+  text-indent: 0 !important;
+}
+body.theme-editorial .bullet-list {
+  padding-left: 1.25em !important;
+  margin-left: 0 !important;
+}
+body.theme-editorial .bullet-list li {
+  padding-left: 10pt !important;
+  text-indent: 0 !important;
+}
+</style>
+<style id="print-final">
 /* 打印收口必须置于所有主题之后；只清除纸张外层装饰，保留正文配色。 */
 @media print {
   html, body, body.theme-bank, body.theme-editorial {
@@ -925,21 +1530,15 @@ body.theme-editorial .skill-content { color: var(--editorial-copy); }
       for (var i = 0; i < btns.length; i++) {
         btns[i].classList.toggle('active', btns[i].getAttribute('data-theme') === t);
       }
-      try { localStorage.setItem('resume-theme', t); } catch (e) {}
+      document.body.setAttribute('data-theme', t || 'minimal');
     }
     (function () {
       var btns = document.querySelectorAll('.theme-switch button');
       for (var i = 0; i < btns.length; i++) {
         btns[i].onclick = function () { setTheme(this.getAttribute('data-theme')); };
       }
-      var saved = '';
-      try { saved = localStorage.getItem('resume-theme') || ''; } catch (e) {}
-      if (!saved) {
-        /* 无暂存主题时保留文档自带主题（「保存修改」下载的文件靠它固化所选风格） */
-        if (document.body.classList.contains('theme-bank')) saved = 'bank';
-        else if (document.body.classList.contains('theme-editorial')) saved = 'editorial';
-      }
-      setTheme(saved);
+      var saved = document.body.getAttribute('data-theme') || 'minimal';
+      setTheme(saved === 'minimal' ? '' : saved);
     })();
 
     function togglePreview() {
@@ -951,7 +1550,7 @@ body.theme-editorial .skill-content { color: var(--editorial-copy); }
     }
 
     /* ===== 内容自动暂存 + 保存修改/还原 ===== */
-    var CONTENT_KEY = 'resume-content:' + (document.title || 'resume');
+    var CONTENT_KEY = 'locked-resume-v1:' + location.pathname + ':' + (document.title || 'resume');
     var pageEl = document.getElementById('page');
     var saveTimer = null;
     /* 嵌入内容指纹：文件更新后，浏览器里的旧暂存自动作废，不再覆盖新内容 */

@@ -26,6 +26,8 @@ def _resume():
             "邮箱": "liming@example.com",
             "城市": "杭州",
             "求职意向": "高级销售经理",
+            "学历": "本科",
+            "年龄": "32岁",
         },
         "sections": [
             {
@@ -53,6 +55,8 @@ def test_render_default_html():
     assert "李明" in html
     assert "示例科技" in html
     assert "13800000000" in html
+    assert "32岁" in html
+    assert "岗位胜任" in html
 
 
 def test_basic_age_is_rendered_in_contact_row():
@@ -77,7 +81,7 @@ def test_basic_age_is_rendered_in_contact_row():
                 self.items.append(data.strip())
     parser = Parser()
     parser.feed(markup)
-    assert parser.items == ["13800000000", "liming@example.com", "杭州", "高级销售经理", "32岁", "本科"]
+    assert parser.items == ["13800000000", "liming@example.com", "杭州", "高级销售经理", "本科", "32岁"]
 
 
 def test_basic_education_stays_in_contact_row_when_education_section_exists():
@@ -181,3 +185,17 @@ def test_education_section_takes_precedence_without_mutating_input():
     assert '旧学校' not in text
     assert '旧摘要' in text
     assert json.dumps(resume, ensure_ascii=False) == before
+
+def test_render_field_content_and_normal_metric_weight():
+    resume = _resume()
+    resume["sections"][1]["entries"][0]["bullets"] = ["业绩增长：主导 560 万合同商务谈判并签约落地"]
+    html = render(resume, theme="minimal")
+    assert '<span class="field-content">' in html
+    assert '<span class="bullet-tag">业绩增长</span>' in html
+    assert '主导 560 万合同商务谈判并签约落地' in hr.build_body(resume)
+    assert '<span class="metric">' not in hr.build_body(resume)
+
+
+def test_render_explicit_theme_class():
+    assert 'theme-bank' in render(_resume(), theme="bank")
+    assert 'theme-editorial' in render(_resume(), theme="editorial")

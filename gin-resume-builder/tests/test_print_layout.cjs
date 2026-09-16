@@ -17,7 +17,7 @@ const template = fs.readFileSync(path.join(root, 'assets/resume_template.html'),
       try {
         const body = '<header class="header"><h1 class="name">版式检查</h1>' +
           '<div class="contact-row"><span class="contact-item">13800000000</span><span class="contact-item">liming@example.com</span><span class="contact-item">杭州</span><span class="contact-item">高级销售经理</span><span class="contact-item">32岁</span><span class="contact-item">浙江大学｜本科</span></div></header>' +
-          '<section class="section"><h2 class="section-title">工作经历<span class="en">WORK EXPERIENCE</span></h2><div class="entry"><p class="field-line"><span class="field-label">核心职责</span>负责重点客户拓展。</p></div></section>';
+          '<section class="section" data-section="work"><h2 class="section-title">工作经历<span class="en">WORK EXPERIENCE</span></h2><div class="entry"><p class="field-line"><span class="field-label">核心职责</span><span class="field-content">负责重点客户拓展。</span></p></div></section>';
         await page.setContent(template.replace('{{TITLE}}', label).replace('{{BODY}}', body));
         await page.evaluate(theme => {setTheme(theme);}, theme);
         const items = await page.locator('.contact-item').evaluateAll(nodes => nodes.map(n => n.textContent.trim()));
@@ -49,7 +49,7 @@ const template = fs.readFileSync(path.join(root, 'assets/resume_template.html'),
           const page = await browser.newPage();
           try {
             const body = '<header class="header"><h1 class="name">打印回归样本</h1></header>' +
-              Array.from({length:count}, (_, i) => `<section class="section"><h2 class="section-title">工作经历 ${i + 1}</h2><div class="entry"><p class="field-line">模拟内容：验证背景、阴影及长文分页。</p></div></section>`).join('');
+              Array.from({length:count}, (_, i) => `<section class="section" data-section="work"><h2 class="section-title">工作经历 ${i + 1}</h2><div class="entry"><p class="field-line">模拟内容：验证背景、阴影及长文分页。</p></div></section>`).join('');
             await page.setContent(template.replace('{{TITLE}}', label).replace('{{BODY}}', body));
             await page.evaluate(({theme,editing}) => {setTheme(theme); document.getElementById('page').contentEditable = String(editing);}, {theme,editing});
             await page.emulateMedia({media:'print'});

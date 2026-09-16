@@ -7,7 +7,7 @@ description: 中文求职技能组（Router + 10 个子功能），基于持久�
 
 本技能是 Router：识别意图 → 触发反馈 → 知识库检查 → 路由到对应子功能。严格执行「知识库有的事实才能上简历」，不编造经历。
 
-> 当前版本：v1.24.4（2026-09-15）· 变更记录见技能目录「更新日志.md」
+> 当前版本：v1.25.0（2026-09-16）· 变更记录见技能目录「更新日志.md」
 
 ## 运行流程（每次触发必走）
 
@@ -102,7 +102,7 @@ Progress:
 - 目录结构：`scripts/kb_interview.py init --kb <路径>` 自动创建，规范见 `references/knowledge-structure.md`
 - **工作经历支持职业休整期条目**：`work_history.md` 中可写入 `## 职业休整期 | 休整期类型 | 起止时间`，渲染时自动识别并弱化显示，字段标签自动从「核心职责/关键业绩」切换为「核心说明/关键事实」。写作规范见 `references/resume-section-standard.md` 第五部分。
 - **技能清单确认门禁**：技能的定义（通用能力/专属能力两段）、命名格式、条目写法（专属=熟练度+佐证；通用=证据强度+场景）与确认流程，必读 `references/skills-inventory-standard.md`。所有技能（用户自报 + AI 从经历推断）必须先整批展示给用户确认，确认的条目才用 `append-skill`（通用能力加 `--type general`）逐条写入；未确认不落盘。简历与求职材料只准使用 skills.md 中已确认的技能。查看清单用 `list-skills`
-- **优势录入**：个人优势/岗位胜任条目用 `append-advantage --text '...'` 写入 `原始事实/advantages.md`，展示层自动置顶为「岗位胜任」
+- **优势录入**：个人优势/岗位胜任条目用 `append-advantage --text '...'` 写入 `原始事实/advantages.md`，展示层置顶，默认名为「岗位胜任」；用户已确认「岗位匹配」时保留该名称
 - **技能深挖**：为核心技能写详细描述前信息不足时，按 `references/skill-mining-playbook.md` 支架式提问（把创作题变成选择题/填空题/改错题，不抛开放式大问题），核心技能挖全 STAR-Plus 五维、其余从简；产物经用户确认后写入 `原始事实/skill_details.md` 并运行 `facts_parser.py` 重建
 - **STAR 行为证据挖掘**：在 KB 访谈/增量更新对话中，当用户说出具体工作经历、项目经历、技能使用场景或优势时，Agent 应语义触发 → 暂停主线 → 按 `references/tacit-mining-methodology.md` 用 CDM/对比/Laddering/反事实/隐喻轮换追问 5-8 轮 → 整理成可读 STAR → 调用 `kb_interview.py stage-evidence` 写入 `原始事实/待确认/` → **展示给用户确认 `[硬闸门]`** → 用户回复 OK 后调用 `kb_interview.py confirm-evidence` 迁移到 `原始事实/behavioral_evidence/` → 调用 `kb_audit.py` 验证 → 反馈文件路径与统计 → 返回主线
   - 未获得用户明确 OK 前，禁止调用 `confirm-evidence`
@@ -162,10 +162,10 @@ Progress:
 7. **强主张审计**：`strong_claim_auditor.py --bullets bullets.json`；含「主导/负责/0→1/核心/Owner」但无具体决策/结果时，降级为「参与」或标注【待确认】
 8. **主张绑定**：`claim_binder.py --bullets bullets.json [--claims user_inputs.json]`；每条通过的 bullet 生成 claim 记录，写入 `原始事实/claims/`，并追问用户确认 boundary 与 interview_details
 9. **溯源校验**：`provenance_verifier.py --bullets bullets.json`；退出码 2 = 有拦截 / 退出码 3 = 事实冲突 → 引导用户补事实/修正/删除/裁决 → 重写 → 再校，不得跳过
-10. **初稿确认**：按 `references/resume-section-standard.md` 的字段结构组装 resume.json 展示给用户，用户要求修改则返回第 6 步
+10. **初稿确认**：按 `references/resume-section-standard.md` 的字段结构组装 resume.json 展示给用户，用户要求修改则返回第 6 步。七项基本信息（姓名、联系电话、邮箱、居住地、求职职位、学历、年龄）和岗位匹配/岗位胜任必须齐全，别名及布局规则见 `references/locked-template-output.md`；缺项先从已确认事实补齐，仍缺则询问用户，禁止编造或静默省略
 11. **结构校验**：`resume_structure_check.py --resume resume.json`；退出码 2 = 字段不达标 → 修正后重新组装再校，不得跳过
 12. **渲染前确认（硬闸门）**：把简历文字稿（基于 resume.json 生成）发给用户确认。用户说 OK / 没问题后，将 `render_approved = true` 写入 `review_state.json`，才能进入下一步。用户要求修改时，记录反馈并返回第 6 步或第 10 步重新修改，修改完成后需重新走强主张审计、主张绑定、溯源校验、结构校验和渲染前确认。**未获得用户明确确认前，禁止执行渲染。**
-13. **渲染**：`html_renderer.py --resume resume.json`（默认 HTML；用户要求 Markdown 时用 `markdown_renderer.py`；需要可编辑版本时加 `--editable`）。若用户选择可编辑版本或首次生成母版，调用 `save_workspace()` 同时生成 `基础简历.md`、`简历版式档案.md`、`基础简历.html`，供后续岗位定制复用。
+13. **渲染**：先读 `references/locked-template-output.md`。使用 `html_renderer.py --resume resume.json --theme minimal|bank|editorial --out 简历.html`（按已确认风格选择一个值；默认 minimal；用户要求 Markdown 时用 `markdown_renderer.py`；可编辑版本加 `--editable`，使用同一锁定版式）。若用户选择可编辑版本或首次生成母版，调用 `save_workspace()` 同时生成 `基础简历.md`、`简历版式档案.md`、`基础简历.html`，供后续岗位定制复用。
 
 ### 其余子功能
 

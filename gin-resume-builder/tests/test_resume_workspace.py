@@ -18,8 +18,8 @@ _spec.loader.exec_module(hr)
 def _resume():
     return {
         "title": "李明-高级销售经理-简历",
-        "basic": {"姓名": "李明", "电话": "13800000000", "邮箱": "liming@example.com"},
-        "sections": [],
+        "basic": {"姓名": "李明", "电话": "13800000000", "邮箱": "liming@example.com", "城市": "杭州", "求职意向": "经理", "学历": "本科", "年龄": "32岁"},
+        "sections": [{"title":"岗位胜任", "items":[{"tag":"协作能力","text":"建立清晰的协作机制。"}]}],
     }
 
 

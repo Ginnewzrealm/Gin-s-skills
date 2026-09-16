@@ -36,7 +36,7 @@ Before asking for another resume file, search the current workspace or supplied 
 - use `基础简历.md` to compare current coverage, wording, and section selection;
 - use the evidence index and only relevant evidence sections to find stronger or overlooked material;
 - use `简历版式档案.md` when generating the final artifact;
-- when `基础简历.html` exists, duplicate and patch it rather than rebuilding the HTML shell;
+- when `基础简历.html` uses the locked template, duplicate it for the next application; for an older shell, preserve approved content and theme but rebuild through the current renderer (see `locked-template-output.md`);
 - ask whether the saved base is still current only when there is a concrete sign it may be stale.
 
 Request a new source resume only when the user says it changed, wants a new source design, or a required field cannot be reconstructed from the saved files. Do not request a PDF merely because a new job description (JD) arrived.
@@ -61,3 +61,7 @@ For an Agent without persistent filesystem access, offer a downloadable package 
 ```
 
 The user can upload this small package to a new conversation instead of repeatedly uploading and parsing a PDF. Other requested formats may be added, but Markdown remains the default portable source.
+
+## Locked template output
+
+Persist `theme` as `minimal`, `bank`, or `editorial` in the style profile. `save_workspace` applies this theme to the editable master. All seven basic fields and the front 岗位匹配/岗位胜任 section are required for formal output. Missing facts must be supplied and approved rather than guessed. Editing and preview share the same layout; no automatic one-page shrink is applied.

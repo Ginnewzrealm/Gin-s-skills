@@ -47,6 +47,9 @@ def save_state(path, state):
 
 def format_resume_text(resume):
     """把 resume.json 渲染成可读的简历文字稿，用于用户确认。"""
+    if "basic" in resume or "sections" in resume:
+        from html_renderer import _resume_to_markdown
+        return _resume_to_markdown(resume).strip()
     lines = []
 
     # 基本信息

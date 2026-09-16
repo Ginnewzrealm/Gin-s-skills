@@ -72,7 +72,7 @@ def main():
 
     highlights = pick_highlights(facts)
     resume = build_resume_json(facts, highlights)
-    html_text = html_renderer.render(resume)
+    html_text = html_renderer.render(resume, validate=False)  # 高管骨架，非正式投递稿
     out = common.out_path(root, "executive_resumes", "高管简历-%s-%s.html" % (facts["basic_info"].get("姓名", ""), common.stamp()))
     with open(out, "w", encoding="utf-8") as f:
         f.write(html_text)

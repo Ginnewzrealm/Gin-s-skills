@@ -5,7 +5,7 @@
 按 references/resume-section-standard.md 的合格线检查 resume.json：
 - 工作经历每段：核心职责必填；bullet ≥3 条；含数字 bullet ≥2 条
 - 项目经历每个：项目描述必填；bullet ≥2 条；含数字 bullet ≥1 条
-- 岗位胜任板块：存在且 2-3 条（缺失/超量只警告）
+- 岗位匹配/岗位胜任：必须存在且非空；建议 2-3 条
 - 技能板块：存在（缺失只警告）
 - bullet 能力小标题（「用户增长：……」）：缺失只警告
 
@@ -18,11 +18,13 @@
 """
 import argparse
 import json
+import os
 import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import common
+from html_renderer import required_content_errors, item_text
 
 # 从 common.py 共享（单一来源）
 METRIC_RE = common.METRIC_RE
@@ -41,7 +43,7 @@ def main():
     with open(args.resume, encoding="utf-8") as f:
         resume = json.load(f)
 
-    errors, warnings = [], []
+    errors, warnings = required_content_errors(resume), []
     sections = {s.get("title"): s for s in resume.get("sections", [])}
 
     # ---- 工作经历 ----
@@ -56,11 +58,11 @@ def main():
             bullets = e.get("bullets", [])
             if len(bullets) < 3:
                 errors.append("工作经历「%s」【关键业绩】bullet 仅 %d 条，不足 3 条" % (name, len(bullets)))
-            n_metric = sum(1 for b in bullets if has_metric(b))
+            n_metric = sum(1 for b in bullets if has_metric(item_text(b)))
             if len(bullets) >= 3 and n_metric < 2:
                 errors.append("工作经历「%s」含数字的 bullet 仅 %d 条，不足 2 条" % (name, n_metric))
             for b in bullets:
-                if not TAG_RE.match(str(b).strip()):
+                if not ((isinstance(b, dict) and b.get("tag") and b.get("text")) or TAG_RE.match(str(b).strip())):
                     warnings.append("工作经历「%s」有 bullet 缺能力小标题：%.20s…" % (name, b))
 
     # ---- 项目经历 ----
@@ -73,11 +75,11 @@ def main():
             bullets = e.get("bullets", [])
             if len(bullets) < 2:
                 errors.append("项目经历「%s」【职责与行动】bullet 仅 %d 条，不足 2 条" % (name, len(bullets)))
-            n_metric = sum(1 for b in bullets if has_metric(b))
+            n_metric = sum(1 for b in bullets if has_metric(item_text(b)))
             if len(bullets) >= 2 and n_metric < 1:
                 errors.append("项目经历「%s」没有含数字的 bullet" % name)
             for b in bullets:
-                if not TAG_RE.match(str(b).strip()):
+                if not ((isinstance(b, dict) and b.get("tag") and b.get("text")) or TAG_RE.match(str(b).strip())):
                     warnings.append("项目经历「%s」有 bullet 缺能力小标题：%.20s…" % (name, b))
 
     # ---- 岗位胜任 ----
@@ -94,7 +96,7 @@ def main():
             warnings.append("「岗位胜任」当前 %d 条，建议 2-3 条" % n)
 
     # ---- 技能 ----
-    if not any(t in sections for t in ("技能", "专业技能", "Skills")):
+    if not any(t in sections for t in ("技能", "专业技能", "专业能力", "Skills")):
         warnings.append("缺少「技能」板块（ATS 关键词主要靠它）")
 
     # ---- 报告 ----

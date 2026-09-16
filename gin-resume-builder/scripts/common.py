@@ -77,9 +77,9 @@ METRIC_RE = re.compile(
     r"(\d+(?:\.\d+)?\s?(?:万元|亿元|QPS|qps|TPS|tps|ms|%|万|亿|倍|元|年|k|K|w|W|\+))"
 )
 # 能力小标题：≤32 字 + 全角/半角冒号
-TAG_PATTERN = r"^[^：:]{1,32}："
+TAG_PATTERN = r"^[^：:]{1,32}[：:]"
 # 置顶板块候选名
-FRONT_SECTIONS = ("岗位胜任", "核心亮点", "个人优势")
+FRONT_SECTIONS = ("岗位匹配", "岗位胜任", "核心亮点", "个人优势")
 
 # 责任层级标准（由低到高）
 RESPONSIBILITY_LEVELS = ("参与", "负责模块", "主导方案或交付", "项目负责人")
