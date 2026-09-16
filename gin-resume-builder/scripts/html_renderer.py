@@ -48,7 +48,7 @@ import common
 
 TEMPLATE = os.path.join(common.SKILL_DIR, "assets", "resume_template.html")
 
-# 展示层置顶板块（知识库存储层仍叫 advantages/个人优势，展示层统一为「岗位胜任」；
+# 展示层置顶板块（知识库存储层仍叫 advantages/个人优势，展示层保留已确认的「岗位匹配/岗位胜任」；
 # 保留「核心亮点」「个人优势」兼容旧数据）
 FRONT_SECTIONS = common.FRONT_SECTIONS
 

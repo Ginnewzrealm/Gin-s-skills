@@ -115,6 +115,8 @@ def test_cli_and_structure_check(tmp_path):
     result = subprocess.run([sys.executable, str(ROOT/'scripts/html_renderer.py'), '--resume', str(src), '--out', str(out), '--theme', 'editorial', '--editable'], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert 'data-theme="editorial"' in out.read_text()
+    check = subprocess.run([sys.executable, str(ROOT/'scripts/resume_structure_check.py'), '--resume', str(src)], capture_output=True, text=True)
+    assert check.returncode == 0, check.stdout + check.stderr
     data['basic'].pop('年龄')
     src.write_text(json.dumps(data, ensure_ascii=False))
     previous = out.read_bytes()
