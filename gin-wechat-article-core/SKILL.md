@@ -50,7 +50,7 @@ checklist 步骤标签：
 | 阶段 1/6：初始化与需求澄清 | init, clarify | 需求记录确认 |
 | 阶段 2/6：素材诊断与角度选择 | template_loaded, angle_diagnosed, role_boundary | 人-AI 协作契约书确认 |
 | 阶段 3/6：大纲生成与确认 | angle_matched, outline_generated, outline_selected, outline_confirmed | 大纲选择 + 开始写正文确认 |
-| 阶段 4/6：正文写作与人工改写 | draft_written, draft_revised | 人工二次改写确认 |
+| 阶段 4/6：正文写作与人工审阅 | draft_written, draft_revised | 人工审阅确认（可确认原稿或修改） |
 | 阶段 5/6：润色、小标题与标题优化 | polished, titled, title_confirmed | 标题确认 |
 | 阶段 6/6：质量检查与终审定稿 | quality_checked, finalized, markdown_output, publish_decision | 终审定稿确认 |
 
@@ -114,7 +114,7 @@ checklist 步骤标签：
 | outline_generated | 选择/修改大纲 | （人工） | 人工 | [硬闸门] [可回环] |
 | outline_selected | 确认开始写正文 | （人工） | 人工 | [硬闸门] |
 | outline_confirmed | 分段写正文 | gin-wechat-article-writer | AI | [自动] |
-| draft_written | 二次改写正文 | （人工） | 人工 | [硬闸门] [可回环] |
+| draft_written | 人工审阅正文（确认或修改） | （人工） | 人工 | [硬闸门] [可回环] |
 | draft_revised | 小标题优化 + 润色 | gin-wechat-article-polish | AI | [自动] |
 | polished | 审阅润色稿 → 提炼标题候选 | （人工审阅）+ gin-wechat-article-title(article) | 人工+AI | [需确认] |
 | titled | 选择/修改标题 | （人工） | 人工 | [硬闸门] [可回环] |
@@ -139,7 +139,7 @@ checklist 步骤标签：
 | outline_generated | `angle_matched` 已完成 | `outline_candidates` | `selected_outline` 已写入 | 重复展示大纲候选，停留在 outline_generated | outline_selected |
 | outline_selected | `outline_generated` 已完成 | `selected_outline` | 用户明确确认"开始写正文" | 停留在大纲确认节点，提示用户确认或修改大纲 | outline_confirmed |
 | outline_confirmed | `outline_selected` 已完成 | `selected_outline` 且 `outline_confirmed = true` | 无（AI 自动节点） | 校验 section 覆盖完整性，缺失时返回 outline_generated | draft_written |
-| draft_written | `outline_confirmed` 已完成 | `article_draft.md` | `draft_revised = true` 且 `draft_revised_path` 非空 | 提示用户先二次改写，停留在 draft_written | draft_revised |
+| draft_written | `outline_confirmed` 已完成 | `article_draft.md` | `draft_revised = true` 且 `draft_revised_path` 非空 | 提示用户人工审阅初稿，可确认原稿或提交修改，停留在 draft_written | draft_revised |
 | draft_revised | `draft_written` 已完成 | `draft_revised_path` | 无（AI 自动节点） | 重新运行 `gin-wechat-article-polish` | polished |
 | polished | `draft_revised` 已完成 | `polished_draft_path` | 人工审阅润色稿通过 | 停留在 polished 等待审阅润色稿 | titled |
 | titled | `polished` 已完成 | `title_candidates` | `selected_title` 已写入 | 重复展示标题候选，停留在 titled | title_confirmed |
@@ -153,7 +153,7 @@ checklist 步骤标签：
 - `role_boundary`：阻塞式人工节点，用户确认协作契约书后才能进入 `angle_matched`。
 - `outline_selected`：用户从 `outline_candidates` 中选定一个大纲。选定后**必须额外确认一次"开始写正文"**，才能进入 `outline_confirmed`。
 - `outline_confirmed`：由主 skill 调用 `template_loader.validate_sections_coverage()` 校验大纲是否完整覆盖 `narrative_protocol.sections`。校验通过后进入 `draft_written`。
-- `draft_revised`：用户在正文初稿二次改写后进入，由 AI 执行小标题优化 + 润色。
+- `draft_revised`：用户明确审阅确认正文初稿或提交修改后进入，由 AI 执行小标题优化 + 润色。
 - `polished`：用户先人工审阅润色稿，通过后由 AI 提炼标题候选（该步骤已合并到 `polished` 内完成「人工审阅 + AI 提炼」两步）。
 - `quality_failed`：`gin-wechat-article-quality` 评分低于 70 或出现 hard-fail 时进入，返回 `gin-wechat-article-polish` 重新润色，循环直到质量达标。
 - `finalized`：用户在终审定稿后进入，由 AI 生成最终 Markdown。
@@ -185,10 +185,10 @@ checklist 步骤标签：
    - 如果 `gin-wechat-article-writer`、`gin-wechat-article-polish`、`gin-wechat-article-outline`、`gin-wechat-article-quality` 任一核心子 skill 缺失或调用失败，主 skill 应明确提示用户并**暂停流程**，等待用户处理。
    - 只有可选外部 skill（插图、封面、WPS、发布等）缺失时才允许 fallback 为保存 Markdown。
 
-4. **用户二次改写是必经人工节点**
+4. **用户审阅初稿是必经人工节点**
    - `gin-wechat-article-writer` 输出初稿后，必须进入 `draft_written` 人工节点，由用户确认或修改。
    - 用户确认后，主 skill 将 `draft_revised` 置为 `true` 并保存到 `draft_revised_path`，再进入 `gin-wechat-article-polish`。
-   - 禁止用 AI 自动代替用户完成二次改写。
+   - 用户可确认原稿或提交修改；明确确认原稿也满足本节点。`draft_revised` 表示人工审阅节点已完成，不要求必须改动文字。AI 不得代替用户确认；沉默不算批准。
 
 5. **role_boundary 是阻塞式人工节点**
    - 用户必须确认 `collaboration_charter` 后，才能进入 `angle_matched`。
@@ -215,7 +215,7 @@ checklist 步骤标签：
 主 skill 输出《人-AI 协作契约书》，包含：
 
 - **AI 负责做**：推荐角度、生成大纲、找证据/类比、按角度扩写、结构优化、质量自检。
-- **必须由你来做**：第一手经历、核心角度拍板、情绪节点、关键金句、二次改写、终审定稿。
+- **必须由你来做**：第一手经历、核心角度拍板、情绪节点、关键金句、初稿人工审阅（确认或修改）、终审定稿。
 - **当前需要你确认**：素材是否足够、是否有真实经验、是否严格遵循模板结构、缺真实经历时如何处理。
 
 用户确认后，主 skill 将 `collaboration_charter.confirmed` 置为 `true` 并写入 `context.md`。
@@ -359,7 +359,7 @@ outline_candidates:                   # gin-wechat-article-outline 写入
 selected_outline: <uuid or index>
 draft_path: article_draft.md          # gin-wechat-article-writer 写入
 draft_revised: false
-draft_revised_path: article_draft_revised.md  # 用户二次改写后保存路径
+draft_revised_path: article_draft_revised.md  # 用户审阅确认的正文保存路径（可为原稿副本）
 polished_draft_path: polished_draft.md  # gin-wechat-article-polish 写入
 title_candidates:                     # gin-wechat-article-title 写入
   - rank: 1
@@ -405,8 +405,8 @@ version: v0.4.0
 - `outline_candidates`：排序后的大纲候选列表，每项包含 thesis、supporting_points、persuasion_strategies、emotion_goal、emotion_arc、key_quotes、closing_hook、sections 等。
 - `selected_outline`：用户选定的大纲。
 - `draft_path`：正文初稿文件路径（默认 `article_draft.md`）。
-- `draft_revised`：正文是否已完成二次改写。
-- `draft_revised_path`：用户二次改写后的正文保存路径（默认 `article_draft_revised.md`）。
+- `draft_revised`：正文是否已完成人工审阅并明确确认（可不改文字）。
+- `draft_revised_path`：用户审阅确认的正文保存路径（默认 `article_draft_revised.md`）。
 - `polished_draft_path`：润色后正文文件路径（默认 `polished_draft.md`）。
 - `title_candidates`：排序后的标题候选列表，每项包含 emotion_trigger、core_conflict 等。
 - `selected_title`：用户选定的最终标题。
