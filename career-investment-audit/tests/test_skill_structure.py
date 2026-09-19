@@ -50,9 +50,10 @@ class CareerInvestmentAuditSkillStructureTests(unittest.TestCase):
         self.assertRegex(self.text, r"主观分数.{0,20}(客观|真理)|客观.{0,20}主观分数")
 
     def test_interview_question_policy_is_bounded_and_prioritized(self):
-        self.assertRegex(self.text, r"最多.{0,8}5 个")
-        self.assertIn("不承诺一轮覆盖全部维度", self.text)
-        self.assertIn("后续问题", self.text)
+        self.assertIn("5 个必问问题", self.text)
+        self.assertIn("5–7 个补充问题", self.text)
+        self.assertIn("深挖问题", self.text)
+        self.assertIn("互动模式每轮只展示 1–3 个", self.text)
         for phrase in ("决策影响", "不确定性", "工作强度", "权限", "绩效", "成果归属", "证据可携带性", "团队稳定性"):
             self.assertIn(phrase, self.text)
 
