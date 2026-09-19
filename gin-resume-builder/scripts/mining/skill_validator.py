@@ -4,7 +4,7 @@
 
 证据来源三处：
 1. behavioral_evidence/*.md（STAR 行为证据碎片）
-2. skill_details.md（技能深挖五维块）
+2. skill_details.md（技能深挖四维块）
 3. skills.md 中已声明的熟练度（用于发现「自报过高」的情况）
 """
 import os

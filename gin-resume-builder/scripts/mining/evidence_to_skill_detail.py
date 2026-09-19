@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""evidence_to_skill_detail.py — 将 behavioral_evidence 碎片转换为 skill_details 五维块。
+"""evidence_to_skill_detail.py — 将 behavioral_evidence 碎片转换为 skill_details 四维块。
 
 用途：当某条 STAR 行为证据对应一个已知技能时，自动/半自动生成 skill_details.md 条目，
 供简历「岗位胜任」或技能详细描述使用。
@@ -84,7 +84,7 @@ def skill_detail_exists(root, skill_name):
 
 
 def append_skill_detail(root, skill_name, dims):
-    """追加一个技能五维块到 skill_details.md。"""
+    """追加一个技能四维块到 skill_details.md。"""
     path = os.path.join(root, common.DIR_RAW, "skill_details.md")
     lines = ["\n## %s" % skill_name]
     for k in ("情境", "行动", "结果", "沉淀"):
@@ -130,7 +130,7 @@ def main():
 
     print("找到 %d 条匹配 '%s' 的 STAR 碎片" % (len(candidates), args.skill))
 
-    # 合并多个碎片的五维：每个维度取最长/最完整的一条
+    # 合并多个碎片的四维：每个维度取最长/最完整的一条
     merged = {"情境": [], "行动": [], "结果": [], "沉淀": []}
     for path in candidates:
         be = parse_be_file(path)
