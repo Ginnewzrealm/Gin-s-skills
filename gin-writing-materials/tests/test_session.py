@@ -79,3 +79,35 @@ def test_mark_completed():
         session.mark_completed(tmp, "c")
         s = session.load_or_create(tmp, "c")
         assert s["status"] == "completed"
+
+
+def test_session_captures_seed_qud_branches_and_closure():
+    with tempfile.TemporaryDirectory() as tmp:
+        session.set_seed(tmp, "灵感主题", "准备越充分，反而越不想开始")
+        session.set_qud(
+            tmp,
+            "灵感主题",
+            main_qud="为什么准备会阻碍开始？",
+            current_qud="最近一次拖延发生了什么？",
+            return_to="main",
+            p_x_r={"P": "准备充分却不开始", "X": "准备不足时反而开始", "R": "机制"},
+        )
+        session.set_question_plan(
+            tmp,
+            "灵感主题",
+            object="最近一次拖延",
+            gap="事实",
+            action="描述",
+            dimension="时间顺序",
+            purpose="确定准备和拖延的先后关系",
+        )
+        session.add_branch(tmp, "灵感主题", "B001", "准备越完整越难开始", "可能形成另一条知识链")
+        session.set_closure(tmp, "灵感主题", knowledge="closed", public_material="open", confirmed=True)
+        state = session.load_or_create(tmp, "灵感主题")
+        assert state["seed"] == "准备越充分，反而越不想开始"
+        assert state["main_qud"] == "为什么准备会阻碍开始？"
+        assert state["current_qud"] == "最近一次拖延发生了什么？"
+        assert state["p_x_r"]["P"] == "准备充分却不开始"
+        assert state["last_question"]["gap"] == "事实"
+        assert state["branches"][0]["id"] == "B001"
+        assert state["closure"]["knowledge"] == "closed"

@@ -37,6 +37,57 @@
         "'章节' in score",
         "'主题清晰度' in score"
       ]
+    },
+    {
+      "id": "eval-05",
+      "name": "非法碎片阻止生成",
+      "description": "碎片字段为空或元数据非法时，默认 build 应失败",
+      "assertions": [
+        "fragment.validate(path)",
+        "build_doc.build(...) raises ValueError"
+      ]
+    },
+    {
+      "id": "eval-06",
+      "name": "主题定义驱动管线",
+      "description": "pipeline 从主题定义读取问题与约束，生成 03-素材文档.md 并标记会话完成",
+      "assertions": [
+        "os.path.exists(doc_path)",
+        "session['status'] == 'completed'"
+      ]
+    },
+    {
+      "id": "eval-07",
+      "name": "灵感种子与主线状态持久化",
+      "description": "从一句思维碎片开始时，seed、QUD、P-X-R、旁支和闭环状态应写入会话文件",
+      "assertions": [
+        "session['seed'] == seed",
+        "session['main_qud'] == main_qud",
+        "session['current_qud'] == current_qud",
+        "session['p_x_r']['P'] == p",
+        "session['branches'][0]['status'] == 'queued'",
+        "session['closure']['confirmed'] is True"
+      ]
+    },
+    {
+      "id": "eval-08",
+      "name": "未分类素材不丢失",
+      "description": "方向尚未确定的 confirmed 素材仍应进入材料清单、未分类素材章节和来源索引",
+      "assertions": [
+        "'## 未分类素材' in document",
+        "'素材 #1' in document",
+        "'02-素材碎片' in document"
+      ]
+    },
+    {
+      "id": "eval-09",
+      "name": "小灵感闭环生成",
+      "description": "只有一条 confirmed 素材时，只要用户确认知识闭环且没有校验错误，pipeline 也能生成素材文档",
+      "assertions": [
+        "result['knowledge_closed'] is True",
+        "result['confirmed_count'] == 1",
+        "os.path.exists(doc_path)"
+      ]
     }
   ]
 }

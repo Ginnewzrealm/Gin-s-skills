@@ -35,6 +35,12 @@ def test_decide_next_stage_for_review():
     assert result["current_key"] == "project_located"
 
 
+def test_completed_session_maps_to_action_steps():
+    result = decide_next_stage({"stage": "completed", "status": "completed"}, "review")
+    assert result["current_key"] == "project_located"
+    assert result["completed_keys"] == []
+
+
 def test_validate_transition_forward():
     result = validate_transition("project_located", "topic_defined", "mine")
     assert result["valid"] is True
@@ -43,6 +49,11 @@ def test_validate_transition_forward():
 def test_validate_transition_loopback():
     result = validate_transition("mining", "topic_defined", "mine")
     assert result["valid"] is True
+
+
+def test_validate_transition_rejects_loopback_to_non_loopable_step():
+    result = validate_transition("validated", "topic_defined", "mine")
+    assert result["valid"] is False
 
 
 def test_validate_transition_skip_not_allowed():
@@ -61,7 +72,8 @@ def test_advance_stage_at_end():
 
 
 def test_is_hard_gate():
-    assert is_hard_gate("topic_defined", "mine") is True
+    assert is_hard_gate("topic_defined", "mine") is False
+    assert is_hard_gate("mining", "mine") is True
     assert is_hard_gate("project_located", "mine") is False
 
 

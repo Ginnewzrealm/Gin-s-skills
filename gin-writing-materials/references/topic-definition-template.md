@@ -1,5 +1,8 @@
 # 主题定义：{主题}
 
+## 原始灵感（Seed）
+{seed}
+
 ## 真实问题（Key Question）
 {key_question}
 

@@ -4,6 +4,7 @@
 
 import argparse
 import os
+import re
 
 import common
 
@@ -20,6 +21,7 @@ def _bullet_list(items):
 def save(
     material_root,
     topic,
+    seed="",
     key_question="",
     scope=None,
     success_criteria=None,
@@ -51,6 +53,7 @@ def save(
 
     content = template.format(
         主题=topic,
+        seed=seed or "（待补充）",
         key_question=key_question or "（待补充）",
         scope=scope_text,
         success_criteria=_bullet_list(success_criteria),
@@ -63,10 +66,53 @@ def save(
     return path
 
 
+def _section(content, title):
+    marker = f"## {title}\n"
+    if marker not in content:
+        return ""
+    value = content.split(marker, 1)[1]
+    return value.split("\n## ", 1)[0].strip()
+
+
+def _bullet_values(value):
+    values = []
+    for line in value.splitlines():
+        line = line.strip()
+        if line.startswith("-"):
+            item = line[1:].strip()
+            if item and item != "（待补充）":
+                values.append(item)
+    return values
+
+
+def read(material_root, topic):
+    """读取主题定义，返回与 build_doc 对齐的结构化字段。"""
+    path = common.topic_definition_path(material_root, topic)
+    if not os.path.exists(path):
+        raise FileNotFoundError(f"主题定义不存在：{path}")
+    with open(path, encoding="utf-8") as f:
+        content = f.read()
+
+    scope = {}
+    for line in _section(content, "范围（Scope）").splitlines():
+        match = re.match(r"- \*\*(.+?)\*\*：\s*(.*)", line.strip())
+        if match:
+            scope[match.group(1)] = match.group(2).strip()
+    return {
+        "seed": _section(content, "原始灵感（Seed）"),
+        "key_question": _section(content, "真实问题（Key Question）"),
+        "scope": scope,
+        "success_criteria": _bullet_values(_section(content, "成功标准（Success Criteria）")),
+        "constraints": _bullet_values(_section(content, "约束（Constraints）")),
+        "hypotheses": _bullet_values(_section(content, "初始判断/假设（Initial Hypotheses）")),
+    }
+
+
 def main():
     ap = argparse.ArgumentParser(description="生成主题定义文件")
     ap.add_argument("--material-root", required=True, help="素材库根目录")
     ap.add_argument("--topic", required=True, help="主题名")
+    ap.add_argument("--seed", default="", help="原始灵感或思维碎片")
     ap.add_argument("--key-question", default="", help="真实问题")
     ap.add_argument("--reader", default="", help="读者")
     ap.add_argument("--style", default="", help="文体")
@@ -89,6 +135,7 @@ def main():
     path = save(
         material_root=args.material_root,
         topic=args.topic,
+        seed=args.seed,
         key_question=args.key_question,
         scope=scope,
         success_criteria=args.success_criteria,

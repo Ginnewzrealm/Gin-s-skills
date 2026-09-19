@@ -32,14 +32,35 @@ def validate_session(material_root, topic):
         if field_errors:
             errors.extend(field_errors)
 
-    ok = confirmed >= MIN_CONFIRMED and len(sections) >= MIN_SECTIONS
+    ok = not errors and confirmed >= MIN_CONFIRMED and len(sections) >= MIN_SECTIONS
+    state = session_mod.load_or_create(material_root, topic)
+    closure = state.get("closure", {})
     return {
         "ok": ok,
         "confirmed_count": confirmed,
         "fuzzy_count": fuzzy,
         "sections_covered": sorted(sections),
         "errors": errors,
+        "knowledge_closed": closure.get("knowledge") == "closed" and bool(closure.get("confirmed")),
+        "public_material_status": closure.get("public_material", "unknown"),
     }
+
+
+def main():
+    import argparse
+    import json
+
+    parser = argparse.ArgumentParser(description="校验写作素材会话")
+    parser.add_argument("--material-root", required=True, help="素材库根目录")
+    parser.add_argument("--topic", required=True, help="主题名")
+    args = parser.parse_args()
+    result = validate_session(args.material_root, args.topic)
+    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return 0 if result["ok"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
 
 
 def completeness_score(material_root, topic):

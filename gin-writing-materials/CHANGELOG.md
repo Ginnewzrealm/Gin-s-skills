@@ -1,4 +1,17 @@
 # CHANGELOG
+## 2026-09-19 · v0.6.0 · minor
+- 支持从想法、灵感、经历或思维碎片直接开始，不再把完整主题定义作为入口硬闸门
+- 新增 `seed`、主 QUD / 当前子 QUD、P-X-R、旁支和知识闭环状态
+- 追问增加来源轮次、素材角色与关系字段，允许未分类素材保留并进入最终文档
+- 闭环确认后允许小灵感生成素材文档，固定素材数量和章节覆盖不再是唯一门槛
+- README、human-writing 接口、Progress Checklist 与评测样例同步更新
+
+## 2026-09-18 · v0.5.0 · minor
+- 强化素材碎片字段与元数据校验，校验错误默认阻止成品生成
+- 新增主题定义读取接口与 `scripts/pipeline.py` 管线入口
+- 为 `validate.py`、`build_doc.py` 补齐 CLI，并修正阶段回环与完成态恢复
+- 同步 human-writing 接口、README 与历史验证报告说明
+
 ## 2026-08-30 · v0.4.0 · minor
 - 新增 Progress Checklist 进度可视化设计
 - 新增 `scripts/progress_reporter.py` 统一渲染 mine/review/correct/build 各动作 checklist

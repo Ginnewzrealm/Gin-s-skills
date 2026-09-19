@@ -7,12 +7,12 @@ from typing import Dict, List, Optional
 
 # mine 动作的完整阶段定义
 MINE_STEPS = [
-    {"key": "project_located", "name": "定位/创建项目文件夹", "tags": ["自动"]},
-    {"key": "topic_defined", "name": "生成主题定义并确认读者/文体/方向", "tags": ["硬闸门"]},
-    {"key": "anchors_loaded", "name": "拉取锚点素材到成品库", "tags": ["自动"]},
-    {"key": "domain_selected", "name": "选择本次挖掘域", "tags": ["需确认"]},
-    {"key": "mining", "name": "对话挖掘素材", "tags": ["硬闸门", "可回环"]},
-    {"key": "validated", "name": "完整性校验", "tags": ["自动"]},
+    {"key": "project_located", "name": "捕获灵感并创建项目", "tags": ["自动"]},
+    {"key": "topic_defined", "name": "形成暂定问题（可回环）", "tags": ["需确认", "可回环"]},
+    {"key": "anchors_loaded", "name": "读取可选锚点素材", "tags": ["自动"]},
+    {"key": "domain_selected", "name": "确认本次采访方式", "tags": ["需确认"]},
+    {"key": "mining", "name": "一次一问地采访并保存素材", "tags": ["硬闸门", "可回环"]},
+    {"key": "validated", "name": "收束确认与闭环校验", "tags": ["硬闸门"]},
     {"key": "doc_built", "name": "生成素材文档", "tags": ["自动"]},
     {"key": "completed", "name": "输出素材文档路径", "tags": ["需确认"]},
 ]

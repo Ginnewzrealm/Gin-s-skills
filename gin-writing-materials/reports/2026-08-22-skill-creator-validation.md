@@ -1,4 +1,6 @@
-# gin-writing-materials 技能验证报告
+# gin-writing-materials 技能验证报告（历史记录）
+
+> 本文记录 2026-08-22 的初次验证结果。当前实现已采用项目目录结构和 Progress Checklist；最新验证请以仓库当前测试结果为准。
 
 > 使用 skill-creator 方法对技能进行验证测试、工作流闭环、脚本耦合、输入输出依赖的全面检查。
 > 日期：2026-08-22
