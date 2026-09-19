@@ -13,7 +13,7 @@
 │   │                          #   休整期类型示例：技能提升 / 家庭统筹 / 健康调整 / 自由职业 / 进修学习
 │   ├── projects.md            # ## 项目名 | 角色 | 时间段 + bullet 列表
 │   ├── skills.md              # 两段：## 通用能力（- 能力名（证据：强/中）｜场景：…）/ ## 专属能力（- 技能名（熟练度）｜佐证：…），规范见 references/skills-inventory-standard.md，确认后写入
-│   ├── skill_details.md       # ## 技能名 + - 情境/行动/结果/沉淀 五维块（深挖产物，规范见 references/skill-mining-playbook.md）
+│   ├── skill_details.md       # ## 技能名 + - 情境/行动/结果/沉淀 四维详情 + 反事实校验（反事实及边界存行为证据或 claim；规范见 references/skill-mining-playbook.md）
 │   ├── advantages.md          # - 优势条目
 │   ├── internal_notes.md      # 用户私下备注（不上简历的信息，如离职真实原因）
 │   ├── behavioral_evidence/   # 新增：STAR 行为证据碎片（自动维护，禁止手动编辑）
