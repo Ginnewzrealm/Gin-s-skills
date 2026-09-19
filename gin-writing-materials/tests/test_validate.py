@@ -1,6 +1,8 @@
 import os
 import sys
 import tempfile
+import subprocess
+import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
@@ -52,6 +54,26 @@ def test_validate_session_sufficient():
         assert result["confirmed_count"] == 5
 
 
+def test_validate_session_errors_make_session_invalid():
+    with tempfile.TemporaryDirectory() as tmp:
+        fragment.create(
+            material_root=tmp,
+            topic="坏碎片",
+            domain="writing",
+            method="A",
+            direction="钩子",
+            confidence="confirmed",
+            quote="",
+            scene="场景",
+            interpretation=[],
+            anchor="",
+            source="第1轮",
+        )
+        result = validate.validate_session(tmp, "坏碎片")
+        assert result["ok"] is False
+        assert result["errors"]
+
+
 def test_completeness_score_red_and_green():
     with tempfile.TemporaryDirectory() as tmp:
         # 空会话
@@ -98,3 +120,15 @@ def test_completeness_score_yellow_for_partial_sections():
         score = validate.completeness_score(tmp, "半")
         assert score["章节"]["current"] == 1
         assert score["章节"]["light"] == "🟡"
+
+
+def test_validate_cli_returns_nonzero_for_incomplete_session():
+    with tempfile.TemporaryDirectory() as tmp:
+        script = os.path.join(os.path.dirname(__file__), "..", "scripts", "validate.py")
+        result = subprocess.run(
+            [sys.executable, script, "--material-root", tmp, "--topic", "空"],
+            capture_output=True,
+            text=True,
+        )
+        assert result.returncode == 1
+        assert '"ok": false' in result.stdout

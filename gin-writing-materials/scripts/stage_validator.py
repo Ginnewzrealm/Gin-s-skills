@@ -27,7 +27,7 @@ def decide_next_stage(session: Dict, action: str = "mine") -> Dict[str, any]:
     stage = session.get("stage")
     status = session.get("status")
 
-    if status == "completed":
+    if status == "completed" and action == "mine":
         return {
             "current_key": "completed",
             "completed_keys": MINE_STEP_KEYS,
@@ -85,8 +85,11 @@ def validate_transition(current_key: str, next_key: str, action: str = "mine") -
 
     if next_idx == current_idx + 1:
         return {"valid": True, "reason": "正常前进"}
+    if next_idx <= current_idx and "可回环" in steps[current_idx]["tags"]:
+        return {"valid": True, "reason": "当前步骤允许回环"}
+
     if next_idx <= current_idx:
-        return {"valid": True, "reason": "用户要求回环到已完成步骤"}
+        return {"valid": False, "reason": f"当前步骤 {current_key} 不允许回环"}
 
     return {"valid": False, "reason": f"不能从 {current_key} 跳过到 {next_key}"}
 

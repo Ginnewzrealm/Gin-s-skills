@@ -27,6 +27,10 @@ def save_turn(
     anchor=None,
     source=None,
     interpretation=None,
+    role="core",
+    relation="support",
+    seed=None,
+    qud=None,
 ):
     """保存一轮对话。
 
@@ -47,6 +51,11 @@ def save_turn(
     """
     interpretation = interpretation or []
 
+    if seed is not None:
+        session.set_seed(material_root, topic, seed)
+    if qud:
+        session.set_qud(material_root, topic, **qud)
+
     # increment_round / record_method 内部会自动创建会话状态
     session.increment_round(material_root, topic)
     if method:
@@ -58,7 +67,8 @@ def save_turn(
     # 追加对话记录到 00-需求澄清.md
     log_path = common.conversation_log_path(material_root, topic)
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
-    entry = f"""## 第 {round_num} 轮
+    turn_id = f"T{round_num:03d}"
+    entry = f"""## {turn_id}（第 {round_num} 轮）
 
 **AI**：{question}
 
@@ -87,6 +97,9 @@ def save_turn(
             source=source or f"第{round_num}轮",
             question=question,
             raw_expression=answer,
+            source_turn=turn_id,
+            role=role,
+            relation=relation,
         )
         rel = os.path.relpath(
             frag_path,
@@ -109,7 +122,20 @@ def main():
     ap.add_argument("--anchor", default=None)
     ap.add_argument("--source", default=None)
     ap.add_argument("--interpretation", nargs="*", default=[])
+    ap.add_argument("--seed", default=None, help="原始灵感或思维碎片")
+    ap.add_argument("--main-qud", default=None, help="主问题")
+    ap.add_argument("--current-qud", default=None, help="当前子问题")
+    ap.add_argument("--return-to", default=None, help="回答后回收的主线标识")
+    ap.add_argument("--role", default="core", choices=sorted(fragment.VALID_ROLES))
+    ap.add_argument("--relation", default="support", choices=sorted(fragment.VALID_RELATIONS))
     args = ap.parse_args()
+
+    qud = {
+        "main_qud": args.main_qud,
+        "current_qud": args.current_qud,
+        "return_to": args.return_to,
+    }
+    qud = {key: value for key, value in qud.items() if value is not None}
 
     log_path, frag_path = save_turn(
         material_root=args.material_root,
@@ -122,6 +148,10 @@ def main():
         anchor=args.anchor,
         source=args.source,
         interpretation=args.interpretation,
+        role=args.role,
+        relation=args.relation,
+        seed=args.seed,
+        qud=qud or None,
     )
     print(f"已保存对话记录：{log_path}")
     if frag_path:

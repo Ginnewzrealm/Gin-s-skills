@@ -34,3 +34,25 @@ def test_topic_def_save_uses_defaults_for_empty_fields():
         content = open(path, encoding="utf-8").read()
         assert "空主题" in content
         assert "（待补充）" in content
+
+
+def test_topic_def_read_returns_structured_fields():
+    with tempfile.TemporaryDirectory() as tmp:
+        topic_def.save(
+            material_root=tmp,
+            topic="读取主题",
+            seed="最初的灵感",
+            key_question="核心问题",
+            scope={"读者": "创作者", "文体": "评论"},
+            success_criteria=["标准一"],
+            constraints=["约束一"],
+            hypotheses=["假设一"],
+        )
+        data = topic_def.read(tmp, "读取主题")
+        assert data["key_question"] == "核心问题"
+        assert data["seed"] == "最初的灵感"
+        assert data["scope"]["读者"] == "创作者"
+        assert data["scope"]["文体"] == "评论"
+        assert data["success_criteria"] == ["标准一"]
+        assert data["constraints"] == ["约束一"]
+        assert data["hypotheses"] == ["假设一"]

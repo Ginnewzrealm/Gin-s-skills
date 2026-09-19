@@ -95,6 +95,28 @@ def test_validate_fragment():
         assert errors == []
 
 
+def test_validate_rejects_empty_required_fields_and_invalid_metadata():
+    with tempfile.TemporaryDirectory() as tmp:
+        fid = fragment.create(
+            material_root=tmp,
+            topic="严格校验",
+            domain="writing",
+            method="A",
+            direction="未知章节",
+            confidence="maybe",
+            quote="",
+            scene="场景",
+            interpretation=[],
+            anchor="",
+            source="来源",
+        )
+        errors = fragment.validate(fid)
+        assert "字段为空：原话" in errors
+        assert "字段为空：解读" in errors
+        assert "非法 confidence：maybe" in errors
+        assert "非法 direction：未知章节" in errors
+
+
 def test_read_parses_frontmatter_and_body():
     with tempfile.TemporaryDirectory() as tmp:
         fid = fragment.create(
@@ -116,3 +138,65 @@ def test_read_parses_frontmatter_and_body():
         assert fm["confidence"] == "confirmed"
         assert "## 原话" in body
         assert "原话" in body
+
+
+def test_fragment_allows_unclassified_material_and_tracks_provenance():
+    with tempfile.TemporaryDirectory() as tmp:
+        fid = fragment.create(
+            material_root=tmp,
+            topic="灵感",
+            domain="writing",
+            method="A",
+            direction="",
+            confidence="confirmed",
+            quote="一个还没想清楚的念头",
+            scene="刚想到时",
+            interpretation=["需要继续采访"],
+            anchor="",
+            source="T001",
+            source_turn="T001",
+            role="unresolved",
+            relation="support",
+        )
+        errors = fragment.validate(fid)
+        fm, _ = fragment.read(fid)
+        assert errors == []
+        assert fm["source_turn"] == "T001"
+        assert fm["role"] == "unresolved"
+
+
+def test_validate_legacy_fragment_defaults_new_metadata():
+    with tempfile.TemporaryDirectory() as tmp:
+        path = os.path.join(tmp, "legacy.md")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write("""---
+topic: 旧主题
+domain: writing
+method: A
+direction: 钩子
+confidence: confirmed
+created: 20260822
+anchor:
+---
+
+## 用户原始表达
+旧表达
+
+## AI 追问
+旧问题
+
+## 原话
+旧原话
+
+## 场景
+旧场景
+
+## 解读
+旧解读
+
+## 关联锚点
+
+## 来源
+旧来源
+""")
+        assert fragment.validate(path) == []

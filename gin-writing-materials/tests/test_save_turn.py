@@ -1,6 +1,7 @@
 import os
 import sys
 import tempfile
+import subprocess
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 
@@ -58,3 +59,31 @@ def test_save_turn_records_method_in_session():
         save_turn.save_turn(tmp, "m", "q", "a", method="B")
         s = session.load_or_create(tmp, "m")
         assert "B" in s["methods_used"]
+
+
+def test_save_turn_records_source_turn_and_material_role():
+    with tempfile.TemporaryDirectory() as tmp:
+        _, frag_path = save_turn.save_turn(
+            material_root=tmp,
+            topic="灵感",
+            question="发生了什么？",
+            answer="我准备了三天，最后没有开始。",
+            direction="",
+            confidence="confirmed",
+            role="core",
+            relation="support",
+            interpretation=["准备和开始之间出现冲突"],
+        )
+        fm, _ = __import__("fragment").read(frag_path)
+        assert fm["source_turn"] == "T001"
+        assert fm["role"] == "core"
+        assert fm["relation"] == "support"
+
+
+def test_save_turn_cli_exposes_seed_and_provenance_options():
+    script = os.path.join(os.path.dirname(__file__), "..", "scripts", "save_turn.py")
+    result = subprocess.run([sys.executable, script, "--help"], capture_output=True, text=True)
+    assert result.returncode == 0
+    assert "--seed" in result.stdout
+    assert "--role" in result.stdout
+    assert "--relation" in result.stdout

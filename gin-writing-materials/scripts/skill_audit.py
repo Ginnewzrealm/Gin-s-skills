@@ -143,7 +143,7 @@ def main():
   → session.py（维护会话状态 JSON）
   → fragment.py（生成碎片 Markdown）
   → validate.py（统计 confirmed/章节覆盖）
-  → build_doc.py（输出 `{日期}-{主题拼音}-素材.md`）
+  → pipeline.py（校验并输出主题项目内的 `03-素材文档.md`）
   → human-writing（读取素材文档路径）
 """)
 

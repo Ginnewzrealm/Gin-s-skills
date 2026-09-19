@@ -9,6 +9,11 @@ import common
 
 
 REQUIRED_FIELDS = ["用户原始表达", "AI 追问", "原话", "场景", "解读", "关联锚点", "来源"]
+NON_EMPTY_FIELDS = ["原话", "场景", "解读", "来源"]
+VALID_CONFIDENCE = {"confirmed", "fuzzy"}
+VALID_DIRECTIONS = {"", "钩子", "核心论证", "案例支撑", "结尾升华"}
+VALID_ROLES = {"core", "necessary_support", "boundary", "background", "branch", "unresolved"}
+VALID_RELATIONS = {"support", "qualify", "revise", "refute"}
 
 
 def _next_seq(material_root, topic, date_str=None):
@@ -38,6 +43,9 @@ def create(
     source,
     question="",
     raw_expression="",
+    source_turn="",
+    role="core",
+    relation="support",
 ):
     date_str = common.today_str()
     seq = _next_seq(material_root, topic, date_str)
@@ -54,6 +62,9 @@ direction: {direction}
 confidence: {confidence}
 created: {common.today_str()}
 anchor: {anchor}
+source_turn: {source_turn}
+role: {role}
+relation: {relation}
 ---
 
 ## 用户原始表达
@@ -99,7 +110,33 @@ def validate(path):
     for field in REQUIRED_FIELDS:
         if f"## {field}" not in content:
             errors.append(f"缺少字段：{field}")
+        elif field in NON_EMPTY_FIELDS and not _extract_field(content, field):
+            errors.append(f"字段为空：{field}")
+    fm, _ = read(path)
+    confidence = fm.get("confidence", "")
+    if confidence not in VALID_CONFIDENCE:
+        errors.append(f"非法 confidence：{confidence}")
+    direction = fm.get("direction", "")
+    if direction not in VALID_DIRECTIONS:
+        errors.append(f"非法 direction：{direction}")
+    # role/relation 是 v0.6 新增字段；旧版碎片按默认核心素材兼容读取。
+    role = fm.get("role", "core")
+    if role not in VALID_ROLES:
+        errors.append(f"非法 role：{role}")
+    relation = fm.get("relation", "support")
+    if relation not in VALID_RELATIONS:
+        errors.append(f"非法 relation：{relation}")
     return errors
+
+
+def _extract_field(content, field):
+    """提取 Markdown 二级标题下的字段内容。"""
+    marker = f"## {field}\n"
+    if marker not in content:
+        return ""
+    value = content.split(marker, 1)[1]
+    value = value.split("\n## ", 1)[0]
+    return value.strip()
 
 
 def read(path):
