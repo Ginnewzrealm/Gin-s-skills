@@ -20,6 +20,8 @@
 | `gin-fitness-pdca` | PDCA 减脂：基于每日健康数据执行 M1-M9 代谢扫描，生成 PDCA 周报并写入飞书表格 |
 | `gin-question` | 问答技能：围绕问题构建高质量问答工作流（含评测工作区 `gin-question-workspace/`） |
 | `gin-problem-clarify` | 通用问题澄清：在动手前把模糊需求问清楚 |
+| `career-investment-audit` | 职业机会投入—产出审计：面试前初审、生成验证问题，面试后评估现金回报、成就点、可携带资产和风险 |
+| `achievement-point-coach` | 人生成就点澄清：核验基线变化、个人贡献、证据、持续性和目标匹配度 |
 | `gin-resume-builder` | 中文简历求职一站式工具：简历定制、求职信、面试准备、ATS 诊断等 |
 | `gin-story-brainstorm` | 脑洞大开——小说开书前的灵感孵化与世界观锻造 |
 | `gin-story-architect` | 嵌套剧本架构师——把设定素材整理成剧集/网文大纲并写入飞书多维表格 |
