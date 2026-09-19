@@ -92,11 +92,11 @@
 
 检查 frontmatter、触发描述、篇幅、引用路径、无关范围和未验证承诺。
 
-- [ ] **步骤 3：提交变更**
+- [x] **步骤 3：提交变更**
 
 运行：`git add career-investment-audit README.md docs/superpowers/plans/2026-09-18-career-investment-audit.md && git commit -m "feat: add career investment audit skill"`
 
-- [ ] **步骤 4：推送分支**
+- [x] **步骤 4：推送分支**
 
 运行：`git push -u origin codex/career-investment-audit`
 
