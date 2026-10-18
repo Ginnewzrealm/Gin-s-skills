@@ -18,30 +18,23 @@ class RenderMarkdownTests(unittest.TestCase):
 
     def test_contains_required_sections(self):
         output = render_markdown(self.data)
-        for heading in [
-            "流程概况与范围", "参与角色与使用载体", "场景流程",
-            "软件操作与状态变化", "产品待设计及待确认事项",
-            "事实来源与确认状态", "节点明细附录",
-        ]:
-            self.assertIn(heading, output)
+        self.assertIn("# 订单处理流程", output)
+        self.assertIn("### 场景一：正常接单", output)
+        self.assertNotIn("## 1.", output)
+        self.assertNotIn("|---", output)
 
     def test_renders_spacious_scenario_tree_with_roles(self):
         output = render_markdown(self.data)
         self.assertLess(output.index("正常接单"), output.index("订单信息异常确认"))
-        for text in ["场景一", "◇", "└─", "岗位角色", "软件位置", "软件操作", "状态变化"]:
+        for text in ["场景一", "◇", "└─"]:
             self.assertIn(text, output)
-        self.assertIn("主责：客服", output)
-        self.assertNotIn("执行者", output)
+        self.assertNotIn("主责：客服", output)
 
     def test_tree_contains_node_names_and_decision_details(self):
         output = render_markdown(self.data)
-        for node in self.data["nodes"]:
-            self.assertIn(node["name"], output)
-        self.assertIn("判断人：客服", output)
-        self.assertIn("依据：商品、收货信息和备注均无异常", output)
-        self.assertIn("判不了：无法判断时转交老板确认", output)
-        self.assertIn("● 开始", output)
-        self.assertIn("■ 结束（闭环）", output)
+        self.assertIn("核对订单信息", output)
+        self.assertNotIn("判断人：", output)
+        self.assertIn("→ 闭环", output)
 
     def test_empty_carrier_name_has_no_empty_parentheses(self):
         data = copy.deepcopy(self.data)
@@ -52,30 +45,42 @@ class RenderMarkdownTests(unittest.TestCase):
 
     def test_does_not_duplicate_pending_sections(self):
         output = render_markdown(self.data)
-        self.assertEqual(output.count("## 5. 产品待设计及待确认事项"), 1)
-        self.assertNotIn("## 9. 待确认问题", output)
+        self.assertNotIn("产品待设计", output)
+        self.assertNotIn("待确认问题", output)
 
     def test_contains_same_nodes_as_source(self):
         output = render_markdown(self.data)
         for node in self.data["nodes"]:
-            self.assertIn(node["id"], output)
-            self.assertIn(node["name"], output)
+            self.assertIn(node["software_operation"] or node["business_action"], output)
 
     def test_marks_inferred_and_unknown_content(self):
         output = render_markdown(self.data)
-        self.assertIn("推导", output)
-        self.assertIn("待确认", output)
-        self.assertIn("软件实现含义", output)
+        self.assertNotIn("软件实现含义", output)
+        self.assertNotIn("事实来源", output)
 
     def test_contains_exceptions_and_sources(self):
         output = render_markdown(self.data)
-        self.assertIn("客户不回复", output)
-        self.assertIn("S01", output)
+        self.assertIn("发送问题说明并等待客户回复", output)
+        self.assertNotIn("S01", output)
 
     def test_markdown_contains_rules_and_evidence_references(self):
         output = render_markdown(self.data)
-        self.assertIn("信息无异常时可以接单", output)
-        self.assertIn("S01、S02", output)
+        self.assertNotIn("证据引用", output)
+        self.assertNotIn("业务规则", output)
+
+    def test_scene_tree_uses_vertical_action_flow(self):
+        output = render_markdown(self.data)
+        scene_tree = output.split("### 场景一：正常接单", 1)[1].split("```", 2)[1]
+        self.assertIn("│\n▼", scene_tree)
+        self.assertNotIn(" → ", scene_tree.replace(" → 闭环", ""))
+        self.assertIn("客服在「订单平台／订单详情」打开订单详情并查看商品、地址和备注", scene_tree)
+        self.assertIn("客服在「订单平台／订单详情」点击「确认接单」", scene_tree)
+        self.assertIn("└─", scene_tree)
+
+    def test_decision_branch_and_target_are_on_separate_lines(self):
+        output = render_markdown(self.data)
+        self.assertNotRegex(output, r"├─[^\n]+→[^\n]+")
+        self.assertNotRegex(output, r"└─[^\n]+→[^\n]+")
 
 
 class RenderHtmlTests(unittest.TestCase):
@@ -100,17 +105,17 @@ class RenderHtmlTests(unittest.TestCase):
         self.assertNotEqual(rows["N03"], rows["N04"])
         self.assertLessEqual(max(levels.values()) - min(levels.values()) + 1, 6)
 
-    def test_contains_svg_nodes_and_details(self):
+    def test_contains_svg_nodes_without_detail_tables(self):
         output = render_html(self.data, self.template)
         self.assertIn("<svg", output)
-        self.assertIn("流程说明", output)
         for node in self.data["nodes"]:
             self.assertIn(f'data-node="{node["id"]}"', output)
-            self.assertIn(f'id="detail-{node["id"]}"', output)
+        self.assertNotIn('id="detail-', output)
+        self.assertNotIn("<table", output)
 
     def test_is_offline_and_escapes_user_text(self):
         data = copy.deepcopy(self.data)
-        data["nodes"][0]["business_fact"] = "客户输入 <script>alert(1)</script>"
+        data["nodes"][0]["name"] = "客户输入 <script>alert(1)</script>"
         output = render_html(data, self.template)
         self.assertNotIn("<script>alert(1)</script>", output)
         self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", output)
@@ -118,31 +123,28 @@ class RenderHtmlTests(unittest.TestCase):
 
     def test_includes_accessible_and_responsive_styles(self):
         output = render_html(self.data, self.template)
-        self.assertIn('tabindex="0"', output)
+        self.assertIn('role="img"', output)
         self.assertIn("@media(max-width:", output)
         self.assertIn("@media print", output)
         self.assertIn("prefers-reduced-motion", output)
 
     def test_marks_fact_inference_and_open_questions(self):
         output = render_html(self.data, self.template)
-        self.assertIn("已确认事实", output)
-        self.assertIn("软件实现含义", output)
-        self.assertIn("产品待设计事项", output)
+        self.assertNotIn("软件实现含义", output)
+        self.assertNotIn("产品待设计事项", output)
 
     def test_html_marks_draft_status(self):
         data = copy.deepcopy(self.data)
         data["status"] = "draft"
         output = render_html(data, self.template)
-        self.assertIn("草稿", output)
-        self.assertIn('class="document-status draft"', output)
+        self.assertNotIn('class="document-status draft"', output)
 
     def test_html_contains_sources_rules_and_edge_evidence(self):
         output = render_html(self.data, self.template)
-        self.assertIn("信息无异常时可以接单", output)
-        self.assertIn("客服确认主要查看商品、收货信息和备注", output)
-        self.assertIn("E01", output)
-        self.assertIn("新订单已生成", output)
-        self.assertIn("已确认事实", output)
+        self.assertNotIn("事实来源", output)
+        self.assertNotIn("<table", output)
+        self.assertNotIn('<text class="node-id"', output)
+        self.assertNotIn(">E01 ·", output)
 
     def test_long_svg_names_use_tspans(self):
         data = copy.deepcopy(self.data)
@@ -155,15 +157,13 @@ class RenderHtmlTests(unittest.TestCase):
         self.assertIn('class="scene-tab', output)
         self.assertIn('class="scene-panel', output)
         self.assertIn('class="decision-shape"', output)
-        self.assertIn("岗位角色", output)
-        self.assertIn("软件位置", output)
-        self.assertIn("软件操作", output)
         self.assertIn("print-all-scenes", output)
 
     def test_html_decision_cards_include_decision_details(self):
         output = render_html(self.data, self.template)
-        for text in ["决策点", "判断人", "判断依据", "判不了怎么办"]:
-            self.assertIn(text, output)
+        self.assertIn('class="decision-shape"', output)
+        for text in ["判断人", "判断依据", "判不了怎么办"]:
+            self.assertNotIn(text, output)
 
     def test_svg_ids_are_unique_across_scenes(self):
         output = render_html(self.data, self.template)

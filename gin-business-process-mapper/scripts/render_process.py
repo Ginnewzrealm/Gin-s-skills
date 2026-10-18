@@ -39,70 +39,39 @@ def render_markdown(data):
     edges = {edge["id"]: edge for edge in data["edges"]}
     scene_order = {"main": 0, "exception": 1, "variant": 2}
     scenes = sorted(data["scenes"], key=lambda scene: (scene_order[scene["type"]], scene["id"]))
-    lines = [
-        f"# {data['process_name']}", "",
-        f"> 版本：{data['version']}｜状态：{'已确认' if data['status'] == 'confirmed' else '草稿'}", "",
-        "## 1. 流程概况与范围", "",
-        f"- **流程编号**：{data['process_id']}",
-        f"- **目的**：{data['purpose']}",
-        f"- **起点**：{data['scope_start']}",
-        f"- **终点**：{data['scope_end']}", "",
-        "## 2. 参与角色与使用载体", "",
-        f"- **参与角色**：{_items(data['participants'])}",
-        f"- **系统与渠道**：{_items(data['systems_and_channels'])}", "",
-        "## 3. 场景流程", "",
-    ]
+    lines = [f"# {data['process_name']}", ""]
 
     for index, scene in enumerate(scenes, start=1):
         chinese_number = "一二三四五六七八九十"[index - 1] if index <= 10 else str(index)
         lines.extend([f"### 场景{chinese_number}：{scene['name']}", "", "```text"])
         lines.extend(_render_scene_tree(scene, nodes, edges))
-        lines.extend(["```", "", f"- **岗位角色**：主责：{'、'.join(scene['owner_roles'])}", f"- **分界线**：{scene['boundary_rule']}"])
-        lines.append("")
-
-    lines.extend(["## 4. 软件操作与状态变化", "", "| 节点 | 岗位角色 | 软件位置／线下载体 | 软件操作 | 状态变化 |", "|---|---|---|---|---|"])
-    for node in data["nodes"]:
-        carrier = CARRIER_LABELS[node["carrier"]]
-        if node["carrier_name"]:
-            carrier += f"（{node['carrier_name']}）"
-        location = node["software_location"] or carrier
-        lines.append(f"| {node['id']} {node['name']} | {node['actor_role']} | {location} | {node['software_operation'] or '待确认'} | {node['state_before'] or '未定义'} → {node['state_after'] or '未定义'} |")
-
-    lines.extend(["", "## 5. 产品待设计及待确认事项", ""])
-    if data["open_questions"]:
-        for question in data["open_questions"]:
-            lines.append(f"- {question}（待设计／待确认）")
-    else:
-        lines.append("- 无")
-    if data["future_expectations"]:
-        lines.extend(["", "### 未来期望（不属于现状主流程）", ""])
-        lines.extend(f"- {item}" for item in data["future_expectations"])
-
-    lines.extend(["", "## 6. 事实来源与确认状态", "", "| 来源 | 类型 | 摘要 |", "|---|---|---|"])
-    for source in data["sources"]:
-        lines.append(f"| {source['id']} | {source['type']} | {source['summary']} |")
-    lines.extend(["", "## 7. 节点明细附录", ""])
-    for node in data["nodes"]:
-        lines.extend([
-            f"### {node['id']} · {node['name']}", "",
-            f"- **确认状态**：{STATUS_LABELS[node['evidence_status']]}",
-            f"- **现状事实**：{node['business_fact']}",
-            f"- **岗位角色**：{node['actor_role']}",
-            f"- **实际动作**：{node['business_action']}",
-            f"- **业务规则**：{_items(node['rules'])}",
-            f"- **输入／输出**：{_items(node['inputs'])} → {_items(node['outputs'])}",
-            f"- **异常处理**：{_items(node['exceptions'])}",
-            f"- **软件实现含义**：{_items(node['interface_implications'])}",
-            f"- **证据引用**：{'、'.join(node['evidence_refs']) or '无'}", "",
-        ])
+        lines.extend(["```", ""])
     return "\n".join(lines)
 
 
-def _flow_node_text(node):
-    marker = {"start": "● 开始｜", "decision": "◇ ", "end": "■ 结束（闭环）｜"}.get(node.get("kind"), "")
+def _operation_text(node):
+    operation = node.get("software_operation") or node.get("business_action") or node["name"]
     location = node.get("software_location") or node.get("carrier_name")
-    context = " · ".join(item for item in [node.get("actor_role"), location] if item)
-    return f"{marker}{node['name']}" + (f"（{context}）" if context else "")
+    actor = "系统" if node.get("execution_mode") == "automatic" else node.get("actor_role")
+    if node.get("execution_mode") == "automatic" and location:
+        text = f"{operation}（{location}）"
+    elif actor and location and not str(operation).startswith(str(actor)):
+        text = f"{actor}在「{location}」{operation}"
+    elif location:
+        text = f"{operation}（{location}）"
+    else:
+        text = f"{actor}{operation}" if actor and not str(operation).startswith(str(actor)) else str(operation)
+    return text + (" → 闭环" if node.get("kind") == "end" else "")
+
+
+def _flow_node_lines(node):
+    if node.get("kind") != "decision":
+        return [_operation_text(node)]
+    question = str(node["name"]).rstrip("？?")
+    operation = _operation_text(node)
+    if operation and operation != node["name"]:
+        return [operation, "│", "▼", f"◇ {question}？"]
+    return [f"◇ {question}？"]
 
 
 def _render_scene_tree(scene, nodes, edges):
@@ -118,32 +87,37 @@ def _render_scene_tree(scene, nodes, edges):
     roots = list(dict.fromkeys(roots))
     result = []
 
-    def decision_details(node, prefix):
-        if node.get("kind") != "decision":
-            return
-        result.append(prefix + f"  判断人：{node['decider_role']}")
-        for criterion in node.get("criteria", []):
-            result.append(prefix + f"  依据：{criterion}")
-        result.append(prefix + f"  判不了：{node['fallback']}")
-
     def walk(node_id, prefix, visited, include_node=True):
         node = nodes[node_id]
         if include_node:
-            result.append(prefix + _flow_node_text(node))
-            decision_details(node, prefix)
+            result.extend(prefix + line for line in _flow_node_lines(node))
         choices = outgoing.get(node_id, [])
+        if len(choices) == 1 and node.get("kind") != "decision":
+            edge = choices[0]
+            target = edge["to"]
+            result.extend([prefix + "│", prefix + "▼"])
+            if target in visited or edge["kind"] in {"rework", "cancel"}:
+                result.append(prefix + f"↩ 返回「{nodes[target]['name']}」")
+                return
+            walk(target, prefix, visited | {target})
+            return
         for offset, edge in enumerate(choices):
             last = offset == len(choices) - 1
             branch = "└─" if last else "├─"
-            continuation = "  " if last else "│ "
+            continuation = "   " if last else "│  "
             target_node = nodes[edge["to"]]
-            result.append(prefix + branch + f" {edge['label']}：{edge['condition']} → " + _flow_node_text(target_node))
+            label = edge["label"] or "流转"
+            condition = f"（{edge['condition']}）" if edge.get("condition") else ""
+            result.append(prefix + branch + f" {label}{condition}")
+            result.append(prefix + continuation + "│")
             target = edge["to"]
             if target in visited or edge["kind"] in {"rework", "cancel"}:
-                result.append(prefix + continuation + f"  └─ 回到「{nodes[target]['name']}」")
+                result.append(prefix + continuation + f"└─ ↩ 返回「{nodes[target]['name']}」")
             else:
-                child_prefix = prefix + continuation + "  "
-                decision_details(target_node, child_prefix)
+                child_prefix = prefix + continuation + "   "
+                target_lines = _flow_node_lines(target_node)
+                result.append(prefix + continuation + "└─ " + target_lines[0])
+                result.extend(child_prefix + line for line in target_lines[1:])
                 walk(target, child_prefix, visited | {target}, include_node=False)
             if not last:
                 result.append("")
@@ -232,7 +206,7 @@ def _build_svg(data, svg_key="flow"):
         title = f'{edge["id"]}｜{edge["condition"]}｜{evidence}｜证据：{refs}'
         parts.append(f'<path class="connector {kind}" style="marker-end:url(#{svg_key}-arrow)" d="{path}"><title>{html.escape(title)}</title></path>')
         label = edge["label"] or "流转"
-        edge_text = f'{edge["id"]} · {label}'
+        edge_text = label
         parts.append(f'<text class="edge-label" x="{label_x}" y="{label_y}">{html.escape(edge_text)}</text>')
     branched_targets = {edge["to"] for edge in data["edges"] if edge["kind"] in {"exception", "timeout", "cancel", "rework"}}
     for node in data["nodes"]:
@@ -257,10 +231,9 @@ def _build_svg(data, svg_key="flow"):
                 f'<tspan x="{node_width / 2}" y="60">{second}</tspan></text>'
             )
         parts.append(
-            f'<g class="{node_class}" data-node="{html.escape(node["id"])}" tabindex="0" role="link" '
-            f'aria-label="查看 {html.escape(node["id"])} {name}说明" transform="translate({x} {y})">'
-            f'{shape}<text class="node-id" x="{node_width / 2}" y="20">{html.escape(node["id"])}</text>'
-            f'{name_markup}</g>'
+            f'<g class="{node_class}" data-node="{html.escape(node["id"])}" '
+            f'aria-label="{name}" transform="translate({x} {y})">'
+            f'{shape}{name_markup}</g>'
         )
     parts.append("</svg>")
     return "".join(parts)
@@ -305,24 +278,6 @@ def _node_card(node):
 
 def render_html(data, template):
     _require_valid(data)
-    cards = "".join(_node_card(node) for node in data["nodes"])
-    questions = data["open_questions"]
-    futures = data["future_expectations"]
-    pending_items = "".join(f"<li>{html.escape(item)}</li>" for item in questions)
-    pending_items += "".join(f"<li>未来期望：{html.escape(item)}</li>" for item in futures)
-    pending = (
-        f'<aside class="pending"><h3>产品待设计事项与待确认问题</h3><ul>{pending_items or "<li>无</li>"}</ul></aside>'
-    )
-    source_rows = "".join(
-        f'<tr><td>{html.escape(source["id"])}</td><td>{html.escape(source["type"])}</td><td>{html.escape(source["summary"])}</td></tr>'
-        for source in data["sources"]
-    )
-    source_body = source_rows or '<tr><td colspan="3">无</td></tr>'
-    sources = (
-        '<section class="sources"><h3>事实来源</h3><table><thead><tr><th>来源</th><th>类型</th><th>摘要</th></tr></thead>'
-        f'<tbody>{source_body}</tbody></table></section>'
-    )
-    node_by_id = {node["id"]: node for node in data["nodes"]}
     edge_by_id = {edge["id"]: edge for edge in data["edges"]}
     scene_order = {"main": 0, "exception": 1, "variant": 2}
     scenes = sorted(data["scenes"], key=lambda scene: (scene_order[scene["type"]], scene["id"]))
@@ -334,31 +289,14 @@ def render_html(data, template):
         scene_edges = [edge_by_id[edge_id] for edge_id in scene["edge_ids"]]
         used_ids = {edge["from"] for edge in scene_edges} | {edge["to"] for edge in scene_edges}
         scene_data = {**data, "nodes": [node for node in data["nodes"] if node["id"] in used_ids], "edges": scene_edges}
-        edge_rows = "".join(
-            f'<tr><td>{html.escape(edge["id"])}</td><td>{html.escape(edge["label"] or "流转")}</td>'
-            f'<td>{html.escape(edge["condition"])}</td><td>{html.escape(STATUS_LABELS[edge["evidence_status"]])}</td>'
-            f'<td>{html.escape("、".join(edge["evidence_refs"]) or "无")}</td></tr>'
-            for edge in scene_edges
-        )
-        edge_details = (
-            '<div class="edge-details"><h3>流转条件</h3><table><thead><tr><th>连线</th><th>名称</th><th>进入条件</th><th>确认状态</th><th>证据</th></tr></thead>'
-            f'<tbody>{edge_rows}</tbody></table></div>'
-        )
         panels.append(
             f'<section class="scene-panel{active}" data-scene-panel="{html.escape(scene["id"])}">'
-            f'<div class="scene-caption"><strong>{html.escape(scene["name"])}</strong><span>主责：{html.escape("、".join(scene["owner_roles"]))}</span><span>{html.escape(scene["boundary_rule"])}</span></div>'
-            f'<div class="diagram-shell">{_build_svg(scene_data, scene["id"].lower())}</div>{edge_details}</section>'
+            f'<div class="diagram-shell">{_build_svg(scene_data, scene["id"].lower())}</div></section>'
         )
     scene_markup = f'<nav class="scene-tabs" aria-label="流程场景">{"".join(tabs)}</nav><div class="print-all-scenes">{"".join(panels)}</div>'
     replacements = {
         "{{TITLE}}": html.escape(data["process_name"]),
-        "{{VERSION}}": html.escape(data["version"]),
         "{{SCENES}}": scene_markup,
-        "{{CARDS}}": cards,
-        "{{PENDING}}": pending,
-        "{{SOURCES}}": sources,
-        "{{STATUS_LABEL}}": "已确认" if data["status"] == "confirmed" else "草稿",
-        "{{STATUS_CLASS}}": "confirmed" if data["status"] == "confirmed" else "draft",
     }
     output = template
     for marker, value in replacements.items():
