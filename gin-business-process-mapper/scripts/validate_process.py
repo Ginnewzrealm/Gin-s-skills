@@ -27,7 +27,7 @@ EDGE_KINDS = {"normal", "decision", "exception", "timeout", "cancel", "rework"}
 NODE_KINDS = {"start", "action", "decision", "end"}
 SCENE_TYPES = {"main", "exception", "variant"}
 DECISION_FIELDS = {"decider_role", "criteria", "fallback"}
-VAGUE_PHRASES = {"处理", "处理一下", "跟进", "跟进一下", "弄一下", "看情况"}
+VAGUE_PHRASES = {"处理", "跟进", "对接", "协调", "弄一下", "看情况", "及时", "尽快", "完善", "优化"}
 
 
 def _missing(item, required):
@@ -60,7 +60,7 @@ def _has_cycle(node_ids, edges):
 
 def _is_vague(value):
     text = re.sub(r"[，。；、,.\s]", "", str(value or ""))
-    return text in VAGUE_PHRASES
+    return any(phrase in text for phrase in VAGUE_PHRASES)
 
 
 def lint(data):
@@ -183,6 +183,7 @@ def validate(data):
         scenes = []
     valid_edge_ids = set(edge_ids)
     covered_edge_ids = set()
+    edge_owners = {}
     has_main = False
     for index, scene in enumerate(scenes):
         label = f"scenes[{index}]"
@@ -198,10 +199,17 @@ def validate(data):
             if edge_id not in valid_edge_ids:
                 errors.append(f"{label} 引用了不存在的连线：{edge_id}")
             covered_edge_ids.add(edge_id)
+            edge_owners.setdefault(edge_id, []).append(scene.get("id", label))
+            edge = next((item for item in edges if isinstance(item, dict) and item.get("id") == edge_id), None)
+            if scene.get("type") == "main" and edge and edge.get("kind") in {"exception", "rework", "cancel", "timeout"}:
+                errors.append(f"{label} 主场景不能包含异常、返工、取消或超时连线：{edge_id}")
         if scene.get("type") != "main" and not str(scene.get("boundary_rule", "")).strip():
             errors.append(f"{label} 非主场景必须填写 boundary_rule")
     if scenes and not has_main:
         errors.append("scenes 至少包含一个 main 场景")
+    for edge_id, owners in edge_owners.items():
+        if len(owners) > 1:
+            errors.append(f"连线 {edge_id} 只能归属一个场景，当前归属：{', '.join(owners)}")
     if data.get("status") == "confirmed":
         uncovered = sorted(valid_edge_ids - covered_edge_ids)
         if uncovered:

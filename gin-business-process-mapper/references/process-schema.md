@@ -51,7 +51,7 @@ JSON 是 Markdown 与 HTML 的唯一数据源。
 
 必填：`id`、`name`、`type`、`owner_roles`、`edge_ids`、`boundary_rule`。
 
-`type` 只能是 `main`、`exception` 或 `variant`。至少有一个主场景；终稿中的每条连线必须归属至少一个场景。`owner_roles` 只填写岗位角色。`boundary_rule` 用业务语言说明何时进入、何时结束或返回其他场景。
+`type` 只能是 `main`、`exception` 或 `variant`。至少有一个主场景；终稿中的每条连线必须且只能归属一个场景。主场景不得包含 `exception`、`timeout`、`cancel` 或 `rework` 连线，跨场景关系用 `boundary_rule` 说明，不重复登记连线。`owner_roles` 只填写岗位角色。`boundary_rule` 用业务语言说明何时进入、何时结束或返回其他场景。
 
 ## 证据来源
 

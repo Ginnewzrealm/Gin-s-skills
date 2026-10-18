@@ -83,6 +83,21 @@ class ValidateProcessTests(unittest.TestCase):
         data["nodes"][2]["business_action"] = "处理一下"
         self.assertTrue(any("表达过于模糊" in warning for warning in lint(data)))
 
+    def test_vague_word_inside_business_action_is_a_warning(self):
+        data = copy.deepcopy(self.fixture)
+        data["nodes"][2]["business_action"] = "处理订单"
+        self.assertTrue(any("表达过于模糊" in warning for warning in lint(data)))
+
+    def test_edge_can_belong_to_only_one_scene(self):
+        data = copy.deepcopy(self.fixture)
+        data["scenes"][1]["edge_ids"].append("E02")
+        self.assertTrue(any("只能归属一个场景" in error for error in validate(data)))
+
+    def test_main_scene_rejects_exception_edges(self):
+        data = copy.deepcopy(self.fixture)
+        data["scenes"][0]["edge_ids"].append("E03")
+        self.assertTrue(any("主场景不能包含异常" in error for error in validate(data)))
+
 
 if __name__ == "__main__":
     unittest.main()

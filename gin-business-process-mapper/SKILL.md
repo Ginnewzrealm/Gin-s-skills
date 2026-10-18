@@ -39,10 +39,11 @@ description: Use when a user wants to reconstruct, document, or clarify how a co
 2. 从最近一次真实案例开始，逐动作追踪发生、知晓、处理、交接、完成和异常；对软件步骤继续还原系统／页面、选择或填写、提交动作和提交后的状态变化。
 3. 阶段性复述，仅确认用户已经说过的内容。
 4. 主路径明确后，用具体生活化场景补充真实存在的异常与返工。
-5. 按 [references/process-schema.md](references/process-schema.md) 整理结构化 JSON；建立节点时读取该文件。
-6. 先向用户展示文字草案：主路径、异常、事实／推导／待设计事项及待确认问题。
-7. 用户确认草案后，运行验证器；验证通过才生成终稿。
-8. 使用生成器从同一 JSON 同时生成 Markdown 与 HTML。输出时读取 [references/output-rules.md](references/output-rules.md)。
+5. 按主场景、异常场景、变体场景切分流程；一条连线只归属一个场景。为每个非主场景写清何时进入、何时结束或返回，并逐条请用户确认。
+6. 按 [references/process-schema.md](references/process-schema.md) 整理结构化 JSON；建立节点时读取该文件。
+7. 先向用户展示文字草案：主路径、异常、事实／推导／待设计事项及待确认问题。
+8. 用户确认草案后，运行验证器；验证通过才生成终稿。
+9. 使用生成器从同一 JSON 同时生成 Markdown 与 HTML。输出时读取 [references/output-rules.md](references/output-rules.md)。
 
 ## 确认关卡
 
