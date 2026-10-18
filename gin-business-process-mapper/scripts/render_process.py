@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render validated business-process JSON into Markdown and offline HTML."""
+"""Render validated business-process JSON into a Markdown flow tree."""
 
 import argparse
 import html
@@ -310,20 +310,17 @@ def _safe_name(name):
 
 
 def main(argv=None):
-    parser = argparse.ArgumentParser(description="从结构化 JSON 生成流程 Markdown 和离线 HTML")
+    parser = argparse.ArgumentParser(description="从结构化 JSON 生成 Markdown 流程树")
     parser.add_argument("input", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--overwrite", action="store_true")
     args = parser.parse_args(argv)
     data = json.loads(args.input.read_text(encoding="utf-8"))
     _require_valid(data)
-    template_path = Path(__file__).resolve().parents[1] / "assets/process-report-template.html"
-    template = template_path.read_text(encoding="utf-8")
     args.output_dir.mkdir(parents=True, exist_ok=True)
     base = _safe_name(data["process_name"])
     outputs = {
         args.output_dir / f"{base}-流程说明.md": render_markdown(data),
-        args.output_dir / f"{base}-流程图.html": render_html(data, template),
     }
     existing = [str(path) for path in outputs if path.exists()]
     if existing and not args.overwrite:

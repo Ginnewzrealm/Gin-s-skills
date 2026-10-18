@@ -1,6 +1,6 @@
 ---
 name: gin-business-process-mapper
-description: Use when a user wants to reconstruct, document, or clarify how a company actually performs a business process through natural-language interviews, especially when non-technical staff describe daily actions, handoffs, software use, offline work, decisions, and exceptions, and the result should be a Markdown process document plus an offline HTML flowchart. Do not use for process optimization alone, UI prototyping alone, or a process already fully specified for direct implementation.
+description: Use when a user wants to reconstruct, document, or clarify how a company actually performs a business process through natural-language interviews, especially when non-technical staff describe daily actions, handoffs, software use, offline work, decisions, and exceptions, and the result should be a complete Markdown flow tree. Do not use for process optimization alone, UI prototyping alone, or a process already fully specified for direct implementation.
 ---
 
 # 企业流程梳理
@@ -39,11 +39,11 @@ description: Use when a user wants to reconstruct, document, or clarify how a co
 2. 从最近一次真实案例开始，逐动作追踪发生、知晓、处理、交接、完成和异常；对软件步骤继续还原系统／页面、选择或填写、提交动作和提交后的状态变化。一个节点只表达一个可观察动作或一个系统结果；打开、填写、选择、提交、生成单据、更新状态或库存必须拆成独立节点。
 3. 阶段性复述，仅确认用户已经说过的内容。
 4. 主路径明确后，用具体生活化场景补充真实存在的异常与返工。
-5. 按主场景、异常场景、变体场景切分流程；一条连线只归属一个场景。为每个非主场景写清何时进入、何时结束或返回，并逐条请用户确认。
+5. 按业务触发情境划分场景。一个场景必须是一棵完整流程树：从入口动作开始，遇到每个决策点都展开全部出口，并把每条分支继续写到闭环、明确回流点或已确认的流程边界。不得把同一决策的正常、异常、取消或返工出口拆成不同场景。不同场景可以复用相同连线。
 6. 按 [references/process-schema.md](references/process-schema.md) 整理结构化 JSON；建立节点时读取该文件。
 7. 先向用户展示文字草案：主路径、异常、事实／推导／待设计事项及待确认问题。
 8. 用户确认草案后，运行验证器；验证通过才生成终稿。
-9. 使用生成器从同一 JSON 同时生成 Markdown 与 HTML。输出时读取 [references/output-rules.md](references/output-rules.md)。
+9. 使用生成器输出 Markdown 流程树。输出时读取 [references/output-rules.md](references/output-rules.md)。
 
 ## 确认关卡
 
@@ -51,9 +51,8 @@ description: Use when a user wants to reconstruct, document, or clarify how a co
 - 用户说“不确定”的内容保留 `unknown`；
 - 草案未确认时不得把文件标为终稿；
 - 验证器失败时说明具体问题，不生成终稿；
-- Markdown 正文必须按场景输出留有空白的纵向等宽树状流程；每个界面动作和系统结果独占一行，用竖线和向下箭头连接，不得用横向箭头链压缩；
-- HTML 必须按场景输出横向流程图，明确开始、动作、决策、结束和返工回路；
-- 最终交付必须同时包含 Markdown 和 HTML，场景、节点编号与分支一致。
+- Markdown 正文必须是流程树：根节点表示场景入口，动作和系统结果独占一行，`◇` 表示决策点，`├─`／`└─` 表示该决策的全部分支，`│`／`▼` 表示继续向下；不得用横向箭头链压缩，不得遗漏或跨场景拆散决策出口；
+- 最终只交付 Markdown 文档；不得额外生成 HTML、表格、节点清单或说明报告。
 
 ## 工具入口
 

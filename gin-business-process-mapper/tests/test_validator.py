@@ -88,15 +88,24 @@ class ValidateProcessTests(unittest.TestCase):
         data["nodes"][2]["business_action"] = "处理订单"
         self.assertTrue(any("表达过于模糊" in warning for warning in lint(data)))
 
-    def test_edge_can_belong_to_only_one_scene(self):
+    def test_edge_can_be_shared_by_complete_scenes(self):
         data = copy.deepcopy(self.fixture)
-        data["scenes"][1]["edge_ids"].append("E02")
-        self.assertTrue(any("只能归属一个场景" in error for error in validate(data)))
+        second = copy.deepcopy(data["scenes"][0])
+        second["id"] = "SC02"
+        second["name"] = "订单复核"
+        second["type"] = "variant"
+        data["scenes"].append(second)
+        self.assertFalse(any("只能归属一个场景" in error for error in validate(data)))
 
-    def test_main_scene_rejects_exception_edges(self):
+    def test_main_scene_can_include_exception_edges(self):
         data = copy.deepcopy(self.fixture)
-        data["scenes"][0]["edge_ids"].append("E03")
-        self.assertTrue(any("主场景不能包含异常" in error for error in validate(data)))
+        self.assertFalse(any("主场景不能包含异常" in error for error in validate(data)))
+
+    def test_scene_must_include_every_exit_of_its_decision(self):
+        data = copy.deepcopy(self.fixture)
+        data["scenes"][0]["edge_ids"].remove("E03")
+        errors = validate(data)
+        self.assertTrue(any("决策节点 N02 的全部出口" in error for error in errors))
 
     def test_source_requires_id_type_and_summary(self):
         data = copy.deepcopy(self.fixture)
@@ -110,7 +119,7 @@ class ValidateProcessTests(unittest.TestCase):
 
     def test_scene_ids_must_be_unique(self):
         data = copy.deepcopy(self.fixture)
-        data["scenes"][1]["id"] = data["scenes"][0]["id"]
+        data["scenes"].append(copy.deepcopy(data["scenes"][0]))
         self.assertTrue(any("场景 ID 重复" in error for error in validate(data)))
 
     def test_scene_requires_nonempty_name_and_owner_roles(self):

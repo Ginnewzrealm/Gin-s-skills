@@ -19,8 +19,7 @@
     {"id":"E03","from":"N02","to":"N01","label":"退回补充","condition":"资料不齐全","kind":"rework","evidence_status":"confirmed","evidence_refs":["S01"]}
   ],
   "scenes": [
-    {"id":"SC01","name":"正常审批","type":"main","owner_roles":["销售","老板"],"edge_ids":["E01","E02"],"boundary_rule":"销售提交申请后进入；老板审批通过后结束"},
-    {"id":"SC02","name":"资料退回重办","type":"exception","owner_roles":["销售","老板"],"edge_ids":["E03"],"boundary_rule":"资料不齐全时进入；销售补充后返回提交申请"}
+    {"id":"SC01","name":"申请审批","type":"main","owner_roles":["销售","老板"],"edge_ids":["E01","E02","E03"],"boundary_rule":"销售提交申请后进入；完整展开通过与退回重办分支"}
   ],
   "open_questions": [],
   "future_expectations": [],

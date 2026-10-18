@@ -1,6 +1,6 @@
 # 流程数据结构
 
-JSON 是 Markdown 与 HTML 的唯一数据源。
+JSON 是 Markdown 流程树的唯一数据源。
 
 ## 流程对象
 
@@ -51,7 +51,11 @@ JSON 是 Markdown 与 HTML 的唯一数据源。
 
 必填：`id`、`name`、`type`、`owner_roles`、`edge_ids`、`boundary_rule`。
 
-`type` 只能是 `main`、`exception` 或 `variant`。至少有一个主场景；终稿中的每条连线必须且只能归属一个场景。主场景不得包含 `exception`、`timeout`、`cancel` 或 `rework` 连线，跨场景关系用 `boundary_rule` 说明，不重复登记连线。`owner_roles` 只填写岗位角色。`boundary_rule` 用业务语言说明何时进入、何时结束或返回其他场景。
+`type` 只能是 `main`、`exception` 或 `variant`，且至少有一个主场景。
+
+场景按完整业务情境划分，不按某一条决策分支划分。场景的 `edge_ids` 必须组成一棵完整流程树：只要场景包含某个决策节点，就必须包含该节点在全流程数据中的全部出边，包括正常、异常、超时、取消和返工出口。不得把同一决策的出口拆到不同场景。不同业务情境需要复用共同路径时，同一连线可以出现在多个场景中。
+
+`owner_roles` 只填写岗位角色。`boundary_rule` 用业务语言说明何时进入，以及各叶子分支在哪里闭环、回流或到达已确认的流程边界。
 
 ## 证据来源
 

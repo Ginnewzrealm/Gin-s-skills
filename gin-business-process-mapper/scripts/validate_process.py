@@ -207,8 +207,11 @@ def validate(data):
         scenes = []
     valid_edge_ids = set(edge_ids)
     covered_edge_ids = set()
-    edge_owners = {}
     has_main = False
+    outgoing_edge_ids = {}
+    for edge in edges:
+        if isinstance(edge, dict) and edge.get("id"):
+            outgoing_edge_ids.setdefault(edge.get("from"), set()).add(edge["id"])
     scene_ids = [scene.get("id") for scene in scenes if isinstance(scene, dict)]
     duplicate_scene_ids = sorted({scene_id for scene_id in scene_ids if scene_id and scene_ids.count(scene_id) > 1})
     if duplicate_scene_ids:
@@ -237,17 +240,24 @@ def validate(data):
             if edge_id not in valid_edge_ids:
                 errors.append(f"{label} 引用了不存在的连线：{edge_id}")
             covered_edge_ids.add(edge_id)
-            edge_owners.setdefault(edge_id, []).append(scene.get("id", label))
-            edge = next((item for item in edges if isinstance(item, dict) and item.get("id") == edge_id), None)
-            if scene.get("type") == "main" and edge and edge.get("kind") in {"exception", "rework", "cancel", "timeout"}:
-                errors.append(f"{label} 主场景不能包含异常、返工、取消或超时连线：{edge_id}")
         if scene.get("type") != "main" and not str(scene.get("boundary_rule", "")).strip():
             errors.append(f"{label} 非主场景必须填写 boundary_rule")
+        scene_edge_set = set(scene_edge_ids)
+        involved_nodes = {
+            endpoint
+            for edge in edges if isinstance(edge, dict) and edge.get("id") in scene_edge_set
+            for endpoint in (edge.get("from"), edge.get("to"))
+        }
+        for node in nodes:
+            if not isinstance(node, dict) or node.get("kind") != "decision" or node.get("id") not in involved_nodes:
+                continue
+            missing_exits = sorted(outgoing_edge_ids.get(node["id"], set()) - scene_edge_set)
+            if missing_exits:
+                errors.append(
+                    f"{label} 必须包含决策节点 {node['id']} 的全部出口，缺少：{', '.join(missing_exits)}"
+                )
     if scenes and not has_main:
         errors.append("scenes 至少包含一个 main 场景")
-    for edge_id, owners in edge_owners.items():
-        if len(owners) > 1:
-            errors.append(f"连线 {edge_id} 只能归属一个场景，当前归属：{', '.join(owners)}")
     if data.get("status") == "confirmed":
         uncovered = sorted(valid_edge_ids - covered_edge_ids)
         if uncovered:
