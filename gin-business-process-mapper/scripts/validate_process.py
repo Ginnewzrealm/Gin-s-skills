@@ -20,6 +20,8 @@ NODE_FIELDS = {
 }
 EDGE_FIELDS = {"id", "from", "to", "label", "condition", "kind", "evidence_status", "evidence_refs"}
 SCENE_FIELDS = {"id", "name", "type", "owner_roles", "edge_ids", "boundary_rule"}
+SOURCE_FIELDS = {"id", "type", "summary"}
+SOURCE_TYPES = {"conversation", "document", "screenshot", "confirmation"}
 EVIDENCE_STATUSES = {"confirmed", "inferred", "unknown"}
 EXECUTION_MODES = {"manual", "automatic", "assisted"}
 CARRIERS = {"system", "chat", "email", "spreadsheet", "paper", "onsite", "other"}
@@ -108,7 +110,29 @@ def validate(data):
     if ids != expected_ids:
         errors.append(f"节点 ID 必须从 N01 开始连续排列，预期 {expected_ids}，实际 {ids}")
 
-    source_ids = {source.get("id") for source in data.get("sources", []) if isinstance(source, dict)}
+    sources = data.get("sources", [])
+    if not isinstance(sources, list):
+        errors.append("sources 必须是数组")
+        sources = []
+    source_id_list = []
+    for index, source in enumerate(sources):
+        label = f"sources[{index}]"
+        if not isinstance(source, dict):
+            errors.append(f"{label} 必须是对象")
+            continue
+        for field in _missing(source, SOURCE_FIELDS):
+            errors.append(f"{label} 缺少字段：{field}")
+        for field in SOURCE_FIELDS:
+            if field in source and not str(source[field]).strip():
+                errors.append(f"{label}.{field} 不能为空")
+        if source.get("type") and source.get("type") not in SOURCE_TYPES:
+            errors.append(f"{label} type 无效")
+        if source.get("id"):
+            source_id_list.append(source["id"])
+    duplicate_source_ids = sorted({source_id for source_id in source_id_list if source_id_list.count(source_id) > 1})
+    if duplicate_source_ids:
+        errors.append(f"来源 ID 重复：{', '.join(duplicate_source_ids)}")
+    source_ids = set(source_id_list)
     for index, node in enumerate(nodes, start=1):
         if not isinstance(node, dict):
             errors.append(f"nodes[{index - 1}] 必须是对象")
@@ -185,6 +209,10 @@ def validate(data):
     covered_edge_ids = set()
     edge_owners = {}
     has_main = False
+    scene_ids = [scene.get("id") for scene in scenes if isinstance(scene, dict)]
+    duplicate_scene_ids = sorted({scene_id for scene_id in scene_ids if scene_id and scene_ids.count(scene_id) > 1})
+    if duplicate_scene_ids:
+        errors.append(f"场景 ID 重复：{', '.join(duplicate_scene_ids)}")
     for index, scene in enumerate(scenes):
         label = f"scenes[{index}]"
         if not isinstance(scene, dict):
@@ -192,10 +220,20 @@ def validate(data):
             continue
         for field in _missing(scene, SCENE_FIELDS):
             errors.append(f"{label} 缺少字段：{field}")
+        for field in ("id", "name"):
+            if field in scene and not str(scene[field]).strip():
+                errors.append(f"{label}.{field} 不能为空")
+        owner_roles = scene.get("owner_roles", [])
+        if not isinstance(owner_roles, list) or not owner_roles or any(not isinstance(role, str) or not role.strip() for role in owner_roles):
+            errors.append(f"{label}.owner_roles 必须是非空数组，且每项为非空角色名称")
+        scene_edge_ids = scene.get("edge_ids", [])
+        if not isinstance(scene_edge_ids, list):
+            errors.append(f"{label}.edge_ids 必须是数组")
+            scene_edge_ids = []
         if scene.get("type") not in SCENE_TYPES:
             errors.append(f"{label} type 无效")
         has_main = has_main or scene.get("type") == "main"
-        for edge_id in scene.get("edge_ids", []):
+        for edge_id in scene_edge_ids:
             if edge_id not in valid_edge_ids:
                 errors.append(f"{label} 引用了不存在的连线：{edge_id}")
             covered_edge_ids.add(edge_id)

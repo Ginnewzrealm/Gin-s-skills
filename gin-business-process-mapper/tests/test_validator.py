@@ -98,6 +98,34 @@ class ValidateProcessTests(unittest.TestCase):
         data["scenes"][0]["edge_ids"].append("E03")
         self.assertTrue(any("主场景不能包含异常" in error for error in validate(data)))
 
+    def test_source_requires_id_type_and_summary(self):
+        data = copy.deepcopy(self.fixture)
+        del data["sources"][0]["summary"]
+        self.assertTrue(any("sources[0] 缺少字段：summary" in error for error in validate(data)))
+
+    def test_source_ids_must_be_unique(self):
+        data = copy.deepcopy(self.fixture)
+        data["sources"][1]["id"] = data["sources"][0]["id"]
+        self.assertTrue(any("来源 ID 重复" in error for error in validate(data)))
+
+    def test_scene_ids_must_be_unique(self):
+        data = copy.deepcopy(self.fixture)
+        data["scenes"][1]["id"] = data["scenes"][0]["id"]
+        self.assertTrue(any("场景 ID 重复" in error for error in validate(data)))
+
+    def test_scene_requires_nonempty_name_and_owner_roles(self):
+        data = copy.deepcopy(self.fixture)
+        data["scenes"][0]["name"] = ""
+        data["scenes"][0]["owner_roles"] = []
+        errors = validate(data)
+        self.assertTrue(any("name 不能为空" in error for error in errors))
+        self.assertTrue(any("owner_roles 必须是非空数组" in error for error in errors))
+
+    def test_scene_edge_ids_must_be_an_array(self):
+        data = copy.deepcopy(self.fixture)
+        data["scenes"][0]["edge_ids"] = "E01"
+        self.assertTrue(any("edge_ids 必须是数组" in error for error in validate(data)))
+
 
 if __name__ == "__main__":
     unittest.main()

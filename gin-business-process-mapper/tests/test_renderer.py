@@ -72,6 +72,11 @@ class RenderMarkdownTests(unittest.TestCase):
         self.assertIn("客户不回复", output)
         self.assertIn("S01", output)
 
+    def test_markdown_contains_rules_and_evidence_references(self):
+        output = render_markdown(self.data)
+        self.assertIn("信息无异常时可以接单", output)
+        self.assertIn("S01、S02", output)
+
 
 class RenderHtmlTests(unittest.TestCase):
     @classmethod
@@ -123,6 +128,27 @@ class RenderHtmlTests(unittest.TestCase):
         self.assertIn("已确认事实", output)
         self.assertIn("软件实现含义", output)
         self.assertIn("产品待设计事项", output)
+
+    def test_html_marks_draft_status(self):
+        data = copy.deepcopy(self.data)
+        data["status"] = "draft"
+        output = render_html(data, self.template)
+        self.assertIn("草稿", output)
+        self.assertIn('class="document-status draft"', output)
+
+    def test_html_contains_sources_rules_and_edge_evidence(self):
+        output = render_html(self.data, self.template)
+        self.assertIn("信息无异常时可以接单", output)
+        self.assertIn("客服确认主要查看商品、收货信息和备注", output)
+        self.assertIn("E01", output)
+        self.assertIn("新订单已生成", output)
+        self.assertIn("已确认事实", output)
+
+    def test_long_svg_names_use_tspans(self):
+        data = copy.deepcopy(self.data)
+        data["nodes"][1]["name"] = "外观与尺寸是否全部符合验收标准"
+        output = render_html(data, self.template)
+        self.assertIn("<tspan", output)
 
     def test_renders_scene_tabs_decision_shape_and_software_details(self):
         output = render_html(self.data, self.template)

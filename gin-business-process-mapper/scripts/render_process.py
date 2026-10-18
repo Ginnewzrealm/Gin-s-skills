@@ -89,9 +89,11 @@ def render_markdown(data):
             f"- **现状事实**：{node['business_fact']}",
             f"- **岗位角色**：{node['actor_role']}",
             f"- **实际动作**：{node['business_action']}",
+            f"- **业务规则**：{_items(node['rules'])}",
             f"- **输入／输出**：{_items(node['inputs'])} → {_items(node['outputs'])}",
             f"- **异常处理**：{_items(node['exceptions'])}",
-            f"- **软件实现含义**：{_items(node['interface_implications'])}", "",
+            f"- **软件实现含义**：{_items(node['interface_implications'])}",
+            f"- **证据引用**：{'、'.join(node['evidence_refs']) or '无'}", "",
         ])
     return "\n".join(lines)
 
@@ -225,10 +227,13 @@ def _build_svg(data, svg_key="flow"):
             path = f"M{start_x} {start_y}V{bottom}H{end_x - 22}V{end_y}H{end_x}"
             label_x, label_y = (start_x + end_x) / 2, bottom - 8
         kind = html.escape(edge["kind"])
-        parts.append(f'<path class="connector {kind}" style="marker-end:url(#{svg_key}-arrow)" d="{path}"/>')
-        label = edge["label"] or edge["condition"]
-        if label:
-            parts.append(f'<text class="edge-label" x="{label_x}" y="{label_y}">{html.escape(label)}</text>')
+        evidence = STATUS_LABELS[edge["evidence_status"]]
+        refs = "、".join(edge["evidence_refs"]) or "无"
+        title = f'{edge["id"]}｜{edge["condition"]}｜{evidence}｜证据：{refs}'
+        parts.append(f'<path class="connector {kind}" style="marker-end:url(#{svg_key}-arrow)" d="{path}"><title>{html.escape(title)}</title></path>')
+        label = edge["label"] or "流转"
+        edge_text = f'{edge["id"]} · {label}'
+        parts.append(f'<text class="edge-label" x="{label_x}" y="{label_y}">{html.escape(edge_text)}</text>')
     branched_targets = {edge["to"] for edge in data["edges"] if edge["kind"] in {"exception", "timeout", "cancel", "rework"}}
     for node in data["nodes"]:
         x, y = positions[node["id"]]
@@ -240,11 +245,22 @@ def _build_svg(data, svg_key="flow"):
         else:
             radius = 32 if node["kind"] in {"start", "end"} else 8
             shape = f'<rect width="{node_width}" height="{node_height}" rx="{radius}"/>'
+        raw_name = str(node["name"])
+        if len(raw_name) <= 8:
+            name_markup = f'<text x="{node_width / 2}" y="48">{name}</text>'
+        else:
+            first = html.escape(raw_name[:8])
+            remainder = raw_name[8:]
+            second = html.escape(remainder if len(remainder) <= 9 else remainder[:8] + "…")
+            name_markup = (
+                f'<text x="{node_width / 2}" y="42"><tspan x="{node_width / 2}" y="42">{first}</tspan>'
+                f'<tspan x="{node_width / 2}" y="60">{second}</tspan></text>'
+            )
         parts.append(
             f'<g class="{node_class}" data-node="{html.escape(node["id"])}" tabindex="0" role="link" '
             f'aria-label="查看 {html.escape(node["id"])} {name}说明" transform="translate({x} {y})">'
             f'{shape}<text class="node-id" x="{node_width / 2}" y="20">{html.escape(node["id"])}</text>'
-            f'<text x="{node_width / 2}" y="48">{name}</text></g>'
+            f'{name_markup}</g>'
         )
     parts.append("</svg>")
     return "".join(parts)
@@ -264,11 +280,13 @@ def _node_card(node):
         ("发生载体", carrier),
         ("进入信号", node["entry_or_signal"] or "待确认"),
         ("实际动作", node["business_action"]),
+        ("业务规则", "；".join(node["rules"]) or "无"),
         ("软件位置", node["software_location"] or "待确认"),
         ("软件操作", node["software_operation"] or "待确认"),
         ("完成信号", node["completion_signal"] or "待确认"),
         ("状态变化", f"{node['state_before'] or '未定义'} → {node['state_after'] or '未定义'}"),
         ("异常处理", exceptions),
+        ("证据引用", "、".join(node["evidence_refs"]) or "无"),
     ]
     if node.get("kind") == "decision":
         pairs.extend([
@@ -295,6 +313,15 @@ def render_html(data, template):
     pending = (
         f'<aside class="pending"><h3>产品待设计事项与待确认问题</h3><ul>{pending_items or "<li>无</li>"}</ul></aside>'
     )
+    source_rows = "".join(
+        f'<tr><td>{html.escape(source["id"])}</td><td>{html.escape(source["type"])}</td><td>{html.escape(source["summary"])}</td></tr>'
+        for source in data["sources"]
+    )
+    source_body = source_rows or '<tr><td colspan="3">无</td></tr>'
+    sources = (
+        '<section class="sources"><h3>事实来源</h3><table><thead><tr><th>来源</th><th>类型</th><th>摘要</th></tr></thead>'
+        f'<tbody>{source_body}</tbody></table></section>'
+    )
     node_by_id = {node["id"]: node for node in data["nodes"]}
     edge_by_id = {edge["id"]: edge for edge in data["edges"]}
     scene_order = {"main": 0, "exception": 1, "variant": 2}
@@ -307,10 +334,20 @@ def render_html(data, template):
         scene_edges = [edge_by_id[edge_id] for edge_id in scene["edge_ids"]]
         used_ids = {edge["from"] for edge in scene_edges} | {edge["to"] for edge in scene_edges}
         scene_data = {**data, "nodes": [node for node in data["nodes"] if node["id"] in used_ids], "edges": scene_edges}
+        edge_rows = "".join(
+            f'<tr><td>{html.escape(edge["id"])}</td><td>{html.escape(edge["label"] or "流转")}</td>'
+            f'<td>{html.escape(edge["condition"])}</td><td>{html.escape(STATUS_LABELS[edge["evidence_status"]])}</td>'
+            f'<td>{html.escape("、".join(edge["evidence_refs"]) or "无")}</td></tr>'
+            for edge in scene_edges
+        )
+        edge_details = (
+            '<div class="edge-details"><h3>流转条件</h3><table><thead><tr><th>连线</th><th>名称</th><th>进入条件</th><th>确认状态</th><th>证据</th></tr></thead>'
+            f'<tbody>{edge_rows}</tbody></table></div>'
+        )
         panels.append(
             f'<section class="scene-panel{active}" data-scene-panel="{html.escape(scene["id"])}">'
             f'<div class="scene-caption"><strong>{html.escape(scene["name"])}</strong><span>主责：{html.escape("、".join(scene["owner_roles"]))}</span><span>{html.escape(scene["boundary_rule"])}</span></div>'
-            f'<div class="diagram-shell">{_build_svg(scene_data, scene["id"].lower())}</div></section>'
+            f'<div class="diagram-shell">{_build_svg(scene_data, scene["id"].lower())}</div>{edge_details}</section>'
         )
     scene_markup = f'<nav class="scene-tabs" aria-label="流程场景">{"".join(tabs)}</nav><div class="print-all-scenes">{"".join(panels)}</div>'
     replacements = {
@@ -319,6 +356,9 @@ def render_html(data, template):
         "{{SCENES}}": scene_markup,
         "{{CARDS}}": cards,
         "{{PENDING}}": pending,
+        "{{SOURCES}}": sources,
+        "{{STATUS_LABEL}}": "已确认" if data["status"] == "confirmed" else "草稿",
+        "{{STATUS_CLASS}}": "confirmed" if data["status"] == "confirmed" else "draft",
     }
     output = template
     for marker, value in replacements.items():
