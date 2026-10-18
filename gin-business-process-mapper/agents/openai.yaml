@@ -1,0 +1,7 @@
+interface:
+  display_name: "企业流程梳理"
+  short_description: "把非技术人员的日常描述还原成流程文档与 HTML 流程图"
+  brand_color: "#06B7B1"
+  default_prompt: "Use $gin-business-process-mapper to interview me in plain language and reconstruct this business process."
+policy:
+  allow_implicit_invocation: true
