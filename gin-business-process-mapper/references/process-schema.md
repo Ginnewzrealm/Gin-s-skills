@@ -4,7 +4,7 @@ JSON 是 Markdown 与 HTML 的唯一数据源。
 
 ## 流程对象
 
-必填：`process_id`、`process_name`、`purpose`、`scope_start`、`scope_end`、`participants`、`systems_and_channels`、`nodes`、`edges`、`open_questions`、`future_expectations`、`sources`、`version`、`status`。
+必填：`process_id`、`process_name`、`purpose`、`scope_start`、`scope_end`、`participants`、`systems_and_channels`、`nodes`、`edges`、`scenes`、`open_questions`、`future_expectations`、`sources`、`version`、`status`。
 
 `status` 只能是 `draft` 或 `confirmed`。
 
@@ -16,13 +16,16 @@ JSON 是 Markdown 与 HTML 的唯一数据源。
 |---|---|
 | `id` | 连续编号，如 `N01` |
 | `name` | 业务人员能理解的动作名称 |
+| `kind` | `start` / `action` / `decision` / `end` |
 | `business_fact` | 用户确认的现状事实 |
-| `actor` | 实际执行者 |
+| `actor_role` | 岗位角色，不记录人名 |
 | `execution_mode` | `manual` / `automatic` / `assisted` |
 | `carrier` | `system` / `chat` / `email` / `spreadsheet` / `paper` / `onsite` / `other` |
 | `carrier_name` | 具体系统或工具名称；不知道可为空字符串 |
 | `entry_or_signal` | 执行者如何知道该处理 |
 | `business_action` | 实际动作 |
+| `software_location` | 系统和页面位置；纯线下动作可为空 |
+| `software_operation` | 选择、填写、上传、提交等实际界面动作；未知可为空 |
 | `interface_implications` | 从事实推导的软件含义数组 |
 | `inputs` / `outputs` | 输入和输出数组 |
 | `completion_signal` | 如何判断完成 |
@@ -34,11 +37,21 @@ JSON 是 Markdown 与 HTML 的唯一数据源。
 
 节点整体为 `confirmed` 时，`business_fact` 必须有 `evidence_refs`。推导出来的界面能力仍应在文字中标为“软件实现含义”，不能因节点已确认而变成用户原话。
 
+决策节点额外必填 `decider_role`、非空 `criteria` 和 `fallback`。每个决策节点至少有两条出边，每条出边的 `condition` 必须非空且互不重复。
+
 ## 连线对象
 
-必填：`from`、`to`、`label`、`condition`、`kind`、`evidence_status`、`evidence_refs`。
+必填：`id`、`from`、`to`、`label`、`condition`、`kind`、`evidence_status`、`evidence_refs`。
 
 `kind` 只能是 `normal`、`decision`、`exception`、`timeout`、`cancel` 或 `rework`。每条边必须引用已存在节点。
+
+普通边不得形成循环。真实存在的返工和取消回路分别使用 `rework`、`cancel`，渲染时从主流程下方返回。
+
+## 场景对象
+
+必填：`id`、`name`、`type`、`owner_roles`、`edge_ids`、`boundary_rule`。
+
+`type` 只能是 `main`、`exception` 或 `variant`。至少有一个主场景；终稿中的每条连线必须归属至少一个场景。`owner_roles` 只填写岗位角色。`boundary_rule` 用业务语言说明何时进入、何时结束或返回其他场景。
 
 ## 证据来源
 
