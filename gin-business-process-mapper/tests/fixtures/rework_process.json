@@ -1,0 +1,28 @@
+{
+  "process_id": "REWORK-001",
+  "process_name": "退回重办流程",
+  "purpose": "验证返工回路可以被表达和渲染。",
+  "scope_start": "销售提交申请",
+  "scope_end": "老板审批通过",
+  "participants": ["销售", "老板"],
+  "systems_and_channels": ["ERP"],
+  "version": "2.0",
+  "status": "confirmed",
+  "nodes": [
+    {"id":"N01","name":"提交申请","kind":"start","business_fact":"销售在 ERP 提交申请。","actor_role":"销售","execution_mode":"manual","carrier":"system","carrier_name":"ERP","entry_or_signal":"资料准备完成","business_action":"提交申请","software_location":"ERP／申请单","software_operation":"点击提交","interface_implications":[],"inputs":["申请资料"],"outputs":["待审批申请"],"completion_signal":"页面显示待审批","state_before":"草稿","state_after":"待审批","rules":[],"exceptions":[],"evidence_status":"confirmed","evidence_refs":["S01"]},
+    {"id":"N02","name":"审核资料","kind":"decision","business_fact":"老板审核申请资料是否齐全。","actor_role":"老板","decider_role":"老板","criteria":["必填资料齐全"],"fallback":"无法判断时退回销售补充说明","execution_mode":"manual","carrier":"system","carrier_name":"ERP","entry_or_signal":"收到待审批提醒","business_action":"审核申请资料","software_location":"ERP／审批中心","software_operation":"打开申请并选择通过或退回","interface_implications":[],"inputs":["待审批申请"],"outputs":["审批结果"],"completion_signal":"审批结果已保存","state_before":"待审批","state_after":"已审批或已退回","rules":[],"exceptions":[],"evidence_status":"confirmed","evidence_refs":["S01"]},
+    {"id":"N03","name":"审批完成","kind":"end","business_fact":"老板审批通过后流程结束。","actor_role":"老板","execution_mode":"manual","carrier":"system","carrier_name":"ERP","entry_or_signal":"资料齐全","business_action":"确认审批通过","software_location":"ERP／审批中心","software_operation":"点击通过","interface_implications":[],"inputs":["审批结果"],"outputs":["已通过申请"],"completion_signal":"页面显示已通过","state_before":"待审批","state_after":"已通过","rules":[],"exceptions":[],"evidence_status":"confirmed","evidence_refs":["S01"]}
+  ],
+  "edges": [
+    {"id":"E01","from":"N01","to":"N02","label":"提交","condition":"申请已提交","kind":"normal","evidence_status":"confirmed","evidence_refs":["S01"]},
+    {"id":"E02","from":"N02","to":"N03","label":"通过","condition":"资料齐全","kind":"decision","evidence_status":"confirmed","evidence_refs":["S01"]},
+    {"id":"E03","from":"N02","to":"N01","label":"退回补充","condition":"资料不齐全","kind":"rework","evidence_status":"confirmed","evidence_refs":["S01"]}
+  ],
+  "scenes": [
+    {"id":"SC01","name":"正常审批","type":"main","owner_roles":["销售","老板"],"edge_ids":["E01","E02"],"boundary_rule":"销售提交申请后进入；老板审批通过后结束"},
+    {"id":"SC02","name":"资料退回重办","type":"exception","owner_roles":["销售","老板"],"edge_ids":["E03"],"boundary_rule":"资料不齐全时进入；销售补充后返回提交申请"}
+  ],
+  "open_questions": [],
+  "future_expectations": [],
+  "sources": [{"id":"S01","type":"conversation","summary":"销售和老板确认审批与退回步骤。"}]
+}
