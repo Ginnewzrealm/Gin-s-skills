@@ -32,7 +32,7 @@
     {"id": "E04", "from": "N03", "to": "N05", "label": "后续履约", "condition": "中间发货步骤未在本样本展开", "kind": "normal", "evidence_status": "inferred", "evidence_refs": ["S03"]}
   ],
   "scenes": [
-    {"id": "SC01", "name": "正常接单", "type": "main", "owner_roles": ["客服"], "edge_ids": ["E01", "E02", "E04"], "boundary_rule": "新订单生成后进入；订单签收后结束"},
+    {"id": "SC01", "name": "正常接单", "type": "main", "owner_roles": ["客服"], "edge_ids": ["E01", "E02", "E03", "E04"], "boundary_rule": "新订单生成后进入；订单签收后结束"},
     {"id": "SC02", "name": "订单信息异常确认", "type": "exception", "owner_roles": ["客服"], "edge_ids": ["E03"], "boundary_rule": "订单信息存在问题时进入；客户回复后返回订单处理"}
   ],
   "open_questions": ["客户长时间不回复时订单如何处理？", "接单到发货之间的仓库操作是什么？"],
