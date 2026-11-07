@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright (c) 2026 Gin. All rights reserved.
+# Proprietary material. See LICENSE in the skill root.
 """Validate and render a business-process decision model."""
 
 from __future__ import annotations

@@ -5,6 +5,8 @@ description: Use when converting Chinese natural-language interviews, meeting no
 
 # 企业流程与决策还原
 
+> Copyright (c) 2026 Gin. All rights reserved. Proprietary material; no permission to copy, modify, distribute, commercialize, or create derivative works without prior written permission. See [LICENSE](LICENSE).
+
 把纯文字中的公司实际运行方式还原成可审阅的流程。重点不是画得复杂，而是让每个关键决策的判断信息、判断标准、分支条件和去向一眼可见。
 
 ## 不可违背的原则
