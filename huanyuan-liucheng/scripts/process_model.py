@@ -397,40 +397,63 @@ def path_card(node: dict[str, Any]) -> str:
 def render_path_map(model: dict[str, Any]) -> str:
     nodes = index_nodes(model)
     start = next(node for node in model["nodes"] if node["type"] == "start")
-    expanded: set[str] = set()
+    queue = [start["id"]]
+    ordered_ids: list[str] = []
+    seen: set[str] = set()
+    inbound: dict[str, int] = {node_id: 0 for node_id in nodes}
+    for node in model["nodes"]:
+        targets = (
+            [branch["target"] for branch in node["branches"]]
+            if node["type"] == "decision"
+            else [node["next"]]
+            if node["type"] in {"start", "action", "join"}
+            else []
+        )
+        for target in targets:
+            inbound[target] += 1
 
-    def render_node(node_id: str, path: frozenset[str]) -> str:
+    while queue:
+        node_id = queue.pop(0)
+        if node_id in seen:
+            continue
+        seen.add(node_id)
+        ordered_ids.append(node_id)
         node = nodes[node_id]
-        if node_id in path or node_id in expanded:
-            label = node.get("question", node.get("label", ""))
-            return f'''<a class="merge-reference" data-merge-target="{esc(node_id)}" href="#path-{esc(node_id)}">
-  汇入 {esc(node_id)} · {esc(label)}
-</a>'''
-        expanded.add(node_id)
-        next_path = path | {node_id}
+        targets = (
+            [branch["target"] for branch in node["branches"]]
+            if node["type"] == "decision"
+            else [node["next"]]
+            if node["type"] in {"start", "action", "join"}
+            else []
+        )
+        queue.extend(target for target in targets if target not in seen)
+
+    blocks: list[str] = []
+    for node_id in ordered_ids:
+        node = nodes[node_id]
         card = path_card(node)
-        if node["type"] in {"terminal", "unresolved"}:
-            return f'<div class="path-node path-end">{card}</div>'
+        merge_note = (
+            f'<div class="merge-count">{inbound[node_id]} 条路径汇入</div>'
+            if inbound[node_id] > 1
+            else ""
+        )
         if node["type"] == "decision":
             branches = "".join(
-                f'''<div class="branch-lane {esc(branch['status'])}">
-  <div class="branch-condition"><strong>{esc(branch['label'])}</strong><span>{esc(branch['condition'])}</span></div>
-  <div class="branch-arrow" aria-hidden="true">↓</div>
-  {render_node(branch['target'], next_path)}
+                f'''<div class="route-branch {esc(branch['status'])}">
+  <strong>{esc(branch['label'])}</strong>
+  <span>{esc(branch['condition'])}</span>
+  <a {'data-merge-target="' + esc(branch['target']) + '"' if nodes[branch['target']]['type'] == 'join' else ''} href="#path-{esc(branch['target'])}">→ {esc(branch['target'])} · {esc(nodes[branch['target']].get('label', nodes[branch['target']].get('question', '')))}</a>
 </div>'''
                 for branch in node["branches"]
             )
-            return f'''<div class="path-node decision-node">
-  {card}
-  <div class="branch-grid" style="--branch-count:{len(node['branches'])}">{branches}</div>
-</div>'''
-        return f'''<div class="path-node linear-node">
-  {card}
-  <div class="linear-arrow" aria-hidden="true">↓</div>
-  <div class="linear-child">{render_node(node['next'], next_path)}</div>
-</div>'''
-
-    return render_node(start["id"], frozenset())
+            routing = f'<div class="route-branches">{branches}</div>'
+        elif node["type"] in {"start", "action", "join"}:
+            target = nodes[node["next"]]
+            routing = f'''<div class="route-next"><span aria-hidden="true">↓</span><a href="#path-{esc(target['id'])}">下一步：{esc(target['id'])} · {esc(target.get('label', target.get('question', '')))}</a></div>'''
+        else:
+            routing = '<div class="route-end">路径到此结束</div>'
+        blocks.append(f'<div class="route-block">{merge_note}{card}{routing}</div>')
+    return "".join(blocks)
 
 
 def render_decision_details(model: dict[str, Any]) -> str:
@@ -494,11 +517,11 @@ def render_html(model: dict[str, Any]) -> str:
 .metrics{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:26px 0}}.metric{{background:#fff;border:1px solid #dfe3e8;border-radius:10px;padding:14px 17px}}.metric strong{{font-size:24px;margin-right:8px}}.metric span{{font-size:13px;color:var(--muted)}}
 .legend{{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px;padding:12px 15px;background:#fff;border:1px solid #dfe3e8;border-radius:9px;font-size:13px;color:#475467}}.legend i{{display:inline-block;width:12px;height:12px;margin-right:6px;border-radius:3px;vertical-align:-1px}}
 .panel{{background:#fff;border:1px solid #dce2e8;border-radius:14px;padding:30px;box-shadow:0 10px 30px rgba(29,41,57,.05)}}.panel+.panel{{margin-top:26px}}.section-head{{margin-bottom:22px}}.section-head h2{{font-size:25px;margin:0 0 4px}}.section-head p{{margin:0;color:var(--muted);font-size:13px}}
-.path-root{{overflow-x:auto;padding:4px 0 14px}}.path-node{{display:flex;flex-direction:column;align-items:center;min-width:0}}.path-card{{width:min(100%,360px);border:2px solid;border-radius:11px;padding:13px 15px;box-shadow:0 4px 10px rgba(16,24,40,.04)}}.path-card header{{display:flex;justify-content:space-between;gap:12px;color:#586579;font-size:12px;font-weight:800}}.path-card h3{{font-size:16px;line-height:1.35;margin:8px 0 0}}.path-card.start,.path-card.action{{background:var(--blue);border-color:var(--blue-b)}}.path-card.decision{{background:var(--yellow);border-color:var(--yellow-b)}}.path-card.unresolved{{background:var(--red);border-color:var(--red-b)}}.path-card.terminal{{background:var(--green);border-color:var(--green-b)}}.path-card.join{{background:var(--purple);border-color:var(--purple-b)}}
-.linear-arrow,.branch-arrow{{color:#697586;font-weight:800;line-height:1;padding:9px 0}}.linear-child{{width:100%;display:flex;justify-content:center}}.branch-grid{{width:100%;display:grid;grid-template-columns:repeat(var(--branch-count),minmax(220px,1fr));gap:16px;margin-top:14px;align-items:start}}.branch-lane{{min-width:0;border-top:2px solid var(--line);padding-top:10px;display:flex;flex-direction:column;align-items:center}}.branch-lane.unresolved{{border-top-color:var(--red-b)}}.branch-condition{{width:100%;min-height:74px;border:1px solid #d9dee5;background:#f8fafc;border-radius:8px;padding:10px 11px;text-align:left}}.branch-condition strong{{display:block;font-size:13px;margin-bottom:4px}}.branch-condition span{{display:block;font-size:12px;color:#475467}}.merge-reference{{display:block;width:min(100%,330px);border:1.5px dashed var(--purple-b);background:var(--purple);border-radius:9px;padding:11px 13px;text-align:center;text-decoration:none;font-size:13px;font-weight:800;color:#58409a}}
+.path-root{{display:grid;gap:12px;padding:4px 0 14px}}.route-block{{width:min(100%,980px);margin:auto;padding:12px 0 20px;border-bottom:1px solid #e7eaee}}.route-block:last-child{{border-bottom:0}}.path-card{{width:min(100%,380px);margin:auto;border:2px solid;border-radius:11px;padding:13px 15px;box-shadow:0 4px 10px rgba(16,24,40,.04)}}.path-card header{{display:flex;justify-content:space-between;gap:12px;color:#586579;font-size:12px;font-weight:800}}.path-card h3{{font-size:16px;line-height:1.35;margin:8px 0 0}}.path-card.start,.path-card.action{{background:var(--blue);border-color:var(--blue-b)}}.path-card.decision{{background:var(--yellow);border-color:var(--yellow-b)}}.path-card.unresolved{{background:var(--red);border-color:var(--red-b)}}.path-card.terminal{{background:var(--green);border-color:var(--green-b)}}.path-card.join{{background:var(--purple);border-color:var(--purple-b)}}.merge-count{{width:max-content;margin:0 auto 7px;padding:3px 8px;border-radius:999px;background:var(--purple);color:#58409a;font-size:11px;font-weight:850}}
+.route-next{{display:flex;justify-content:center;align-items:center;gap:10px;padding-top:9px;font-size:12.5px;color:#536174}}.route-next span{{font-weight:900}}.route-next a{{font-weight:750;text-decoration:none}}.route-branches{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}}.route-branch{{min-width:0;border:1px solid #d9dee5;border-top:3px solid var(--line);background:#f8fafc;border-radius:8px;padding:11px 12px}}.route-branch.unresolved{{border-top-color:var(--red-b);background:#fff9f8}}.route-branch strong{{display:block;font-size:13px;margin-bottom:4px}}.route-branch span{{display:block;min-height:38px;font-size:12px;color:#475467}}.route-branch a{{display:block;margin-top:8px;padding-top:7px;border-top:1px solid #e3e7eb;color:#35618e;font-size:12px;font-weight:800;text-decoration:none}}.route-end{{padding-top:8px;text-align:center;color:var(--muted);font-size:12px}}
 .decision-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}.decision-detail{{border:1px solid #dce2e8;border-radius:11px;padding:18px;background:#fff}}.decision-detail header{{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}}.decision-detail header span{{font-size:12px;font-weight:850;color:#8a6500}}.decision-detail h3{{font-size:18px;margin:3px 0 0}}.decision-detail header b{{font-size:12px;background:#fff4c7;border:1px solid #e2c360;border-radius:999px;padding:4px 9px;white-space:nowrap}}.detail-inputs{{display:grid;grid-template-columns:76px 1fr;gap:8px;font-size:13px;margin:16px 0}}.detail-criteria>strong,.detail-branches>strong{{display:block;font-size:13px;margin-bottom:7px}}.detail-criteria ul{{margin:0 0 16px;padding-left:18px}}.detail-criteria li{{margin:7px 0;font-size:13px}}.detail-criteria li small{{display:block;margin:2px 0 0 54px;color:var(--muted)}}.tag{{display:inline-block;font-size:11px;font-weight:850;border-radius:4px;padding:1px 5px;margin-right:6px}}.tag.confirmed{{background:#dff1e5;color:#246b39}}.tag.unresolved{{background:#ffe1dc;color:#9d3029}}.tag.inferred{{background:#e8e5ff;color:#5748a7}}.detail-branch{{display:grid;grid-template-columns:120px 1fr;gap:3px 10px;border-top:1px solid #e8ebef;padding:9px 0;font-size:12.5px}}.detail-branch .target{{grid-column:2;color:#675200;font-weight:750}}
 .questions{{display:grid;gap:10px}}.question-card{{display:flex;justify-content:space-between;gap:22px;padding:14px 16px;border:1px solid #e1e5ea;border-left:4px solid var(--red-b);border-radius:8px;background:#fff}}.question-card div:first-child{{display:grid;grid-template-columns:46px 1fr;gap:8px}}.question-card p{{margin:0}}.question-links{{white-space:nowrap;font-size:12px;color:var(--muted)}}.question-links a{{display:inline-block;margin-left:6px;color:#35618e;font-weight:800}}.sources{{font-size:13px;color:#475467}}.footnote{{margin:16px 2px 0;color:var(--muted);font-size:13px}}
-@media(max-width:900px){{.page{{padding:24px 14px 44px}}.hero{{display:block}}.status{{display:inline-block;margin-top:14px}}.metrics{{grid-template-columns:1fr}}.panel{{padding:20px 12px}}.branch-grid{{grid-template-columns:1fr!important}}.decision-grid{{grid-template-columns:1fr}}.question-card{{display:block}}.question-links{{margin-top:8px;white-space:normal}}h1{{font-size:30px}}}}
+@media(max-width:900px){{.page{{padding:24px 14px 44px}}.hero{{display:block}}.status{{display:inline-block;margin-top:14px}}.metrics{{grid-template-columns:1fr}}.panel{{padding:20px 12px}}.route-branches{{grid-template-columns:1fr}}.decision-grid{{grid-template-columns:1fr}}.question-card{{display:block}}.question-links{{margin-top:8px;white-space:normal}}h1{{font-size:30px}}}}
 @media print{{body{{background:#fff}}.page{{max-width:none;padding:16px}}.panel{{box-shadow:none;break-inside:avoid}}.path-root{{overflow:visible}}}}
 </style>
 </head>
