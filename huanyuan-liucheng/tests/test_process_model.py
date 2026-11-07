@@ -167,25 +167,74 @@ class ProcessModelCliTests(unittest.TestCase):
             self.assertIn("8 项", questions_text)
             self.assertNotRegex(html_text, r"https?://")
 
-    def test_render_expands_decisions_that_are_not_on_primary_spine(self):
+    def test_render_separates_path_map_from_decision_details(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            output_dir = tmp_path / "rendered"
+            result = self.run_cli("render", FIXTURE, "--output-dir", output_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html_text = (output_dir / "03 销售订单-决策路径图.html").read_text(encoding="utf-8")
+            flow_start = html_text.index('<section id="flow-map"')
+            details_start = html_text.index('<section id="decision-details"')
+            questions_start = html_text.index('<section id="pending-questions"')
+            flow_text = html_text[flow_start:details_start]
+            detail_text = html_text[details_start:questions_start]
+            question_text = html_text[questions_start:]
+
+            self.assertLess(flow_start, details_start)
+            self.assertLess(details_start, questions_start)
+            self.assertNotIn("判断信息", flow_text)
+            self.assertNotIn("客户类型、客户申请账期、公司账期规则", flow_text)
+            self.assertNotIn("自然语言资料中的两条规则存在适用范围歧义", flow_text)
+            self.assertIn("判断信息", detail_text)
+            self.assertIn("客户类型、客户申请账期、公司账期规则", detail_text)
+            self.assertIn("自然语言资料中的两条规则存在适用范围歧义", detail_text)
+            self.assertIn("Q01", question_text)
+            self.assertIn("新客户现款现货", question_text)
+
+    def test_render_shows_every_branch_and_merge_reference(self):
         model = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        route = next(node for node in model["nodes"] if node["id"] == "D04")
-        route["branches"][0]["primary"] = False
-        route["branches"][1]["primary"] = True
+        decision = next(node for node in model["nodes"] if node["id"] == "D03")
+        decision["branches"].extend(
+            [
+                {
+                    "label": "风险等级二",
+                    "condition": "触发等级二风险条件",
+                    "target": "U02",
+                    "status": "unresolved",
+                    "primary": False,
+                },
+                {
+                    "label": "风险等级三",
+                    "condition": "触发等级三风险条件",
+                    "target": "U03",
+                    "status": "unresolved",
+                    "primary": False,
+                },
+            ]
+        )
 
         with tempfile.TemporaryDirectory() as tmp:
             tmp_path = Path(tmp)
-            model_path = tmp_path / "branch-decision.json"
+            model_path = tmp_path / "four-branches.json"
             model_path.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
             output_dir = tmp_path / "rendered"
             result = self.run_cli("render", model_path, "--output-dir", output_dir)
 
             self.assertEqual(result.returncode, 0, result.stderr)
             html_text = (output_dir / "03 销售订单-决策路径图.html").read_text(encoding="utf-8")
-            self.assertIn("分支决策展开", html_text)
-            self.assertIn("D05 · 最终审批", html_text)
-            self.assertIn("符合老板审批标准，具体标准待确认", html_text)
-            self.assertIn("不符合老板审批标准，具体标准待确认", html_text)
+            flow_start = html_text.index('<section id="flow-map"')
+            details_start = html_text.index('<section id="decision-details"')
+            flow_text = html_text[flow_start:details_start]
+            for condition in (
+                "未触发公司定义的高风险情形",
+                "风险判断标准待确认",
+                "触发等级二风险条件",
+                "触发等级三风险条件",
+            ):
+                self.assertIn(condition, flow_text)
+            self.assertIn('data-merge-target="J01"', flow_text)
 
 
 if __name__ == "__main__":
