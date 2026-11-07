@@ -34,6 +34,89 @@ class ProcessModelCliTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn("仍含待确认内容", result.stderr)
 
+    def test_render_rejects_model_before_user_confirmation(self):
+        model = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        model["confirmation"]["status"] = "pending"
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            model_path = tmp_path / "pending-confirmation.json"
+            output_dir = tmp_path / "rendered"
+            model_path.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
+            result = self.run_cli("render", model_path, "--output-dir", output_dir)
+
+            self.assertEqual(result.returncode, 3)
+            self.assertIn("用户确认", result.stderr)
+            self.assertFalse(output_dir.exists())
+
+    def test_validate_requires_process_boundary_fields(self):
+        model = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        del model["process"]["business_object"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            invalid = Path(tmp) / "missing-boundary.json"
+            invalid.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
+            result = self.run_cli("validate", invalid)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("process.business_object", result.stderr)
+
+    def test_validate_requires_owner_for_every_action(self):
+        model = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        action = next(node for node in model["nodes"] if node["type"] == "action")
+        del action["owner"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            invalid = Path(tmp) / "missing-owner.json"
+            invalid.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
+            result = self.run_cli("validate", invalid)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn(f"{action['id']}.owner", result.stderr)
+
+    def test_validate_rejects_duplicate_question_id_and_unknown_related_node(self):
+        model = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        model["pending_questions"][1]["id"] = "Q01"
+        model["pending_questions"][1]["related_nodes"] = ["D99"]
+
+        with tempfile.TemporaryDirectory() as tmp:
+            invalid = Path(tmp) / "invalid-questions.json"
+            invalid.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
+            result = self.run_cli("validate", invalid)
+
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("待确认问题 id 重复", result.stderr)
+        self.assertIn("D99", result.stderr)
+
+    def test_validate_accepts_decision_with_four_branches(self):
+        model = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        decision = next(node for node in model["nodes"] if node["id"] == "D03")
+        decision["branches"].extend(
+            [
+                {
+                    "label": "风险等级二",
+                    "condition": "触发等级二风险条件",
+                    "target": "U02",
+                    "status": "unresolved",
+                    "primary": False,
+                },
+                {
+                    "label": "风险等级三",
+                    "condition": "触发等级三风险条件",
+                    "target": "U03",
+                    "status": "unresolved",
+                    "primary": False,
+                },
+            ]
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            model_path = Path(tmp) / "four-branches.json"
+            model_path.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
+            result = self.run_cli("validate", model_path)
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_validate_rejects_blank_branch_condition(self):
         model = json.loads(FIXTURE.read_text(encoding="utf-8"))
         decision = next(node for node in model["nodes"] if node["id"] == "D01")

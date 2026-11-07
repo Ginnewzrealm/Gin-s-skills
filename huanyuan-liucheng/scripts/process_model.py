@@ -14,8 +14,9 @@ from pathlib import Path
 from typing import Any
 
 
-NODE_TYPES = {"start", "action", "decision", "unresolved", "terminal"}
+NODE_TYPES = {"start", "action", "decision", "join", "unresolved", "terminal"}
 STATUS_TYPES = {"confirmed", "unresolved", "inferred"}
+CONFIRMATION_TYPES = {"pending", "confirmed"}
 
 
 class ModelError(ValueError):
@@ -42,13 +43,31 @@ def require_text(value: Any, location: str, errors: list[str]) -> None:
 def validate_model(model: dict[str, Any]) -> list[str]:
     errors: list[str] = []
     require_text(model.get("schema_version"), "schema_version", errors)
+    if model.get("schema_version") != "2.0":
+        errors.append("schema_version 必须是 2.0")
     require_text(model.get("company"), "company", errors)
+
+    confirmation = model.get("confirmation")
+    if not isinstance(confirmation, dict):
+        errors.append("confirmation 必须是对象")
+        confirmation = {}
+    if confirmation.get("status") not in CONFIRMATION_TYPES:
+        errors.append("confirmation.status 只能是 pending 或 confirmed")
+    require_text(confirmation.get("scope_summary"), "confirmation.scope_summary", errors)
 
     process = model.get("process")
     if not isinstance(process, dict):
         errors.append("process 必须是对象")
         process = {}
-    for field in ("number", "name", "status"):
+    for field in (
+        "number",
+        "name",
+        "status",
+        "business_object",
+        "trigger",
+        "end_state",
+        "boundary_reason",
+    ):
         require_text(process.get(field), f"process.{field}", errors)
     if process.get("status") not in {"draft", "confirmed"}:
         errors.append("process.status 只能是 draft 或 confirmed")
@@ -72,10 +91,12 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             errors.append(f"{node_id or f'nodes[{index}]'}: type 必须是 {sorted(NODE_TYPES)} 之一")
             continue
 
-        if node_type in {"start", "action", "unresolved", "terminal"}:
+        if node_type in {"start", "action", "join", "unresolved", "terminal"}:
             require_text(node.get("label"), f"{node_id}.label", errors)
-        if node_type in {"start", "action"}:
+        if node_type in {"start", "action", "join"}:
             require_text(node.get("next"), f"{node_id}.next", errors)
+        if node_type == "action":
+            require_text(node.get("owner"), f"{node_id}.owner", errors)
         if node_type == "decision":
             if not isinstance(node_id, str) or not re.fullmatch(r"D\d{2}", node_id):
                 errors.append(f"{node_id}: 决策节点 id 必须使用 D01 形式")
@@ -140,7 +161,7 @@ def validate_model(model: dict[str, Any]) -> list[str]:
 
     for node_id, node in node_map.items():
         targets: list[str] = []
-        if node.get("type") in {"start", "action"} and isinstance(node.get("next"), str):
+        if node.get("type") in {"start", "action", "join"} and isinstance(node.get("next"), str):
             targets.append(node["next"])
         if node.get("type") == "decision" and isinstance(node.get("branches"), list):
             targets.extend(
@@ -165,7 +186,7 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             reached.add(node_id)
             active.add(node_id)
             node = node_map[node_id]
-            if node["type"] in {"start", "action"}:
+            if node["type"] in {"start", "action", "join"}:
                 walk(node["next"])
             elif node["type"] == "decision":
                 for branch in node["branches"]:
@@ -181,8 +202,32 @@ def validate_model(model: dict[str, Any]) -> list[str]:
     if not isinstance(pending, list):
         errors.append("pending_questions 必须是数组；没有待确认项时使用空数组")
     else:
+        question_ids: list[str] = []
         for index, question in enumerate(pending):
-            require_text(question, f"pending_questions[{index}]", errors)
+            location = f"pending_questions[{index}]"
+            if not isinstance(question, dict):
+                errors.append(f"{location} 必须是对象")
+                continue
+            question_id = question.get("id")
+            require_text(question_id, f"{location}.id", errors)
+            if isinstance(question_id, str) and question_id:
+                question_ids.append(question_id)
+                if not re.fullmatch(r"Q\d{2}", question_id):
+                    errors.append(f"{location}.id 必须使用 Q01 形式")
+            require_text(question.get("text"), f"{location}.text", errors)
+            related = question.get("related_nodes")
+            if not isinstance(related, list) or not related:
+                errors.append(f"{location}.related_nodes 至少需要一个关联节点")
+            else:
+                for related_index, related_node in enumerate(related):
+                    require_text(related_node, f"{location}.related_nodes[{related_index}]", errors)
+                    if isinstance(related_node, str) and related_node not in node_map:
+                        errors.append(f"{location} 引用了不存在的节点 {related_node}")
+        duplicate_question_ids = sorted(
+            {question_id for question_id in question_ids if question_ids.count(question_id) > 1}
+        )
+        if duplicate_question_ids:
+            errors.append(f"待确认问题 id 重复：{', '.join(duplicate_question_ids)}")
 
     sources = model.get("sources")
     if not isinstance(sources, list) or not sources:
@@ -195,6 +240,8 @@ def validate_model(model: dict[str, Any]) -> list[str]:
 
 
 def has_unresolved(model: dict[str, Any]) -> bool:
+    if model.get("confirmation", {}).get("status") != "confirmed":
+        return True
     if model.get("process", {}).get("status") != "confirmed":
         return True
     if model.get("pending_questions"):
@@ -254,6 +301,11 @@ def render_tree(model: dict[str, Any]) -> str:
                 lines.append(f"{prefix}{continuation}│")
                 lines.append(f"{prefix}{continuation}▼")
                 append_node(branch["target"], prefix + continuation, next_path)
+        elif node_type == "join":
+            lines.append(f"{prefix}◆ {node_id} {node['label']}")
+            lines.append(f"{prefix}│")
+            lines.append(f"{prefix}▼")
+            append_node(node["next"], prefix, next_path)
         elif node_type == "unresolved":
             lines.append(f"{prefix}⚠ {node_id} {node['label']}")
         elif node_type == "terminal":
@@ -309,7 +361,10 @@ def render_markdown(model: dict[str, Any]) -> str:
 
     sections.extend(["## 待确认问题", ""])
     if pending:
-        sections.extend(f"{index}. {question}" for index, question in enumerate(pending, 1))
+        sections.extend(
+            f"{question['id']}. {question['text']}（关联：{'、'.join(question['related_nodes'])}）"
+            for question in pending
+        )
     else:
         sections.append("无。")
     sections.extend(["", "## 图例", "", "- `▶`：流程起点", "- `▭`：业务动作", "- `◇`：关键决策节点", "- `●`：业务终态", "- `⚠`：资料不足，必须继续确认", "", "## 资料来源", ""])
@@ -332,7 +387,7 @@ def primary_spine(model: dict[str, Any]) -> list[dict[str, Any]]:
         seen.add(current["id"])
         if current["type"] in {"terminal", "unresolved"}:
             break
-        if current["type"] in {"start", "action"}:
+        if current["type"] in {"start", "action", "join"}:
             current = nodes[current["next"]]
         else:
             primary = next(branch for branch in current["branches"] if branch["primary"])
@@ -365,6 +420,7 @@ def node_card(node: dict[str, Any], nodes: dict[str, dict[str, Any]]) -> str:
     labels = {
         "start": ("起点", "start"),
         "action": (node.get("owner", "业务动作"), "action"),
+        "join": ("路径汇合", "join"),
         "unresolved": (node.get("owner", "待确认"), "unresolved"),
         "terminal": ("完成", "terminal"),
     }
@@ -413,7 +469,7 @@ def render_html(model: dict[str, Any]) -> str:
                 for branch in source["branches"]:
                     if branch["target"] in inbound:
                         inbound[branch["target"]].append(f"{source['id']} · {branch['label']}")
-            elif source.get("type") in {"start", "action"} and source.get("next") in inbound:
+            elif source.get("type") in {"start", "action", "join"} and source.get("next") in inbound:
                 inbound[source["next"]].append(source["id"])
         cards = "".join(
             f'''<div class="branch-decision-item">
@@ -486,7 +542,10 @@ def render_questions(model: dict[str, Any]) -> str:
         "",
     ]
     if pending:
-        lines.extend(f"{index}. {question}" for index, question in enumerate(pending, 1))
+        lines.extend(
+            f"{question['id']}. {question['text']}（关联：{'、'.join(question['related_nodes'])}）"
+            for question in pending
+        )
     else:
         lines.append("当前没有待确认问题。")
     lines.append("")
@@ -536,6 +595,9 @@ def main() -> int:
             pending = len(model["pending_questions"])
             print(f"校验通过：{decisions} 个决策节点，{pending} 个待确认问题")
             return 0
+        if model.get("confirmation", {}).get("status") != "confirmed":
+            print("错误：尚未取得用户确认，不能生成正式流程成果", file=sys.stderr)
+            return 3
         outputs = render_files(model, args.output_dir)
         for output in outputs:
             print(output)
