@@ -329,6 +329,13 @@ def render_markdown(model: dict[str, Any]) -> str:
         f"> 已识别关键决策：{len(decisions)} 个  ",
         f"> 待确认问题：{len(pending)} 项",
         "",
+        "## 流程边界",
+        "",
+        f"- 核心业务对象：{process['business_object']}",
+        f"- 触发事件：{process['trigger']}",
+        f"- 结束状态：{process['end_state']}",
+        f"- 边界理由：{process['boundary_reason']}",
+        "",
         "## 全流程决策树",
         "",
         "```text",
@@ -489,13 +496,20 @@ def render_decision_details(model: dict[str, Any]) -> str:
 def render_pending_questions(model: dict[str, Any]) -> str:
     if not model["pending_questions"]:
         return '<p class="empty">当前没有待确认问题。</p>'
-    return "".join(
-        f'''<article class="question-card" id="question-{esc(question['id'])}">
+    nodes = index_nodes(model)
+    cards: list[str] = []
+    for question in model["pending_questions"]:
+        links: list[str] = []
+        for node_id in question["related_nodes"]:
+            prefix = "detail" if nodes[node_id]["type"] == "decision" else "path"
+            links.append(f'<a href="#{prefix}-{esc(node_id)}">{esc(node_id)}</a>')
+        cards.append(
+            f'''<article class="question-card" id="question-{esc(question['id'])}">
   <div><strong>{esc(question['id'])}</strong><p>{esc(question['text'])}</p></div>
-  <div class="question-links">关联：{''.join(f'<a href="#detail-{esc(node_id)}">{esc(node_id)}</a>' for node_id in question['related_nodes'])}</div>
+  <div class="question-links">关联：{''.join(links)}</div>
 </article>'''
-        for question in model["pending_questions"]
-    )
+        )
+    return "".join(cards)
 
 
 def render_html(model: dict[str, Any]) -> str:

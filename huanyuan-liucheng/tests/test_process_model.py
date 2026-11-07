@@ -236,6 +236,45 @@ class ProcessModelCliTests(unittest.TestCase):
                 self.assertIn(condition, flow_text)
             self.assertIn('data-merge-target="J01"', flow_text)
 
+    def test_question_links_target_existing_decision_and_path_anchors(self):
+        model = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        model["pending_questions"].append(
+            {
+                "id": "Q09",
+                "text": "提交、审批和汇合之间的交接关系是什么？",
+                "related_nodes": ["A01", "D01", "J01"],
+            }
+        )
+
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            model_path = tmp_path / "mixed-question-links.json"
+            model_path.write_text(json.dumps(model, ensure_ascii=False), encoding="utf-8")
+            output_dir = tmp_path / "rendered"
+            result = self.run_cli("render", model_path, "--output-dir", output_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            html_text = (output_dir / "03 销售订单-决策路径图.html").read_text(encoding="utf-8")
+            self.assertIn('href="#path-A01"', html_text)
+            self.assertIn('href="#detail-D01"', html_text)
+            self.assertIn('href="#path-J01"', html_text)
+            ids = set(re.findall(r'\bid="([^"]+)"', html_text))
+            fragments = set(re.findall(r'href="#([^"]+)"', html_text))
+            self.assertEqual(fragments - ids, set())
+
+    def test_markdown_includes_confirmed_process_boundary(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            output_dir = Path(tmp)
+            result = self.run_cli("render", FIXTURE, "--output-dir", output_dir)
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            markdown_text = (output_dir / "03 销售订单-流程说明.md").read_text(encoding="utf-8")
+            self.assertIn("## 流程边界", markdown_text)
+            self.assertIn("核心业务对象：销售订单", markdown_text)
+            self.assertIn("触发事件：客户向业务员提出采购需求", markdown_text)
+            self.assertIn("结束状态：销售订单审核完成，进入待履约状态", markdown_text)
+            self.assertIn("仓储履约属于下游流程", markdown_text)
+
 
 if __name__ == "__main__":
     unittest.main()
