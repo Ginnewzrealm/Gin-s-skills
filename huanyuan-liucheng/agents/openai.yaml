@@ -1,6 +1,6 @@
 interface:
-  display_name: "企业流程与决策还原"
-  short_description: "把纯文字访谈稳定生成决策清晰的流程说明与可视化图"
-  default_prompt: "使用 $huanyuan-liucheng 从我提供的纯文字还原公司当前流程，并生成 Markdown 流程说明、HTML 决策路径图和待确认问题单。"
+  display_name: "企业流程现状与决策还原"
+  short_description: "先确认流程边界，再把纯文字还原为决策清晰的当前现状"
+  default_prompt: "使用 $huanyuan-liucheng 分析我提供的公司资料。先通过文字确认资料口径、流程边界和待确认问题；我确认后，再生成 Markdown 流程说明、HTML 决策路径图和问题单。"
 policy:
   allow_implicit_invocation: true
