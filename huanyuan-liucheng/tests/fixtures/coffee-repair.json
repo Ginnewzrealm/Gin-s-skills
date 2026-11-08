@@ -1,0 +1,601 @@
+{
+  "schema_version": "3.0",
+  "company": "星禾公司（虚构评测）",
+  "evaluation_context": {
+    "synthetic": true,
+    "confirmation_is_simulated": true,
+    "note": "仅按任务提供的虚构访谈与模拟答复测试，不声称实际用户已审核确认。"
+  },
+  "confirmation": {
+    "status": "confirmed",
+    "scope_summary": "模拟确认：仅咖啡机返修，从客服收到机器到原机或修好机器寄回并关闭返修单；允许保留未知项。",
+    "presented": {
+      "current_facts": [
+        "我理解星禾公司现在由人工处理咖啡机返修：客服收到机器后登记返修单，交给检测员检测；检测员根据结果安排直接维修、缺件订购后维修，或无法维修时告知客户并寄回原机。维修后由检测员通电测试，通过就交仓管打包寄回，客服收到客户签收回复后关闭返修单；不通过则退回维修员再次维修。维修员现在确实会拍测试视频，但它和通电测试的先后还不清楚。"
+      ],
+      "excluded_goals": [
+        "“明年让系统自动分单、自动发短信”属于未来目标，这次不放入现状流程。"
+      ],
+      "process_boundaries": [
+        "资料中有两个候选流程：咖啡机返修、每月办公室文具采购。建议这次只还原咖啡机返修，从客服收到机器开始，到原机或修好机器寄回并关闭返修单为止。收件、检测、订配件、维修、复测、寄回都服务同一台返修机器和返修单，连续放在一棵流程树中；文具采购有独立的月初触发和报销结果，本次不输出。"
+      ],
+      "decisions": [
+        "- 检测员依据故障检测结果选择处理方式：能直接维修的交维修员；配件缺货的交采购员订配件，到货后交维修员；完全无法维修的由客服告知客户，再把原机寄回并关闭返修单。三种处理路径已说明，具体如何判定“能直接维修”和“完全无法维修”还未提供。\n- 检测员在维修后通电测试：通过就交仓管打包寄回；不通过就退回维修员，再次维修后仍进入通电测试。测试通过的具体标准还未提供。"
+      ]
+    },
+    "user_reply": "你的理解对，这次只做咖啡机返修，从客服收到机器到原机或修好机器寄回并关闭返修单。哪些地方没说明就保留问题，可以生成。",
+    "user_reply_source_id": "SIMULATED_APPROVAL",
+    "response_kind": "approval",
+    "accepted_unknowns": true,
+    "simulated": true
+  },
+  "process": {
+    "number": "01",
+    "name": "咖啡机返修",
+    "status": "draft",
+    "business_object": "客户寄回的咖啡机及其返修单",
+    "trigger": "客服收到客户寄来的咖啡机",
+    "end_state": "原机或修好的咖啡机已寄回，返修单关闭",
+    "boundary_reason": "收件、检测、订配件、维修、复测及寄回均服务同一台返修机器和返修单，属于一个连续生命周期。"
+  },
+  "source_materials": [
+    {
+      "id": "SYNTHETIC_INTERVIEW",
+      "text": "合成评测材料，明确虚构，不是真实企业资料。\n星禾公司的客服收到客户寄来的咖啡机，先登记返修单，然后把机器交给检测员。检测员检测故障，依据检测结果选择处理：能直接维修的交维修员维修；配件缺货的交采购员订配件，到货后交维修员维修；完全无法维修的由客服告知客户无法维修，然后把原机寄回，返修单关闭。维修后检测员通电测试，测试通过就交仓管打包，仓管寄回客户，客服收到客户签收回复后关闭返修单；测试不通过就退回维修员再次维修。这些现在都人工做。明年想让系统自动分单和自动发短信。维修员现在会拍测试视频，但我说不清是在检测员通电测试之前还是之后。另外我们还有每月办公室文具采购：行政月初申购，老板审批，行政购买，财务报销，这是另一项工作。"
+    },
+    {
+      "id": "SYNTHETIC_PRESENTATION",
+      "text": "# 第一阶段：拟向用户展示的确认文本\n\n> 合成评测记录。下文依据任务给定的虚构材料准备，不是真实企业访谈，也没有声称实际用户已看到或确认。此阶段尚未建立正式流程模型。\n\n我理解星禾公司现在由人工处理咖啡机返修：客服收到机器后登记返修单，交给检测员检测；检测员根据结果安排直接维修、缺件订购后维修，或无法维修时告知客户并寄回原机。维修后由检测员通电测试，通过就交仓管打包寄回，客服收到客户签收回复后关闭返修单；不通过则退回维修员再次维修。维修员现在确实会拍测试视频，但它和通电测试的先后还不清楚。\n\n“明年让系统自动分单、自动发短信”属于未来目标，这次不放入现状流程。\n\n资料中有两个候选流程：咖啡机返修、每月办公室文具采购。建议这次只还原咖啡机返修，从客服收到机器开始，到原机或修好机器寄回并关闭返修单为止。收件、检测、订配件、维修、复测、寄回都服务同一台返修机器和返修单，连续放在一棵流程树中；文具采购有独立的月初触发和报销结果，本次不输出。\n\n这里有两个关键判断：\n\n- 检测员依据故障检测结果选择处理方式：能直接维修的交维修员；配件缺货的交采购员订配件，到货后交维修员；完全无法维修的由客服告知客户，再把原机寄回并关闭返修单。三种处理路径已说明，具体如何判定“能直接维修”和“完全无法维修”还未提供。\n- 检测员在维修后通电测试：通过就交仓管打包寄回；不通过就退回维修员，再次维修后仍进入通电测试。测试通过的具体标准还未提供。\n\n需要保留的问题是：维修员拍测试视频究竟在通电测试前还是后；检测处理分类和通电测试的具体标准；配件到货后由谁把机器交给维修员；无法维修时由谁寄回原机、谁关闭返修单。最后两处动作和顺序有原文依据，但执行人没有分别说清，我不会擅自指定。\n\n这样理解是否符合现状？如果没说清的内容暂时保留为文末问题，是否可以按这个范围生成一份咖啡机返修草案？\n"
+    },
+    {
+      "id": "SIMULATED_APPROVAL",
+      "text": "合成评测中的模拟用户确认。由评测任务明确提供，并非实际用户对第一阶段确认文本作出的回复。\n\n你的理解对，这次只做咖啡机返修，从客服收到机器到原机或修好机器寄回并关闭返修单。哪些地方没说明就保留问题，可以生成。\n"
+    }
+  ],
+  "evidence": [
+    {
+      "id": "E_RECEIVE",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "星禾公司的客服收到客户寄来的咖啡机，先登记返修单，然后把机器交给检测员。",
+      "kind": "current"
+    },
+    {
+      "id": "E_DETECT",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "检测员检测故障，依据检测结果选择处理：",
+      "kind": "current"
+    },
+    {
+      "id": "E_DIRECT",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "能直接维修的交维修员维修",
+      "kind": "current"
+    },
+    {
+      "id": "E_PARTS",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "配件缺货的交采购员订配件，到货后交维修员维修",
+      "kind": "current"
+    },
+    {
+      "id": "E_UNREPAIRABLE",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "完全无法维修的由客服告知客户无法维修，然后把原机寄回，返修单关闭。",
+      "kind": "current"
+    },
+    {
+      "id": "E_TEST",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "维修后检测员通电测试",
+      "kind": "current"
+    },
+    {
+      "id": "E_PASS",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "测试通过就交仓管打包，仓管寄回客户，客服收到客户签收回复后关闭返修单",
+      "kind": "current"
+    },
+    {
+      "id": "E_FAIL",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "测试不通过就退回维修员再次维修",
+      "kind": "current"
+    },
+    {
+      "id": "E_MANUAL",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "这些现在都人工做。",
+      "kind": "current"
+    },
+    {
+      "id": "E_GOAL",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "明年想让系统自动分单和自动发短信。",
+      "kind": "goal"
+    },
+    {
+      "id": "E_VIDEO",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "维修员现在会拍测试视频",
+      "kind": "current"
+    },
+    {
+      "id": "E_VIDEO_ORDER",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "但我说不清是在检测员通电测试之前还是之后。",
+      "kind": "unclear"
+    },
+    {
+      "id": "E_OTHER_PROCESS",
+      "source_id": "SYNTHETIC_INTERVIEW",
+      "quote": "另外我们还有每月办公室文具采购：行政月初申购，老板审批，行政购买，财务报销，这是另一项工作。",
+      "kind": "current"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "S01",
+      "type": "start",
+      "label": "客服收到客户寄来的咖啡机",
+      "next": "A01",
+      "evidence_refs": [
+        "E_RECEIVE"
+      ],
+      "next_evidence_refs": [
+        "E_RECEIVE"
+      ]
+    },
+    {
+      "id": "A01",
+      "type": "action",
+      "label": "登记返修单",
+      "next": "A02",
+      "evidence_refs": [
+        "E_RECEIVE"
+      ],
+      "next_evidence_refs": [
+        "E_RECEIVE"
+      ],
+      "owner": "客服"
+    },
+    {
+      "id": "A02",
+      "type": "action",
+      "label": "把咖啡机交给检测员",
+      "next": "A03",
+      "evidence_refs": [
+        "E_RECEIVE"
+      ],
+      "next_evidence_refs": [
+        "E_RECEIVE",
+        "E_DETECT"
+      ],
+      "owner": "客服"
+    },
+    {
+      "id": "A03",
+      "type": "action",
+      "label": "检测咖啡机故障",
+      "next": "D01",
+      "evidence_refs": [
+        "E_DETECT"
+      ],
+      "next_evidence_refs": [
+        "E_DETECT"
+      ],
+      "owner": "检测员"
+    },
+    {
+      "id": "D01",
+      "type": "decision",
+      "owner": "检测员",
+      "title": "故障处理方式",
+      "question": "依据检测结果如何处理咖啡机？",
+      "inputs": [
+        "故障检测结果"
+      ],
+      "evidence_refs": [
+        "E_DETECT",
+        "E_DIRECT",
+        "E_PARTS",
+        "E_UNREPAIRABLE"
+      ],
+      "criteria": [
+        {
+          "text": "能直接维修时交维修员维修",
+          "status": "confirmed",
+          "evidence": "合成访谈原文明确说明此处理路径。",
+          "evidence_refs": [
+            "E_DIRECT"
+          ]
+        },
+        {
+          "text": "配件缺货时交采购员订配件，到货后交维修员维修",
+          "status": "confirmed",
+          "evidence": "合成访谈原文明确说明此处理路径。",
+          "evidence_refs": [
+            "E_PARTS"
+          ]
+        },
+        {
+          "text": "完全无法维修时告知客户，寄回原机并关闭返修单",
+          "status": "confirmed",
+          "evidence": "合成访谈原文明确说明此处理路径。",
+          "evidence_refs": [
+            "E_UNREPAIRABLE"
+          ]
+        },
+        {
+          "text": "“能直接维修”和“完全无法维修”的具体判定标准待确认",
+          "status": "unresolved",
+          "evidence": "原文给出处置分类，未给出具体判定标准。",
+          "evidence_refs": []
+        }
+      ],
+      "branches_complete": true,
+      "branches": [
+        {
+          "label": "能直接维修",
+          "condition": "能直接维修",
+          "target": "A04",
+          "status": "unresolved",
+          "condition_status": "unresolved",
+          "target_status": "confirmed",
+          "primary": true,
+          "evidence_refs": [
+            "E_DIRECT"
+          ]
+        },
+        {
+          "label": "配件缺货",
+          "condition": "配件缺货",
+          "target": "A13",
+          "status": "confirmed",
+          "condition_status": "confirmed",
+          "target_status": "confirmed",
+          "primary": false,
+          "evidence_refs": [
+            "E_PARTS"
+          ]
+        },
+        {
+          "label": "完全无法维修",
+          "condition": "完全无法维修",
+          "target": "A15",
+          "status": "unresolved",
+          "condition_status": "unresolved",
+          "target_status": "confirmed",
+          "primary": false,
+          "evidence_refs": [
+            "E_UNREPAIRABLE"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A04",
+      "type": "action",
+      "label": "把咖啡机交给维修员",
+      "next": "A05",
+      "evidence_refs": [
+        "E_DETECT",
+        "E_DIRECT"
+      ],
+      "next_evidence_refs": [
+        "E_DETECT",
+        "E_DIRECT"
+      ],
+      "owner": "检测员"
+    },
+    {
+      "id": "A05",
+      "type": "action",
+      "label": "维修咖啡机",
+      "next": "A06",
+      "evidence_refs": [
+        "E_DIRECT",
+        "E_PARTS",
+        "E_FAIL"
+      ],
+      "next_evidence_refs": [
+        "E_TEST"
+      ],
+      "owner": "维修员"
+    },
+    {
+      "id": "A06",
+      "type": "action",
+      "label": "对咖啡机通电测试",
+      "next": "D02",
+      "evidence_refs": [
+        "E_TEST"
+      ],
+      "next_evidence_refs": [
+        "E_TEST",
+        "E_PASS",
+        "E_FAIL"
+      ],
+      "owner": "检测员"
+    },
+    {
+      "id": "D02",
+      "type": "decision",
+      "owner": "检测员",
+      "title": "维修后通电测试",
+      "question": "咖啡机通电测试是否通过？",
+      "inputs": [
+        "维修后通电测试结果"
+      ],
+      "evidence_refs": [
+        "E_TEST",
+        "E_PASS",
+        "E_FAIL"
+      ],
+      "criteria": [
+        {
+          "text": "测试通过后交仓管打包寄回",
+          "status": "confirmed",
+          "evidence": "合成访谈原文明确说明此处理路径。",
+          "evidence_refs": [
+            "E_PASS"
+          ]
+        },
+        {
+          "text": "测试不通过则退回维修员再次维修",
+          "status": "confirmed",
+          "evidence": "合成访谈原文明确说明此处理路径。",
+          "evidence_refs": [
+            "E_FAIL"
+          ]
+        },
+        {
+          "text": "通电测试通过的具体标准待确认",
+          "status": "unresolved",
+          "evidence": "原文未说明通电测试的具体判定标准。",
+          "evidence_refs": []
+        }
+      ],
+      "branches_complete": true,
+      "branches": [
+        {
+          "label": "测试通过",
+          "condition": "测试通过",
+          "target": "A07",
+          "status": "unresolved",
+          "condition_status": "unresolved",
+          "target_status": "confirmed",
+          "primary": true,
+          "evidence_refs": [
+            "E_PASS"
+          ]
+        },
+        {
+          "label": "测试不通过",
+          "condition": "测试不通过",
+          "target": "A12",
+          "status": "unresolved",
+          "condition_status": "unresolved",
+          "target_status": "confirmed",
+          "primary": false,
+          "evidence_refs": [
+            "E_FAIL"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "A07",
+      "type": "action",
+      "label": "把咖啡机交给仓管",
+      "next": "A08",
+      "evidence_refs": [
+        "E_TEST",
+        "E_PASS"
+      ],
+      "next_evidence_refs": [
+        "E_TEST",
+        "E_PASS"
+      ],
+      "owner": "检测员"
+    },
+    {
+      "id": "A08",
+      "type": "action",
+      "label": "打包咖啡机",
+      "next": "A09",
+      "evidence_refs": [
+        "E_PASS"
+      ],
+      "next_evidence_refs": [
+        "E_PASS"
+      ],
+      "owner": "仓管"
+    },
+    {
+      "id": "A09",
+      "type": "action",
+      "label": "把咖啡机寄回客户",
+      "next": "A10",
+      "evidence_refs": [
+        "E_PASS"
+      ],
+      "next_evidence_refs": [
+        "E_PASS"
+      ],
+      "owner": "仓管"
+    },
+    {
+      "id": "A10",
+      "type": "action",
+      "label": "收到客户签收回复",
+      "next": "A11",
+      "evidence_refs": [
+        "E_PASS"
+      ],
+      "next_evidence_refs": [
+        "E_PASS"
+      ],
+      "owner": "客服"
+    },
+    {
+      "id": "A11",
+      "type": "action",
+      "label": "关闭返修单",
+      "next": "T01",
+      "evidence_refs": [
+        "E_PASS"
+      ],
+      "next_evidence_refs": [
+        "E_PASS"
+      ],
+      "owner": "客服"
+    },
+    {
+      "id": "T01",
+      "type": "terminal",
+      "label": "修好的咖啡机已寄回，返修单关闭",
+      "evidence_refs": [
+        "E_PASS"
+      ]
+    },
+    {
+      "id": "A12",
+      "type": "action",
+      "label": "把咖啡机退回维修员",
+      "next": "A05",
+      "evidence_refs": [
+        "E_TEST",
+        "E_FAIL"
+      ],
+      "next_evidence_refs": [
+        "E_FAIL"
+      ],
+      "owner": "检测员",
+      "back_edge": true
+    },
+    {
+      "id": "A13",
+      "type": "action",
+      "label": "订购所缺配件",
+      "next": "A14",
+      "evidence_refs": [
+        "E_PARTS"
+      ],
+      "next_evidence_refs": [
+        "E_PARTS"
+      ],
+      "owner": "采购员"
+    },
+    {
+      "id": "A14",
+      "type": "action",
+      "label": "配件到货后把咖啡机交给维修员",
+      "next": "A05",
+      "evidence_refs": [
+        "E_PARTS"
+      ],
+      "next_evidence_refs": [
+        "E_PARTS"
+      ],
+      "owner": "执行人待确认"
+    },
+    {
+      "id": "A15",
+      "type": "action",
+      "label": "告知客户咖啡机完全无法维修",
+      "next": "A16",
+      "evidence_refs": [
+        "E_UNREPAIRABLE"
+      ],
+      "next_evidence_refs": [
+        "E_UNREPAIRABLE"
+      ],
+      "owner": "客服"
+    },
+    {
+      "id": "A16",
+      "type": "action",
+      "label": "把原机寄回客户",
+      "next": "A17",
+      "evidence_refs": [
+        "E_UNREPAIRABLE"
+      ],
+      "next_evidence_refs": [
+        "E_UNREPAIRABLE"
+      ],
+      "owner": "执行人待确认"
+    },
+    {
+      "id": "A17",
+      "type": "action",
+      "label": "关闭返修单",
+      "next": "T02",
+      "evidence_refs": [
+        "E_UNREPAIRABLE"
+      ],
+      "next_evidence_refs": [
+        "E_UNREPAIRABLE"
+      ],
+      "owner": "执行人待确认"
+    },
+    {
+      "id": "T02",
+      "type": "terminal",
+      "label": "无法维修的原机已寄回，返修单关闭",
+      "evidence_refs": [
+        "E_UNREPAIRABLE"
+      ]
+    }
+  ],
+  "pending_questions": [
+    {
+      "id": "Q01",
+      "text": "检测员如何具体判定咖啡机“能直接维修”或“完全无法维修”？",
+      "related_nodes": [
+        "D01"
+      ]
+    },
+    {
+      "id": "Q02",
+      "text": "检测员通电测试时，具体达到什么标准才算通过？",
+      "related_nodes": [
+        "D02"
+      ]
+    },
+    {
+      "id": "Q03",
+      "text": "维修员拍摄测试视频是在检测员通电测试之前还是之后？",
+      "related_nodes": [
+        "A05",
+        "A06"
+      ],
+      "known_facts": [
+        {
+          "text": "维修员现在会拍测试视频；与检测员通电测试的先后尚未说明。",
+          "evidence_refs": [
+            "E_VIDEO",
+            "E_VIDEO_ORDER"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "Q04",
+      "text": "配件到货后，实际由谁把咖啡机交给维修员？",
+      "related_nodes": [
+        "A14"
+      ]
+    },
+    {
+      "id": "Q05",
+      "text": "完全无法维修时，实际由谁寄回原机、由谁关闭返修单？",
+      "related_nodes": [
+        "A16",
+        "A17"
+      ]
+    }
+  ],
+  "sources": [
+    "任务给定的合成业务访谈及模拟确认回复；星禾公司与业务情节均为虚构，仅用于技能评测，不作为真实企业资料。"
+  ]
+}

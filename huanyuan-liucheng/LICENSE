@@ -1,0 +1,38 @@
+PROPRIETARY LICENSE — ALL RIGHTS RESERVED
+
+Copyright (c) 2026 Gin. All rights reserved.
+
+This license applies to the huanyuan-liucheng skill and its source
+materials, prompts, instructions, scripts, schemas, documentation, tests,
+and bundled examples (collectively, the "Materials").
+
+Third-party components in vendor/ are excluded from this proprietary
+license and remain subject to the licenses supplied alongside them.
+
+No permission is granted to any person or entity to use, copy, reproduce,
+modify, adapt, translate, publish, distribute, sublicense, sell, rent,
+host, make available, create derivative works from, or commercially exploit
+the Materials, in whole or in part, without prior written permission from
+Gin. The Materials may not be used for artificial intelligence or machine
+learning training, evaluation, dataset creation, model development, or the
+provision of a competing product or service without such permission.
+
+Making the Materials available in a public GitHub repository grants only
+the limited rights to view and fork the repository through GitHub's
+functionality as required by GitHub's Terms of Service. It does not grant
+permission to use, reproduce, distribute, commercialize, or create
+derivative works from the Materials outside those limited platform rights.
+
+This license does not claim ownership of content independently supplied by
+users, nor of a user's business facts or records. Rights in documents
+generated from user-supplied content are determined by applicable law and
+any relevant third-party rights.
+
+Any permission or commercial license must be granted separately in writing
+by Gin.
+
+THE MATERIALS ARE PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
+GIN BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING FROM OR IN
+CONNECTION WITH THE MATERIALS OR THEIR USE.
