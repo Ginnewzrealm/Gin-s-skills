@@ -108,6 +108,25 @@ class SingleMarkdownTests(unittest.TestCase):
             self.assertNotIn('视频', tree)
             self.assertIn('维修员现在会拍测试视频', text.split('## 待确认问题', 1)[1])
 
+    def test_branch_uncertainty_survives_tree_and_details_even_with_path_note(self):
+        for field, heading in [('condition_status', '条件'), ('target_status', '去向')]:
+            for status, label in [('inferred', '推断'), ('unresolved', '待确认')]:
+                with self.subTest(field=field, status=status):
+                    model = self.model()
+                    decision = next(n for n in model['nodes'] if n['id'] == 'D03')
+                    branch = decision['branches'][0]
+                    branch.update(condition_status='confirmed', target_status='confirmed',
+                                  status=status, path_note='已有路径说明')
+                    branch[field] = status
+                    self.assertEqual(renderer.validate_model(model), [])
+                    text = renderer.render_markdown(model)
+                    tree = text.split('```text\n', 1)[1].split('\n```', 1)[0]
+                    detail = text.split('### D03 ', 1)[1].split('### D04 ', 1)[0]
+                    for section in [tree, detail]:
+                        self.assertIn(heading+'：'+label, section)
+                    self.assertIn('已有路径说明', tree)
+                    self.assertIn('已有路径说明', detail)
+
 
 if __name__ == '__main__':
     unittest.main()

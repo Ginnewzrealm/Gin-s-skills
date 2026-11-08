@@ -487,12 +487,17 @@ def render_tree(model: dict[str, Any]) -> str:
             for branch in node['branches']:
                 child = draw(branch['target'], next_path)
                 labels = [f"【{branch['label']}】"]
+                if branch['condition_status'] != 'confirmed':
+                    labels[0] += f"〔条件：{status_text(branch['condition_status'])}〕"
                 if branch['condition'] != branch['label']:
                     labels.append('条件：'+branch['condition'])
+                target_notes = []
+                if branch['target_status'] != 'confirmed':
+                    target_notes.append('去向：'+status_text(branch['target_status']))
                 if branch.get('path_note'):
-                    child[0] += f"〔{branch['path_note']}〕"
-                elif branch.get('target_status') == 'inferred':
-                    child[0] += '〔衔接待核〕'
+                    target_notes.append(branch['path_note'])
+                if target_notes:
+                    child[0] += '〔'+'；'.join(target_notes)+'〕'
                 children.append((labels, child))
             if children:
                 rows.append('│')
@@ -564,8 +569,15 @@ def render_markdown(model: dict[str, Any]) -> str:
             sections.append("- 分支完整性：仅列已知结果；未说明的结果及去向待确认。")
         for index, branch in enumerate(node["branches"], 1):
             target = nodes[branch['target']]
-            note = f"；{branch['path_note']}" if branch.get('path_note') else ('；衔接待核' if branch.get('target_status') == 'inferred' else '')
             condition = branch['condition'] if branch['label'] == branch['condition'] else f"{branch['label']}（条件：{branch['condition']}）"
+            if branch['condition_status'] != 'confirmed':
+                condition += f"〔条件：{status_text(branch['condition_status'])}〕"
+            target_notes = []
+            if branch['target_status'] != 'confirmed':
+                target_notes.append('去向：'+status_text(branch['target_status']))
+            if branch.get('path_note'):
+                target_notes.append(branch['path_note'])
+            note = '〔'+'；'.join(target_notes)+'〕' if target_notes else ''
             sections.append(f"- **分支 {index}：**{condition} → {branch['target']} {target.get('label',target.get('question',''))}{note}")
         if node.get('note'):
             sections.append('- **边界：**'+node['note'])
