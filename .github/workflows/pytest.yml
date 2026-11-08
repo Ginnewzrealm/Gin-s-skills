@@ -19,8 +19,13 @@ jobs:
         with:
           python-version: "3.11"
 
-      - name: Install pytest
-        run: pip install pytest
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
 
-      - name: Run pytest
-        run: pytest -v
+      - name: Install test dependencies
+        run: python -m pip install pytest requests pyyaml pypinyin
+
+      - name: Run tests per skill
+        run: bash run_all_tests.sh

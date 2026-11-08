@@ -40,11 +40,102 @@ def require_text(value: Any, location: str, errors: list[str]) -> None:
         errors.append(f"{location} 必须是非空文字")
 
 
+def validate_evidence(model: dict[str, Any], errors: list[str]) -> tuple[dict, dict]:
+    """Check traceability, not whether a quotation logically proves a claim."""
+    materials: dict[str, str] = {}
+    values = model.get("source_materials")
+    if not isinstance(values, list) or not values:
+        errors.append("source_materials 至少需要一份原始文字资料")
+    else:
+        for index, item in enumerate(values):
+            location = f"source_materials[{index}]"
+            if not isinstance(item, dict):
+                errors.append(f"{location} 必须是对象")
+                continue
+            for field in ("id", "text"):
+                require_text(item.get(field), f"{location}.{field}", errors)
+            if isinstance(item.get("id"), str) and isinstance(item.get("text"), str):
+                if item["id"] in materials:
+                    errors.append(f"资料 id 重复：{item['id']}")
+                materials[item["id"]] = item["text"]
+    registry: dict[str, dict] = {}
+    evidence = model.get("evidence")
+    if not isinstance(evidence, list) or not evidence:
+        errors.append("evidence 至少需要一条原文证据")
+    else:
+        for index, item in enumerate(evidence):
+            location = f"evidence[{index}]"
+            if not isinstance(item, dict):
+                errors.append(f"{location} 必须是对象")
+                continue
+            for field in ("id", "source_id", "quote"):
+                require_text(item.get(field), f"{location}.{field}", errors)
+            if item.get("kind") not in {"current", "goal", "rule", "unclear", "user_confirmation"}:
+                errors.append(f"{location}.kind 必须区分现状、目标、制度、未知或用户确认")
+            source_id = item.get("source_id")
+            if not isinstance(source_id, str) or source_id not in materials:
+                errors.append(f"{location}.source_id 指向不存在的原始资料")
+            elif isinstance(item.get("quote"), str) and item["quote"] not in materials[source_id]:
+                errors.append(f"{location}.quote 与原始资料不匹配")
+            evidence_id = item.get("id")
+            if isinstance(evidence_id, str) and evidence_id:
+                if evidence_id in registry:
+                    errors.append(f"证据 id 重复：{evidence_id}")
+                registry[evidence_id] = item
+    return materials, registry
+
+
+def require_refs(value: Any, location: str, registry: dict, errors: list[str], *,
+                 required: bool = True, current: bool = True) -> None:
+    if not isinstance(value, list):
+        errors.append(f"{location} 必须是证据 ID 数组")
+        return
+    if required and not value:
+        errors.append(f"{location} 至少需要一条原文依据")
+    referenced = []
+    for reference in value:
+        if not isinstance(reference, str) or reference not in registry:
+            errors.append(f"{location} 引用了不存在的证据：{reference}")
+        else:
+            referenced.append(registry[reference])
+    if current and referenced and not any(item.get("kind") in {"current", "user_confirmation"} for item in referenced):
+        errors.append(f"{location} 不能只用预期目标、制度要求或未知说法证明当前事实")
+
+
+def validate_confirmation(confirmation: dict, materials: dict, errors: list[str]) -> None:
+    presented = confirmation.get("presented")
+    if not isinstance(presented, dict):
+        errors.append("confirmation.presented 必须记录向用户展示的确认内容")
+        presented = {}
+    for field in ("current_facts", "excluded_goals", "process_boundaries", "decisions"):
+        value = presented.get(field)
+        if not isinstance(value, list):
+            errors.append(f"confirmation.presented.{field} 必须是文字数组；没有时显式记录空数组")
+        else:
+            for index, text in enumerate(value):
+                require_text(text, f"confirmation.presented.{field}[{index}]", errors)
+    if not isinstance(confirmation.get("accepted_unknowns"), bool):
+        errors.append("confirmation.accepted_unknowns 必须明确是否允许保留待确认项")
+    if confirmation.get("status") == "confirmed":
+        if confirmation.get("response_kind") != "approval":
+            errors.append("confirmation.response_kind 必须为 approval；仅纠正信息不等于同意生成")
+        require_text(confirmation.get("user_reply"), "confirmation.user_reply", errors)
+        source_id = confirmation.get("user_reply_source_id")
+        if not isinstance(source_id, str) or source_id not in materials:
+            errors.append("confirmation.user_reply_source_id 必须指向用户实际回复")
+        elif isinstance(confirmation.get("user_reply"), str) and confirmation["user_reply"] not in materials[source_id]:
+            errors.append("confirmation.user_reply 与记录的用户回复不匹配")
+
+
 def validate_model(model: dict[str, Any]) -> list[str]:
     errors: list[str] = []
+    if 'processes' in model:
+        errors.append('一次只能还原一个流程；请先选定单个 process，不接收流程集合 processes')
+    if model.get('known_fragments'):
+        errors.append('不要提交碎片流程 known_fragments；把未定位的已知动作及证据写入对应问题的 known_facts')
     require_text(model.get("schema_version"), "schema_version", errors)
-    if model.get("schema_version") != "2.0":
-        errors.append("schema_version 必须是 2.0")
+    if model.get("schema_version") != "3.0":
+        errors.append("schema_version 必须是 3.0")
     require_text(model.get("company"), "company", errors)
 
     confirmation = model.get("confirmation")
@@ -54,6 +145,9 @@ def validate_model(model: dict[str, Any]) -> list[str]:
     if confirmation.get("status") not in CONFIRMATION_TYPES:
         errors.append("confirmation.status 只能是 pending 或 confirmed")
     require_text(confirmation.get("scope_summary"), "confirmation.scope_summary", errors)
+
+    materials, evidence = validate_evidence(model, errors)
+    validate_confirmation(confirmation, materials, errors)
 
     process = model.get("process")
     if not isinstance(process, dict):
@@ -91,6 +185,11 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             errors.append(f"{node_id or f'nodes[{index}]'}: type 必须是 {sorted(NODE_TYPES)} 之一")
             continue
 
+        if "next" in node and node_type not in {"start", "action", "join"}:
+            errors.append(f"{node_id}.next 不适用于 {node_type} 节点")
+        if "branches" in node and node_type != "decision":
+            errors.append(f"{node_id}.branches 只能用于 decision 节点")
+
         if node_type in {"start", "action", "join", "unresolved", "terminal"}:
             require_text(node.get("label"), f"{node_id}.label", errors)
         if node_type in {"start", "action", "join"}:
@@ -124,9 +223,14 @@ def validate_model(model: dict[str, Any]) -> list[str]:
                     require_text(criterion.get("evidence"), f"{location}.evidence", errors)
 
             branches = node.get("branches")
-            if not isinstance(branches, list) or len(branches) < 2:
-                errors.append(f"{node_id}.branches 至少需要两个分支")
+            branches_complete = node.get("branches_complete", True)
+            if not isinstance(branches_complete, bool):
+                errors.append(f"{node_id}.branches_complete 必须是布尔值")
+            if not isinstance(branches, list):
+                errors.append(f"{node_id}.branches 必须是数组")
             else:
+                if branches_complete and len(branches) < 2:
+                    errors.append(f"{node_id}.branches 完整决策至少需要两个分支；资料未说全时设置 branches_complete=false 并提问")
                 primary_count = 0
                 for branch_index, branch in enumerate(branches):
                     location = f"{node_id}.branches[{branch_index}]"
@@ -141,8 +245,8 @@ def validate_model(model: dict[str, Any]) -> list[str]:
                         errors.append(f"{location}.primary 必须是布尔值")
                     elif branch["primary"]:
                         primary_count += 1
-                if primary_count != 1:
-                    errors.append(f"{node_id}.branches 必须且只能有一个 primary=true 分支")
+                if primary_count != (1 if branches else 0):
+                    errors.append(f"{node_id}.branches 非空时必须且只能有一个 primary=true 分支")
 
     duplicate_ids = sorted({node_id for node_id in ids if ids.count(node_id) > 1})
     if duplicate_ids:
@@ -153,11 +257,17 @@ def validate_model(model: dict[str, Any]) -> list[str]:
         for node in nodes
         if isinstance(node, dict) and isinstance(node.get("id"), str) and node.get("id")
     }
+    if confirmation.get("status") == "confirmed":
+        presented = confirmation.get("presented", {})
+        if isinstance(presented, dict):
+            for field in ("current_facts", "process_boundaries"):
+                if not presented.get(field):
+                    errors.append(f"confirmation.presented.{field} 不能省略已展示的事实与范围")
+            if any(node.get("type") == "decision" for node in node_map.values()) and not presented.get("decisions"):
+                errors.append("confirmation.presented.decisions 必须记录已向用户确认的关键决策")
     starts = [node for node in node_map.values() if node.get("type") == "start"]
     if len(starts) != 1:
         errors.append(f"必须且只能有一个 start 节点，当前为 {len(starts)} 个")
-    if not any(node.get("type") == "terminal" for node in node_map.values()):
-        errors.append("至少需要一个 terminal 节点")
 
     for node_id, node in node_map.items():
         targets: list[str] = []
@@ -177,7 +287,9 @@ def validate_model(model: dict[str, Any]) -> list[str]:
         reached: set[str] = set()
         active: set[str] = set()
 
-        def walk(node_id: str) -> None:
+        def walk(node_id: str, back_edge: bool = False) -> None:
+            if back_edge:
+                return
             if node_id in active:
                 errors.append(f"检测到未声明的流程环：{node_id}")
                 return
@@ -187,10 +299,10 @@ def validate_model(model: dict[str, Any]) -> list[str]:
             active.add(node_id)
             node = node_map[node_id]
             if node["type"] in {"start", "action", "join"}:
-                walk(node["next"])
+                walk(node["next"], node.get("back_edge", False))
             elif node["type"] == "decision":
                 for branch in node["branches"]:
-                    walk(branch["target"])
+                    walk(branch["target"], branch.get("back_edge", False))
             active.remove(node_id)
 
         walk(starts[0]["id"])
@@ -215,6 +327,17 @@ def validate_model(model: dict[str, Any]) -> list[str]:
                 if not re.fullmatch(r"Q\d{2}", question_id):
                     errors.append(f"{location}.id 必须使用 Q01 形式")
             require_text(question.get("text"), f"{location}.text", errors)
+            facts = question.get('known_facts', [])
+            if not isinstance(facts, list):
+                errors.append(f'{location}.known_facts 必须是事实数组')
+            else:
+                for fact_index, fact in enumerate(facts):
+                    fact_location = f'{location}.known_facts[{fact_index}]'
+                    if not isinstance(fact, dict):
+                        errors.append(f'{fact_location} 必须包含 text 与 evidence_refs')
+                        continue
+                    require_text(fact.get('text'), f'{fact_location}.text', errors)
+                    require_refs(fact.get('evidence_refs'), f'{fact_location}.evidence_refs', evidence, errors)
             related = question.get("related_nodes")
             if not isinstance(related, list) or not related:
                 errors.append(f"{location}.related_nodes 至少需要一个关联节点")
@@ -228,6 +351,67 @@ def validate_model(model: dict[str, Any]) -> list[str]:
         )
         if duplicate_question_ids:
             errors.append(f"待确认问题 id 重复：{', '.join(duplicate_question_ids)}")
+
+    questioned_nodes = {
+        node_id for question in pending if isinstance(question, dict)
+        for node_id in question.get("related_nodes", []) if isinstance(node_id, str)
+    } if isinstance(pending, list) else set()
+    uncertain_nodes: set[str] = set()
+    for node_id, node in node_map.items():
+        node_type = node.get("type")
+        if node_type in {"start", "action", "decision", "terminal"}:
+            require_refs(node.get("evidence_refs"), f"{node_id}.evidence_refs", evidence, errors)
+        if node_type in {"start", "action", "join"}:
+            target = node_map.get(node.get("next"), {})
+            if node.get('next_status', 'confirmed') not in STATUS_TYPES:
+                errors.append(f'{node_id}.next_status 必须区分 confirmed、unresolved 或 inferred')
+            if node.get('next_status', 'confirmed') != 'confirmed':
+                uncertain_nodes.add(node_id)
+            require_refs(node.get("next_evidence_refs"), f"{node_id}.next_evidence_refs", evidence, errors,
+                         required=target.get("type") != "unresolved")
+            if target.get("type") == "unresolved":
+                uncertain_nodes.add(node_id)
+        if "back_edge" in node and not isinstance(node["back_edge"], bool):
+            errors.append(f"{node_id}.back_edge 必须是布尔值")
+        if node.get("back_edge"):
+            require_refs(node.get("next_evidence_refs"), f"{node_id}.next_evidence_refs", evidence, errors)
+        if node_type == "unresolved":
+            uncertain_nodes.add(node_id)
+        if node_type == "decision" and node.get("branches_complete", True) is False:
+            uncertain_nodes.add(node_id)
+        for index, criterion in enumerate(node.get("criteria", [])):
+            if not isinstance(criterion, dict):
+                continue
+            location = f"{node_id}.criteria[{index}]"
+            known = criterion.get("status") == "confirmed"
+            require_refs(criterion.get("evidence_refs"), f"{location}.evidence_refs", evidence, errors,
+                         required=known, current=known)
+            if not known:
+                uncertain_nodes.add(node_id)
+        for index, branch in enumerate(node.get("branches", [])):
+            if not isinstance(branch, dict):
+                continue
+            location = f"{node_id}.branches[{index}]"
+            require_refs(branch.get("evidence_refs"), f"{location}.evidence_refs", evidence, errors)
+            for field in ("condition_status", "target_status"):
+                if branch.get(field) not in STATUS_TYPES:
+                    errors.append(f"{location}.{field} 必须区分 confirmed、unresolved 或 inferred")
+            known = all(branch.get(field) == "confirmed" for field in ("condition_status", "target_status"))
+            if (branch.get("status") == "confirmed") != known:
+                errors.append(f"{location}.status 与条件/去向状态不一致")
+            target = node_map.get(branch.get("target"), {})
+            if target.get("type") == "unresolved" and branch.get("target_status") == "confirmed":
+                errors.append(f"{location}.target_status 不能把未知去向标成 confirmed")
+            if "back_edge" in branch and not isinstance(branch["back_edge"], bool):
+                errors.append(f"{location}.back_edge 必须是布尔值")
+            if not known:
+                uncertain_nodes.add(node_id)
+    for node_id in sorted(uncertain_nodes - questioned_nodes):
+        errors.append(f"{node_id} 存在未知内容，必须关联待确认问题")
+    if process.get("status") == "confirmed" and (uncertain_nodes or pending):
+        errors.append("process.status 不能为 confirmed：仍有待确认内容")
+    if confirmation.get("status") == "confirmed" and (uncertain_nodes or pending) and confirmation.get("accepted_unknowns") is not True:
+        errors.append("confirmation.accepted_unknowns：用户尚未允许保留未知项生成草案")
 
     sources = model.get("sources")
     if not isinstance(sources, list) or not sources:
@@ -249,6 +433,8 @@ def has_unresolved(model: dict[str, Any]) -> bool:
     for node in model.get("nodes", []):
         if node.get("type") == "unresolved":
             return True
+        if node.get("type") == "decision" and node.get("branches_complete", True) is False:
+            return True
         for item in node.get("criteria", []):
             if item.get("status") != "confirmed":
                 return True
@@ -267,56 +453,69 @@ def status_text(status: str) -> str:
 
 
 def render_tree(model: dict[str, Any]) -> str:
+    """Expand the whole process once; only real merges and returns use references."""
     nodes = index_nodes(model)
     start = next(node for node in model["nodes"] if node["type"] == "start")
-    lines: list[str] = []
+    expanded: set[str] = set()
 
-    def append_node(node_id: str, prefix: str, path: frozenset[str]) -> None:
+    def draw(node_id: str, path: frozenset[str]) -> list[str]:
         node = nodes[node_id]
         node_type = node["type"]
+        name = node.get('label', node.get('question', ''))
         if node_id in path:
-            lines.append(f"{prefix}↩ 汇入 {node_id} {node.get('label', node.get('question', ''))}")
-            return
+            return [f'↩ 返回 {node_id} {name}']
+        if node_id in expanded:
+            return [f'↪ 汇入 {node_id} {name}']
+        expanded.add(node_id)
         next_path = path | {node_id}
-        if node_type == "start":
-            lines.append(f"{prefix}▶ {node['label']}")
-            lines.append(f"{prefix}│")
-            lines.append(f"{prefix}▼")
-            append_node(node["next"], prefix, next_path)
-        elif node_type == "action":
-            owner = f"〔{node.get('owner')}〕" if node.get("owner") else ""
-            lines.append(f"{prefix}▭ {node_id} {owner}{node['label']}")
-            lines.append(f"{prefix}│")
-            lines.append(f"{prefix}▼")
-            append_node(node["next"], prefix, next_path)
-        elif node_type == "decision":
-            lines.append(f"{prefix}◇ {node_id} {node['question']}")
-            branches = node["branches"]
-            for index, branch in enumerate(branches):
-                last = index == len(branches) - 1
-                fork = "└─" if last else "├─"
-                continuation = "   " if last else "│  "
-                lines.append(f"{prefix}{fork} {branch['label']}")
-                lines.append(f"{prefix}{continuation}条件：{branch['condition']}")
-                lines.append(f"{prefix}{continuation}│")
-                lines.append(f"{prefix}{continuation}▼")
-                append_node(branch["target"], prefix + continuation, next_path)
-        elif node_type == "join":
-            lines.append(f"{prefix}◆ {node_id} {node['label']}")
-            lines.append(f"{prefix}│")
-            lines.append(f"{prefix}▼")
-            append_node(node["next"], prefix, next_path)
-        elif node_type == "unresolved":
-            lines.append(f"{prefix}⚠ {node_id} {node['label']}")
-        elif node_type == "terminal":
-            lines.append(f"{prefix}● {node_id} {node['label']}")
+        symbol = {'decision':'◆ ', 'join':'＋ ', 'unresolved':'… ', 'terminal':'● '}.get(node_type, '')
+        owner = f"{node['owner']}：" if node_type == 'action' else ''
+        rows = [f'{symbol}{node_id} {owner}{name}']
+        if node_type in {'start', 'action', 'join'}:
+            child = draw(node['next'], next_path)
+            if node.get('next_note'):
+                rows.extend(['│', f"衔接：{node['next_note']}"])
+            elif node.get('next_status', 'confirmed') != 'confirmed':
+                rows.extend(['│', '衔接待核'])
+            elif nodes[node['next']]['type'] in {'decision','join'}:
+                rows.append('│')
+            else:
+                child[0] = ('↓ ' if not child[0].startswith(('↪','↩')) else '') + child[0]
+            rows.extend(child)
+        elif node_type == 'decision':
+            children = []
+            for branch in node['branches']:
+                child = draw(branch['target'], next_path)
+                labels = [f"【{branch['label']}】"]
+                if branch['condition'] != branch['label']:
+                    labels.append('条件：'+branch['condition'])
+                if branch.get('path_note'):
+                    child[0] += f"〔{branch['path_note']}〕"
+                elif branch.get('target_status') == 'inferred':
+                    child[0] += '〔衔接待核〕'
+                children.append((labels, child))
+            if children:
+                rows.append('│')
+            for index, (labels, child) in enumerate(children):
+                last = index == len(children)-1
+                fork, continuation = ('└─','   ') if last else ('├─','│  ')
+                if len(labels) == len(child) == 1:
+                    rows.append(fork+labels[0]+(' ' if child[0].startswith(('↪','↩')) else ' → ')+child[0])
+                else:
+                    rows.append(fork+labels[0])
+                    rows.extend(continuation+text for text in labels[1:])
+                    rows.append(continuation+'└─ '+child[0])
+                    rows.extend(continuation+'   '+text for text in child[1:])
+                if not last and (len(labels)+len(child)>2 or sum(map(len,children[index+1]))>2):
+                    rows.append('│')
+        return rows
 
-    append_node(start["id"], "", frozenset())
-    return "\n".join(lines)
+    return '\n'.join(draw(start['id'], frozenset()))
 
 
 def render_markdown(model: dict[str, Any]) -> str:
     process = model["process"]
+    nodes = index_nodes(model)
     decisions = [node for node in model["nodes"] if node["type"] == "decision"]
     pending = model["pending_questions"]
     status = "草案，存在待确认规则" if has_unresolved(model) else "已确认"
@@ -329,14 +528,16 @@ def render_markdown(model: dict[str, Any]) -> str:
         f"> 已识别关键决策：{len(decisions)} 个  ",
         f"> 待确认问题：{len(pending)} 项",
         "",
-        "## 流程边界",
+        "**流程边界**",
         "",
         f"- 核心业务对象：{process['business_object']}",
         f"- 触发事件：{process['trigger']}",
         f"- 结束状态：{process['end_state']}",
         f"- 边界理由：{process['boundary_reason']}",
         "",
-        "## 全流程决策树",
+        "## 流程图",
+        "",
+        "同一棵树连续展示本流程。↓ 表示连续动作；◆ 表示决策；【】表示分支条件；↪ 仅用于汇入已展开的公共节点；… 表示资料缺口。",
         "",
         "```text",
         render_tree(model),
@@ -345,36 +546,43 @@ def render_markdown(model: dict[str, Any]) -> str:
         "## 关键决策节点",
         "",
     ]
+    if not decisions:
+        sections.extend(["未识别到关键决策节点。", ""])
     for node in decisions:
         sections.extend(
             [
                 f"### {node['id']} {node['question']}",
                 "",
-                f"- 决策人：{node['owner']}",
-                f"- 判断信息：{'、'.join(node['inputs'])}",
-                "- 判断标准：",
+                f"- **判断主体：**{node['owner']}",
+                f"- **判断信息：**{'、'.join(node['inputs'])}",
             ]
         )
         for criterion in node["criteria"]:
-            sections.append(
-                f"  - [{status_text(criterion['status'])}] {criterion['text']}（依据：{criterion['evidence']}）"
-            )
-        sections.append("- 分支条件：")
-        for branch in node["branches"]:
-            sections.append(
-                f"  - {branch['label']}｜条件：{branch['condition']}｜去向：{branch['target']}｜{status_text(branch['status'])}"
-            )
+            basis = f"（依据：{criterion['evidence']}）" if criterion['evidence'] != criterion['text'] else ''
+            sections.append(f"- **条件依据：**[{status_text(criterion['status'])}] {criterion['text']}{basis}")
+        if node.get("branches_complete", True) is False:
+            sections.append("- 分支完整性：仅列已知结果；未说明的结果及去向待确认。")
+        for index, branch in enumerate(node["branches"], 1):
+            target = nodes[branch['target']]
+            note = f"；{branch['path_note']}" if branch.get('path_note') else ('；衔接待核' if branch.get('target_status') == 'inferred' else '')
+            condition = branch['condition'] if branch['label'] == branch['condition'] else f"{branch['label']}（条件：{branch['condition']}）"
+            sections.append(f"- **分支 {index}：**{condition} → {branch['target']} {target.get('label',target.get('question',''))}{note}")
+        if node.get('note'):
+            sections.append('- **边界：**'+node['note'])
+        related = [q['id'] for q in pending if node['id'] in q['related_nodes']]
+        if related:
+            sections.append('- **对应待确认：**'+'、'.join(related))
         sections.append("")
 
     sections.extend(["## 待确认问题", ""])
     if pending:
-        sections.extend(
-            f"{question['id']}. {question['text']}（关联：{'、'.join(question['related_nodes'])}）"
-            for question in pending
-        )
+        for question in pending:
+            sections.extend([f"**{question['id']}** {question['text']}（关联：{'、'.join(question['related_nodes'])}）", ''])
+            for fact in question.get('known_facts', []):
+                sections.extend(['已知事实：'+fact['text'], ''])
     else:
         sections.append("无。")
-    sections.extend(["", "## 图例", "", "- `▶`：流程起点", "- `▭`：业务动作", "- `◇`：关键决策节点", "- `●`：业务终态", "- `⚠`：资料不足，必须继续确认", "", "## 资料来源", ""])
+    sections.extend(["", "**资料来源**", ""])
     sections.extend(f"- {source}" for source in model["sources"])
     sections.extend(["", "> 本文件只还原输入资料。所有“待确认”和“推断”内容均不得写成企业既定事实。", ""])
     return "\n".join(sections)
@@ -384,206 +592,75 @@ def esc(value: Any) -> str:
     return html.escape(str(value), quote=True)
 
 
-def path_card(node: dict[str, Any]) -> str:
-    node_type = node["type"]
-    owners = {
-        "start": "起点",
-        "action": node.get("owner", ""),
-        "decision": node.get("owner", ""),
-        "join": "路径汇合",
-        "unresolved": node.get("owner", "待确认"),
-        "terminal": "完成",
-    }
-    label = node.get("question", node.get("label", ""))
-    return f'''<article class="path-card {esc(node_type)}" id="path-{esc(node['id'])}">
-  <header><span>{esc(node['id'])}</span><span>{esc(owners[node_type])}</span></header>
-  <h3>{esc(label)}</h3>
-</article>'''
-
-
 def render_path_map(model: dict[str, Any]) -> str:
-    nodes = index_nodes(model)
-    start = next(node for node in model["nodes"] if node["type"] == "start")
-    queue = [start["id"]]
-    ordered_ids: list[str] = []
-    seen: set[str] = set()
-    inbound: dict[str, int] = {node_id: 0 for node_id in nodes}
-    for node in model["nodes"]:
-        targets = (
-            [branch["target"] for branch in node["branches"]]
-            if node["type"] == "decision"
-            else [node["next"]]
-            if node["type"] in {"start", "action", "join"}
-            else []
-        )
-        for target in targets:
-            inbound[target] += 1
-
-    while queue:
-        node_id = queue.pop(0)
-        if node_id in seen:
-            continue
-        seen.add(node_id)
-        ordered_ids.append(node_id)
-        node = nodes[node_id]
-        targets = (
-            [branch["target"] for branch in node["branches"]]
-            if node["type"] == "decision"
-            else [node["next"]]
-            if node["type"] in {"start", "action", "join"}
-            else []
-        )
-        queue.extend(target for target in targets if target not in seen)
-
-    blocks: list[str] = []
-    for node_id in ordered_ids:
-        node = nodes[node_id]
-        card = path_card(node)
-        merge_note = (
-            f'<div class="merge-count">{inbound[node_id]} 条路径汇入</div>'
-            if inbound[node_id] > 1
-            else ""
-        )
-        if node["type"] == "decision":
-            branches = "".join(
-                f'''<div class="route-branch {esc(branch['status'])}">
-  <strong>{esc(branch['label'])}</strong>
-  <span>{esc(branch['condition'])}</span>
-  <a {'data-merge-target="' + esc(branch['target']) + '"' if nodes[branch['target']]['type'] == 'join' else ''} href="#path-{esc(branch['target'])}">→ {esc(branch['target'])} · {esc(nodes[branch['target']].get('label', nodes[branch['target']].get('question', '')))}</a>
-</div>'''
-                for branch in node["branches"]
-            )
-            routing = f'<div class="route-branches">{branches}</div>'
-        elif node["type"] in {"start", "action", "join"}:
-            target = nodes[node["next"]]
-            routing = f'''<div class="route-next"><span aria-hidden="true">↓</span><a href="#path-{esc(target['id'])}">下一步：{esc(target['id'])} · {esc(target.get('label', target.get('question', '')))}</a></div>'''
-        else:
-            routing = '<div class="route-end">路径到此结束</div>'
-        blocks.append(f'<div class="route-block">{merge_note}{card}{routing}</div>')
-    return "".join(blocks)
+    from flow_svg import render_svg
+    return render_svg(model)
 
 
 def render_decision_details(model: dict[str, Any]) -> str:
     nodes = index_nodes(model)
-    cards: list[str] = []
-    for node in model["nodes"]:
-        if node["type"] != "decision":
+    cards = []
+    for node in model['nodes']:
+        if node['type'] != 'decision':
             continue
-        criteria = "".join(
-            f'<li><span class="tag {esc(item["status"])}">{esc(status_text(item["status"]))}</span>'
-            f'<span>{esc(item["text"])}</span><small>依据：{esc(item["evidence"])}</small></li>'
-            for item in node["criteria"]
-        )
-        branch_rows = "".join(
-            f'''<div class="detail-branch {esc(branch['status'])}">
-  <strong>{esc(branch['label'])}</strong>
-  <span>条件：{esc(branch['condition'])}</span>
-  <span class="target">→ {esc(branch['target'])} · {esc(nodes[branch['target']].get('label', nodes[branch['target']].get('question', '')))}</span>
-</div>'''
-            for branch in node["branches"]
-        )
-        cards.append(
-            f'''<article class="decision-detail" id="detail-{esc(node['id'])}">
-  <header><div><span>{esc(node['id'])} · {esc(node['title'])}</span><h3>{esc(node['question'])}</h3></div><b>{esc(node['owner'])}</b></header>
-  <p class="detail-inputs"><strong>判断信息</strong>{esc('、'.join(node['inputs']))}</p>
-  <div class="detail-criteria"><strong>判断标准</strong><ul>{criteria}</ul></div>
-  <div class="detail-branches"><strong>分支条件与去向</strong>{branch_rows}</div>
-</article>'''
-        )
-    return "".join(cards)
+        rows = [f'<div class="detail-row"><strong>决策人</strong><p>{esc(node["owner"])}</p></div>',
+                f'<div class="detail-row"><strong>判断信息</strong><p>{esc("、".join(node["inputs"]))}</p></div>']
+        for item in node['criteria']:
+            heading = '判断标准'
+            rows.append(f'<div class="detail-row"><strong>{heading}</strong><p><span class="tag {esc(item["status"])}">{esc(status_text(item["status"]))}</span>{esc(item["text"])}<small>依据：{esc(item["evidence"])}</small></p></div>')
+        if node.get('branches_complete') is False:
+            rows.append('<div class="detail-row"><strong>待确认</strong><p>资料只说明已列出的结果；其他结果及去向尚未说明。</p></div>')
+        for branch in node['branches']:
+            target = nodes[branch['target']]
+            condition_heading = '条件' if branch.get('condition_status') == 'confirmed' else f'条件（{status_text(branch.get("condition_status",branch["status"]))}）'
+            target_heading = '去向' if branch.get('target_status') == 'confirmed' else f'去向（{status_text(branch.get("target_status",branch["status"]))}）'
+            rows.append(f'<div class="detail-branch"><strong>{esc(branch["label"])}</strong><span>{condition_heading}：{esc(branch["condition"])}</span><span class="target">{target_heading}：<a href="#path-{esc(branch["target"])}">→ {esc(branch["target"])} · {esc(target.get("label",target.get("question","")))}</a></span></div>')
+        cards.append(f'<article class="decision-detail" id="detail-{esc(node["id"])}"><header><span class="decision-id">{esc(node["id"])}</span><h3>{esc(node["question"])}</h3></header>{"".join(rows)}</article>')
+    return ''.join(cards) or '<p class="empty">现有资料未识别到改变后续路径的决策。</p>'
 
 
 def render_pending_questions(model: dict[str, Any]) -> str:
-    if not model["pending_questions"]:
-        return '<p class="empty">当前没有待确认问题。</p>'
     nodes = index_nodes(model)
-    cards: list[str] = []
-    for question in model["pending_questions"]:
-        links: list[str] = []
-        for node_id in question["related_nodes"]:
-            prefix = "detail" if nodes[node_id]["type"] == "decision" else "path"
-            links.append(f'<a href="#{prefix}-{esc(node_id)}">{esc(node_id)}</a>')
-        cards.append(
-            f'''<article class="question-card" id="question-{esc(question['id'])}">
-  <div><strong>{esc(question['id'])}</strong><p>{esc(question['text'])}</p></div>
-  <div class="question-links">关联：{''.join(links)}</div>
-</article>'''
-        )
-    return "".join(cards)
+    questions = []
+    for question in model['pending_questions']:
+        links = ''.join(f'<a href="#{"detail" if nodes[nid]["type"] == "decision" else "path"}-{esc(nid)}">{esc(nid)}</a>' for nid in question['related_nodes'])
+        questions.append(f'<li class="question-card" id="question-{esc(question["id"])}"><p>{esc(question["text"])}</p><span class="question-links">{esc(question["id"])} · 关联 {links}</span></li>')
+    return '<ol class="questions">'+''.join(questions)+'</ol>' if questions else '<p class="empty">当前没有待确认问题。</p>'
 
 
 def render_html(model: dict[str, Any]) -> str:
-    process = model["process"]
-    decisions = [node for node in model["nodes"] if node["type"] == "decision"]
-    pending = model["pending_questions"]
-    status = "草案 · 关键规则待确认" if has_unresolved(model) else "已确认"
-    sources = "".join(f"<li>{esc(source)}</li>" for source in model["sources"])
+    process = model['process']
+    decisions = [node for node in model['nodes'] if node['type'] == 'decision']
+    status = '草案，保留待确认规则' if has_unresolved(model) else '已确认'
+    css = (Path(__file__).resolve().parents[1] / 'assets' / 'process.css').read_text(encoding='utf-8')
+    sources = ''.join(f'<li>{esc(source)}</li>' for source in model['sources'])
     return f'''<!doctype html>
-<html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{esc(model['company'])}｜{esc(process['name'])}决策路径图</title>
-<style>
-:root{{--ink:#192230;--muted:#667085;--paper:#f5f6f8;--card:#fff;--line:#98a2b3;--blue:#eaf3ff;--blue-b:#72a7df;--yellow:#fff2bd;--yellow-b:#d5a72b;--red:#fff0ef;--red-b:#d7655b;--green:#e9f7ee;--green-b:#55a46b;--purple:#f0e9ff;--purple-b:#8b6fd1}}
-*{{box-sizing:border-box}}html{{scroll-behavior:smooth}}body{{margin:0;background:var(--paper);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.55}}a{{color:inherit}}
-.page{{max-width:1500px;margin:auto;padding:42px 48px 72px}}.brand{{font-size:12px;font-weight:850;letter-spacing:.12em;color:#35618e}}.hero{{display:flex;justify-content:space-between;gap:28px;align-items:flex-start;margin-top:9px}}h1{{font-size:38px;line-height:1.2;margin:0 0 8px}}.subtitle{{margin:0;color:var(--muted)}}.status{{white-space:nowrap;padding:8px 13px;border:1px solid #e1bd44;background:#fff7d8;border-radius:999px;font-size:13px;font-weight:800}}
-.metrics{{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:26px 0}}.metric{{background:#fff;border:1px solid #dfe3e8;border-radius:10px;padding:14px 17px}}.metric strong{{font-size:24px;margin-right:8px}}.metric span{{font-size:13px;color:var(--muted)}}
-.legend{{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:18px;padding:12px 15px;background:#fff;border:1px solid #dfe3e8;border-radius:9px;font-size:13px;color:#475467}}.legend i{{display:inline-block;width:12px;height:12px;margin-right:6px;border-radius:3px;vertical-align:-1px}}
-.panel{{background:#fff;border:1px solid #dce2e8;border-radius:14px;padding:30px;box-shadow:0 10px 30px rgba(29,41,57,.05)}}.panel+.panel{{margin-top:26px}}.section-head{{margin-bottom:22px}}.section-head h2{{font-size:25px;margin:0 0 4px}}.section-head p{{margin:0;color:var(--muted);font-size:13px}}
-.path-root{{display:grid;gap:12px;padding:4px 0 14px}}.route-block{{width:min(100%,980px);margin:auto;padding:12px 0 20px;border-bottom:1px solid #e7eaee}}.route-block:last-child{{border-bottom:0}}.path-card{{width:min(100%,380px);margin:auto;border:2px solid;border-radius:11px;padding:13px 15px;box-shadow:0 4px 10px rgba(16,24,40,.04)}}.path-card header{{display:flex;justify-content:space-between;gap:12px;color:#586579;font-size:12px;font-weight:800}}.path-card h3{{font-size:16px;line-height:1.35;margin:8px 0 0}}.path-card.start,.path-card.action{{background:var(--blue);border-color:var(--blue-b)}}.path-card.decision{{background:var(--yellow);border-color:var(--yellow-b)}}.path-card.unresolved{{background:var(--red);border-color:var(--red-b)}}.path-card.terminal{{background:var(--green);border-color:var(--green-b)}}.path-card.join{{background:var(--purple);border-color:var(--purple-b)}}.merge-count{{width:max-content;margin:0 auto 7px;padding:3px 8px;border-radius:999px;background:var(--purple);color:#58409a;font-size:11px;font-weight:850}}
-.route-next{{display:flex;justify-content:center;align-items:center;gap:10px;padding-top:9px;font-size:12.5px;color:#536174}}.route-next span{{font-weight:900}}.route-next a{{font-weight:750;text-decoration:none}}.route-branches{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:14px}}.route-branch{{min-width:0;border:1px solid #d9dee5;border-top:3px solid var(--line);background:#f8fafc;border-radius:8px;padding:11px 12px}}.route-branch.unresolved{{border-top-color:var(--red-b);background:#fff9f8}}.route-branch strong{{display:block;font-size:13px;margin-bottom:4px}}.route-branch span{{display:block;min-height:38px;font-size:12px;color:#475467}}.route-branch a{{display:block;margin-top:8px;padding-top:7px;border-top:1px solid #e3e7eb;color:#35618e;font-size:12px;font-weight:800;text-decoration:none}}.route-end{{padding-top:8px;text-align:center;color:var(--muted);font-size:12px}}
-.decision-grid{{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}}.decision-detail{{border:1px solid #dce2e8;border-radius:11px;padding:18px;background:#fff}}.decision-detail header{{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}}.decision-detail header span{{font-size:12px;font-weight:850;color:#8a6500}}.decision-detail h3{{font-size:18px;margin:3px 0 0}}.decision-detail header b{{font-size:12px;background:#fff4c7;border:1px solid #e2c360;border-radius:999px;padding:4px 9px;white-space:nowrap}}.detail-inputs{{display:grid;grid-template-columns:76px 1fr;gap:8px;font-size:13px;margin:16px 0}}.detail-criteria>strong,.detail-branches>strong{{display:block;font-size:13px;margin-bottom:7px}}.detail-criteria ul{{margin:0 0 16px;padding-left:18px}}.detail-criteria li{{margin:7px 0;font-size:13px}}.detail-criteria li small{{display:block;margin:2px 0 0 54px;color:var(--muted)}}.tag{{display:inline-block;font-size:11px;font-weight:850;border-radius:4px;padding:1px 5px;margin-right:6px}}.tag.confirmed{{background:#dff1e5;color:#246b39}}.tag.unresolved{{background:#ffe1dc;color:#9d3029}}.tag.inferred{{background:#e8e5ff;color:#5748a7}}.detail-branch{{display:grid;grid-template-columns:120px 1fr;gap:3px 10px;border-top:1px solid #e8ebef;padding:9px 0;font-size:12.5px}}.detail-branch .target{{grid-column:2;color:#675200;font-weight:750}}
-.questions{{display:grid;gap:10px}}.question-card{{display:flex;justify-content:space-between;gap:22px;padding:14px 16px;border:1px solid #e1e5ea;border-left:4px solid var(--red-b);border-radius:8px;background:#fff}}.question-card div:first-child{{display:grid;grid-template-columns:46px 1fr;gap:8px}}.question-card p{{margin:0}}.question-links{{white-space:nowrap;font-size:12px;color:var(--muted)}}.question-links a{{display:inline-block;margin-left:6px;color:#35618e;font-weight:800}}.sources{{font-size:13px;color:#475467}}.footnote{{margin:16px 2px 0;color:var(--muted);font-size:13px}}
-@media(max-width:900px){{.page{{padding:24px 14px 44px}}.hero{{display:block}}.status{{display:inline-block;margin-top:14px}}.metrics{{grid-template-columns:1fr}}.panel{{padding:20px 12px}}.route-branches{{grid-template-columns:1fr}}.decision-grid{{grid-template-columns:1fr}}.question-card{{display:block}}.question-links{{margin-top:8px;white-space:normal}}h1{{font-size:30px}}}}
-@media print{{body{{background:#fff}}.page{{max-width:none;padding:16px}}.panel{{box-shadow:none;break-inside:avoid}}.path-root{{overflow:visible}}}}
-</style>
-</head>
-<body>
-<main class="page">
-  <div class="brand">企业流程现状还原 · 决策路径图</div>
-  <div class="hero"><div><h1>{esc(process['number'])} {esc(process['name'])}</h1><p class="subtitle">{esc(model['company'])}｜{esc(process['trigger'])} → {esc(process['end_state'])}</p></div><div class="status">● {esc(status)}</div></div>
-  <section class="metrics" aria-label="流程统计"><div class="metric"><strong>{len(decisions)}</strong><span>关键决策节点</span></div><div class="metric"><strong>{len(pending)}</strong><span>待确认问题</span></div><div class="metric"><strong>{len(model['nodes'])}</strong><span>流程节点</span></div></section>
-  <div class="legend"><span><i style="background:var(--blue);border:1px solid var(--blue-b)"></i>业务动作</span><span><i style="background:var(--yellow);border:1px solid var(--yellow-b)"></i>关键决策</span><span><i style="background:var(--purple);border:1px solid var(--purple-b)"></i>路径汇合</span><span><i style="background:var(--red);border:1px solid var(--red-b)"></i>资料未说明的去向</span><span><i style="background:var(--green);border:1px solid var(--green-b)"></i>业务终态</span></div>
-  <section id="flow-map" class="panel" aria-label="{esc(process['name'])}当前现状流程图"><div class="section-head"><h2>当前现状流程图</h2><p>只显示实际节点、决策分支和路径汇合；完整说明统一列在图后。</p></div><div class="path-root">{render_path_map(model)}</div></section>
-  <section id="decision-details" class="panel" aria-label="关键决策节点说明"><div class="section-head"><h2>关键决策节点说明</h2><p>逐项列出决策人、判断信息、判断标准、分支条件和去向。</p></div><div class="decision-grid">{render_decision_details(model)}</div></section>
-  <section id="pending-questions" class="panel" aria-label="待确认问题"><div class="section-head"><h2>待确认问题</h2><p>资料缺失、冲突或衔接不明只在这里提问，不补成流程动作。</p></div><div class="questions">{render_pending_questions(model)}</div></section>
-  <section id="sources" class="panel sources" aria-label="资料来源"><div class="section-head"><h2>资料来源与事实声明</h2></div><ul>{sources}</ul><p class="footnote">本文件只还原输入资料。规范、建议和未来目标不等于当前现状；所有“推断”和“待确认”内容不得写成企业既定事实。</p></section>
-</main>
-</body>
-</html>
-'''
-
-
-def render_questions(model: dict[str, Any]) -> str:
-    process = model["process"]
-    pending = model["pending_questions"]
-    lines = [
-        f"# {process['number']} {process['name']}｜待确认问题",
-        "",
-        f"> 共 {len(pending)} 项。访谈时按顺序确认；确认后同步更新 JSON，再重新生成两种输出。",
-        "",
-    ]
-    if pending:
-        lines.extend(
-            f"{question['id']}. {question['text']}（关联：{'、'.join(question['related_nodes'])}）"
-            for question in pending
-        )
-    else:
-        lines.append("当前没有待确认问题。")
-    lines.append("")
-    return "\n".join(lines)
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{esc(model['company'])} · {esc(process['name'])}流程说明</title><style>{css}</style></head>
+<body><main class="page">
+<h1>{esc(process['number'])} {esc(process['name'])} · 流程说明</h1>
+<div class="meta"><span>{esc(model['company'])}</span><span class="status">{esc(status)}</span><span>{len(decisions)} 个关键决策</span><span>{len(model['pending_questions'])} 项待确认问题</span></div>
+<p class="scope">{esc(process['trigger'])} → {esc(process['end_state'])}</p>
+<div class="legend"><span><i></i>业务动作</span><span><i class="diamond"></i>关键决策</span><span><i class="unknown"></i>去向待确认</span><span><i class="end"></i>起点 / 终态</span></div>
+<section id="flow-map" class="panel"><h2>流程图</h2><div class="flow-canvas" tabindex="0" role="region" aria-label="可横向滚动查看流程图">{render_path_map(model)}</div></section>
+<section id="decision-details" class="panel"><h2>关键决策节点</h2>{render_decision_details(model)}</section>
+<section id="pending-questions" class="panel"><h2>待确认问题</h2>{render_pending_questions(model)}</section>
+<footer class="sources"><strong>资料来源</strong><ul>{sources}</ul><p>只还原现有资料；待确认内容不代表既定事实，不补写缺失业务环节。</p></footer>
+</main></body></html>'''
 
 
 def render_files(model: dict[str, Any], output_dir: Path) -> list[Path]:
-    output_dir.mkdir(parents=True, exist_ok=True)
+    errors = validate_model(model)
+    if errors:
+        raise ModelError("；".join(errors))
+    if model["confirmation"]["status"] != "confirmed":
+        raise ModelError("尚未取得用户确认，不能生成正式流程成果")
     process = model["process"]
     stem = f"{process['number']} {process['name']}"
     outputs = [
         (output_dir / f"{stem}-流程说明.md", render_markdown(model)),
-        (output_dir / f"{stem}-决策路径图.html", render_html(model)),
-        (output_dir / f"{stem}-待确认问题.md", render_questions(model)),
     ]
+    output_dir.mkdir(parents=True, exist_ok=True)
     for path, content in outputs:
         path.write_text(content, encoding="utf-8")
     return [path for path, _ in outputs]
@@ -595,7 +672,7 @@ def parse_args() -> argparse.Namespace:
     validate = subparsers.add_parser("validate", help="校验 JSON 模型")
     validate.add_argument("model", type=Path)
     validate.add_argument("--require-confirmed", action="store_true", help="不允许任何待确认或推断内容")
-    render = subparsers.add_parser("render", help="生成 Markdown、HTML 和待确认问题单")
+    render = subparsers.add_parser("render", help="生成一个流程的一份完整 Markdown 文档")
     render.add_argument("model", type=Path)
     render.add_argument("--output-dir", type=Path, required=True)
     return parser.parse_args()
@@ -625,7 +702,7 @@ def main() -> int:
         for output in outputs:
             print(output)
         return 0
-    except ModelError as exc:
+    except ValueError as exc:
         print(f"错误：{exc}", file=sys.stderr)
         return 1
 

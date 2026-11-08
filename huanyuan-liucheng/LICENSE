@@ -6,6 +6,9 @@ This license applies to the huanyuan-liucheng skill and its source
 materials, prompts, instructions, scripts, schemas, documentation, tests,
 and bundled examples (collectively, the "Materials").
 
+Third-party components in vendor/ are excluded from this proprietary
+license and remain subject to the licenses supplied alongside them.
+
 No permission is granted to any person or entity to use, copy, reproduce,
 modify, adapt, translate, publish, distribute, sublicense, sell, rent,
 host, make available, create derivative works from, or commercially exploit
